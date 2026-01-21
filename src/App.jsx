@@ -3,8 +3,14 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
+import RangeSlider from './RangeSlider.jsx'
+import ToggleBox from './ToggleBox.jsx'
 function App() {
   const [count, setCount] = useState(0)
+  
+
+  const [sliderValue, setSliderValue] = useState(1);
+  const [boxValue, setBoxValue] = useState(false);
 
   return (
     <>
@@ -21,13 +27,11 @@ function App() {
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <RangeSlider onChange={setSliderValue}/>
+      <p>Slider value: {sliderValue}</p>
+      <ToggleBox onChange={setBoxValue}/>
+      <p>Box Active: {boxValue ? "True" : "False"}</p>
     </>
   )
 }
