@@ -1,33 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
 import RangeSlider from './RangeSlider.jsx'
 import ToggleBox from './ToggleBox.jsx'
+import TestGame from './TestGame.jsx'
 function App() {
-  const [count, setCount] = useState(0)
-  
-
-  const [sliderValue, setSliderValue] = useState(1);
+  const [sliderValue, setSliderValue] = useState(50);
   const [boxValue, setBoxValue] = useState(false);
+  const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
+
+  useEffect(() => {
+    if(scene){
+      scene.updateFishVisibility(boxValue)
+    }
+  }, [boxValue, scene])
+
+  useEffect(() => {
+    if(scene){
+      scene.moveFishX(sliderValue)
+    }
+  }, [sliderValue, scene])
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-      </div>
+    <div style={{width: "400px", height: "400px"}}>
+      <TestGame onSceneReady={setScene}/>
+    </div>
       <RangeSlider onChange={setSliderValue}/>
       <p>Slider value: {sliderValue}</p>
       <ToggleBox onChange={setBoxValue}/>

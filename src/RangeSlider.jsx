@@ -15,8 +15,8 @@ function RangeSlider({onChange}){
             <div className="slideContainer">
                 <input 
                 type="range" 
-                min="1" 
-                max="100" 
+                min="50" 
+                max="150" 
                 value={value} 
                 onChange={handleChange}
                 id="myRange" 
