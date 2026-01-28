@@ -32,6 +32,7 @@ function App() {
       <p>Slider value: {sliderValue}</p>
       <ToggleBox onChange={setBoxValue}/>
       <p>Box Active: {boxValue ? "True" : "False"}</p>
+      <p>Use arrow keys to move up and down</p>
     </>
   )
 }
