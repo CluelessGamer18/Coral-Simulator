@@ -1,29 +1,30 @@
 import {useState} from 'react';
 import './SliderStyle.css'
 
-function RangeSlider({onChange}){
-    const [value, setValue] = useState(1);
+function RangeSlider({ min = 0, max = 100, middle = false, onChange }) {
+    const initialValue = middle ? Math.floor((min + max) / 2) : min;
 
-    const handleChange = (e) => { 
-        const newValue = e.target.value; 
-        setValue(newValue); 
+    const [value, setValue] = useState(initialValue);
+
+    const handleChange = (e) => {
+        const newValue = Number(e.target.value);
+        setValue(newValue);
         onChange(newValue);
     };
 
-    return(
-        <>
-            <div className="slideContainer">
-                <input 
-                type="range" 
-                min="50" 
-                max="150" 
-                value={value} 
+    return (
+        <div className="slideContainer">
+            <input
+                type="range"
+                min={min}
+                max={max}
+                value={value}
                 onChange={handleChange}
-                id="myRange" 
-                className="slider"></input>
-            </div>
-        </>
-    )
+                className="slider"
+            />
+        </div>
+    );
 }
+
 
 export default RangeSlider

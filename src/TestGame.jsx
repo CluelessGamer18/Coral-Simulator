@@ -22,9 +22,11 @@ function TestGame({onSceneReady}){
         sceneRef.current = sim;
 
         // This is the bridge
-        sim.events.on("ready", () => { 
-            onSceneReady(sim.scene.keys.TestScene); 
+        sim.events.on("scene-ready", (sceneInstance) => {
+            onSceneReady(sceneInstance);
         });
+
+
 
         return () => {
             sim.destroy(true);
