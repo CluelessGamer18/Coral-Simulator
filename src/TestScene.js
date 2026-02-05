@@ -231,7 +231,7 @@ class TestScene extends Phaser.Scene{
         console.log("zTemp:", zTemp); 
         console.log("zLight:", zLight); 
         console.log("zPollution:", zPollution);
-        this.stressRate = this.nutrientScalar * ((4*zTemp**2 - 0.25) + (2*zLight - 0.2) - ((4 ** (-zPollution)) - 2));
+        this.stressRate = this.nutrientScalar * ((4*zTemp**2 - 0.25) + (4*zLight**2 - 0.2) - ((4 ** (-zPollution)) - 2));
     }
 
     startTimer(){
