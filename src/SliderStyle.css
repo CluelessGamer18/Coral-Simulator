@@ -1,10 +1,10 @@
 .slideContainer {
-    margin: 0 auto; /* Centers the Container */
+    /* margin: 0 auto; Centers the Container */
     display: flex;
     width: 150px;
     background-color: gray;
     border-radius: 5px;
     justify-content: center; /* Center Horizontally */
-    align-items: center; /* Center Vertically */
-    margin-top: 20px;
+    align-items: center;
+    z-index: 5;
 }

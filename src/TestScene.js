@@ -16,23 +16,44 @@ class TestScene extends Phaser.Scene{
         this.stdDevLight = 28.57;
     }
 
-    preload(){
-        this.load.image("Fish", "./SampleFish.jpg")
-        this.load.image("Coral", "./coral1.png")
-        this.load.image("Coral2", "./coral2.png")
-        this.load.image("Trash", "./trashbag.jpg")
+    showPopUpMessage() {
+        const overlay = this.add.rectangle(this.sys.game.config.width / 2, this.sys.game.config.height / 2, this.sys.game.config.width, this.sys.game.config.height, 0x000000, 0.05);
+        overlay.setOrigin(0.5);
+
+        overlay.setInteractive();
+
+        const message = this.add.text(512, 384, 'Overlay/Popup Test', {
+            fontFamily: 'Arial',
+            fontSize: 48,
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: message,
+            scale: { from: 0.5, to: 1 },
+            alpha: { from: 0, to: 1 },
+            duration: 500,
+            ease: 'Back.Out'
+        });
+
+        overlay.on('pointerdown', () => {
+            message.destroy();
+            overlay.destroy();
+            // this.restartGame(); //instead restart, remove overlay
+        });
     }
+
 
     create(){
 
         this.cameras.main.setBackgroundColor("#1d5986");
 
         const cam = this.cameras.main;
-         this.coral2 = this.add.image(200,cam.height - 160,"Coral2").setScale(0.13).setVisible(true).setScrollFactor(1, 0.5); //scroll factor changes movement along y axis relative to camera
-         this.fish = this.add.image(200,250,"Fish").setScale(0.25)
+        const coral2 = this.add.image(200,cam.height - 160,"Coral2").setScale(0.13).setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
+        this.fish = this.add.image(200,550,"Fish").setScale(0.25)
         this.trashbag1 = this.add.image(310,370,"Trash").setScale(0.1).setVisible(false)
         this.trashbag2 = this.add.image(370,370,"Trash").setScale(0.1).setVisible(false)
-         this.coral = this.add.image(140,cam.height - 130,"Coral").setScale(0.07).setVisible(true).setScrollFactor(1, 0.7);
+        this.coral = this.add.image(140,cam.height - 130,"Coral").setScale(0.07).setVisible(true).setScrollFactor(1, 0.7);
 
          const cursors = this.input.keyboard.createCursorKeys();
 
@@ -55,6 +76,37 @@ class TestScene extends Phaser.Scene{
         cam.setBounds(0, -1000, 0, cam.height + 1000);
         this.onSimTimeUpdate = null;
         this.game.events.emit("scene-ready", this);
+
+
+
+        // coral mouse detection
+        coral2.setInteractive();
+
+        coral2.on('pointerdown', () => {
+            this.tweens.add({
+                targets: coral2,
+                scale: { from: coral2.scale, to: coral2.scale * 1.025 },
+                duration: 100,
+                yoyo: true,
+                ease: 'Sine.Out'
+            });
+
+            this.showPopUpMessage();
+        });
+
+        // coral2.on('pointerout', function (pointer)
+        // {
+
+        //     this.clearTint();
+
+        // });
+
+        // coral2.on('pointerup', function (pointer)
+        // {
+
+        //     this.clearTint();
+
+        // });
 
     }
 

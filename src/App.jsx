@@ -6,6 +6,7 @@ import './App.css'
 import RangeSlider from './RangeSlider.jsx'
 import ToggleBox from './ToggleBox.jsx'
 import TestGame from './TestGame.jsx'
+
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(26);
   const [lightValue, setLightValue] = useState(50)
@@ -64,29 +65,22 @@ function App() {
 
   return (
     <>
-      <div className="SimContainer">
+    <TestGame onSceneReady={setScene}/>
       {simStart ? ( 
+        //Change to slider labels:
           <div className="SimSliders"> 
-            <RangeSlider min={8} max={44} middle={true} onChange={setTemperatureValue} /> 
-            <p className="SimControlText">Current Temperature: {temperatureValue}&deg; Celcius </p> 
-            <RangeSlider min={1} max={100} middle={true} onChange={setLightValue} /> 
-            <p className="SimControlText">Current Light Level: {lightValue}% </p> 
-            <RangeSlider min={0} max = {100} onChange={setPollutionValue} /> 
-            <p className="SimControlText">Current Pollution Level: {pollutionValue}% </p>
-            <RangeSlider min={1} max = {10} onChange={setNutrientValue} /> 
-            <p className="SimControlText">Current Nutrient Scalar: {nutrientValue} </p>  
-            <p>Current Stress: {simStress}</p>
-            <p>Current StressRate: {simStressRate}</p>
+            <label className="SimControlText">Current Temperature: {temperatureValue}&deg; Celcius <RangeSlider min={8} max={44} middle={true} onChange={setTemperatureValue} /> </label> 
+            <label className="SimControlText">Current Light Level: {lightValue}%  <RangeSlider min={1} max={100} middle={true} onChange={setLightValue} /> </label> 
+            <label className="SimControlText">Current Pollution Level: {pollutionValue}%  <RangeSlider min={0} max={100} onChange={setPollutionValue} /> </label>
+            <label className="SimControlText">Current Nutrient Scalar: {nutrientValue}  <RangeSlider min={1} max={10} onChange={setNutrientValue} /> </label>
+            <label>Current Stress: {simStress}</label>
+            <label>Current StressRate: {simStressRate}</label>
           </div>) : null}  
-        <div style={{width: "400px", height: "400px"}}>
-          <TestGame onSceneReady={setScene}/>
-        </div>
-      </div>
     {!simStart ? (
       <button className="SimStartButton" onClick={(setSimStart)}>Start Simulation!</button>
       ): null}
-    <p>Use arrow keys to move up and down</p>
     <p className="SimTimer">Elapsed Time: {simTime}</p>
+
     </>
   )
 }

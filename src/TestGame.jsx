@@ -1,6 +1,8 @@
 import {useRef, useEffect} from "react";
 import Phaser from "phaser";
 import TestScene from "./TestScene.js";
+import Boot from "./scenes/Boot.js";
+import Preloader from "./scenes/Preloader.js";
 import './TestScene.css';
 
 function TestGame({onSceneReady}){
@@ -12,11 +14,20 @@ function TestGame({onSceneReady}){
         const sim = new Phaser.Game({
 
             type: Phaser.AUTO,
-            width: 400,
-            height: 400,
+            width: 1025,
+            height: 768,
             parent: "phaserContainer",
-            scene: [TestScene],
-            backgroundColor: "#ADD8E6"
+            scene: [
+                    Boot,
+                    Preloader,
+                    TestScene
+                ],
+            backgroundColor: "#ADD8E6",
+            scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            },
+            
         });
 
         sceneRef.current = sim;
@@ -35,9 +46,7 @@ function TestGame({onSceneReady}){
 
     }, []);
     return (
-        <div id="phaserContainer" className="phaserContainer">
-
-        </div>
+        <div id="phaserContainer" className="phaserContainer"></div>
     )
 }
 
