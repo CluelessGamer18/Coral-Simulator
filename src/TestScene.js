@@ -4,16 +4,25 @@ class TestScene extends Phaser.Scene{
         super("TestScene");
         this.lightLevel = 50;
         this.temperature = 26;
-        this.polutionValue = 0;
-        this.nutrients = 50;
+        this.pollutionValue = 0;
+        this.coverageValue = 0;
+        this.nutrientScalar = 1;
         this.stress = 0;
         this.stressRate = 0;
+        this.stressData = [];
+        this.deltaTimer = 0;
+        this.simStart = false;
+
         this.maxStress = 1000;
         this.meanTemp = 26;
         this.stdDevTemp = 10.39;
-
         this.meanLight = 50;
         this.stdDevLight = 28.57;
+        this.meanPollution = 50;
+        this.stdDevPollution = 28.57;
+        this.meanCoverage = 50;
+        this.stdDevCoverage = 28.57;
+        
     }
 
     showPopUpMessage() {
@@ -110,7 +119,9 @@ class TestScene extends Phaser.Scene{
 
     }
 
-    updateBackgroundColor() {
+    updateLightLevel() {
+        this.lightLevel = ((100 - this.coverageValue) / 100)*this.lightLevel
+
         if (this.lightLevel <= 10){
             this.cameras.main.setBackgroundColor("#06121a");
         } else if (this.lightLevel > 10 && this.lightLevel <= 20){
@@ -186,36 +197,51 @@ class TestScene extends Phaser.Scene{
     }
 
     update(time, delta) {
-        if (this.timerRunning) {
-            this.simTime += delta;
-
-            if (this.onSimTimeUpdate) {
-                this.onSimTimeUpdate(this.getSimTime());
+        if (!this.simStart) return;
+            if (this.timerRunning) {
+                this.simTime += delta;
+            
+                if (this.onSimTimeUpdate) {
+                    this.onSimTimeUpdate(this.getSimTime());
+                    }
             }
-        }
 
-        this.stress = Phaser.Math.Clamp(
-            this.stress + (this.stressRate * delta) / 1000,
-            0,
-            this.maxStress
-        );
+            this.stress = Phaser.Math.Clamp(
+                this.stress + (this.stressRate * delta) / 100,
+                0,
+                this.maxStress
+            );
 
-        console.log(this.stress)
-        this.controls.update(delta);
+            this.deltaTimer+=delta;
+            if (this.deltaTimer >= 100){
+                this.stressData.push(this.stress);
+                this.deltaTimer -= 100;
+            }
+        
+            this.controls.update(delta);
+        
+ 
     }
 
 
     updateStressRate(){
-        const zTemp = (this.temperature - this.meanTemp) / this.stdDevTemp;
-        const zLight = (this.lightLevel - this.meanLight) / this.stdDevLight;
-        this.stressRate = zTemp + zLight;
+        const zTemp = ((this.temperature - this.meanTemp) / this.stdDevTemp) / 1.73;
+        const zLight = ((this.lightLevel - this.meanLight) / this.stdDevLight) / 1.75;
+        const zPollution = ((this.pollutionValue - this.meanPollution) / this.stdDevPollution) / 1.75;
+        console.log("zTemp:", zTemp); 
+        console.log("zLight:", zLight); 
+        console.log("zPollution:", zPollution);
+        this.stressRate = this.nutrientScalar * ((4*zTemp**2 - 0.25) + (2*zLight - 0.2) - ((4 ** (-zPollution)) - 2));
     }
 
     startTimer(){
         this.timerRunning = true;
         this.simTime = 0;
     }
-
+    startSim(){
+        this.simStart = true;
+        console.log(this.simStart)
+    }
     getSimTime() { 
         const totalSeconds = Math.floor(this.simTime / 1000);
 
