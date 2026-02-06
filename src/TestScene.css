@@ -1,6 +1,7 @@
 .phaserContainer{
   max-width: 100%;
-  position: absolute;
   z-index: -5;
   margin-top: 65px;
+  margin-bottom: 15px;
+  height: 650px;
 }

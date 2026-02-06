@@ -15,7 +15,7 @@ function TestGame({onSceneReady}){
 
             type: Phaser.AUTO,
             width: 1025,
-            height: 600,
+            height: 650,
             parent: "phaserContainer",
             scene: [
                     Boot,

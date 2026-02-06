@@ -2,7 +2,7 @@
     /* margin: 0 auto; Centers the Container */
     display: flex;
     width: 150px;
-    background-color: gray;
+    background-color: #ba7e5c;
     border-radius: 5px;
     justify-content: center; /* Center Horizontally */
     align-items: center;
