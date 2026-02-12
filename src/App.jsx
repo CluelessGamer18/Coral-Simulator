@@ -7,6 +7,7 @@ import RangeSlider from './RangeSlider.jsx'
 import ToggleBox from './ToggleBox.jsx'
 import TestGame from './TestGame.jsx'
 import StressChart from './StressChart.jsx'
+import TitleScreen from "./TitleScreen/TitleScreen.jsx"
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(26);
@@ -18,12 +19,13 @@ function App() {
   const [boxValue, setBoxValue] = useState(false);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
-  const [simStart, setSimStart] = useState(false);
   const [simEnd, setSimEnd] = useState(false);
   const [simTime, setSimTime] = useState('0');
   const [simStress, setSimStress] = useState(0);
   const [simStressRate, setSimStressRate] = useState(0);
   const [controlsVisible, setControlsVisible] = useState(false);
+
+  const [showTitleScreen, setShowTitleScreen] = useState(true);
 
   const array = [1,2,3,4,7,8,5,2,1,43,5,234,0]
 
@@ -81,7 +83,9 @@ function App() {
 
   return (
     <>
-      <div className="TopBar">
+        {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
+        <>
+       <div className="TopBar">
           <button className="DropDownToggle" onClick={(() => setControlsVisible(!controlsVisible))}>↕️</button>
           {!simStart ? (
           <button className="SimStartButton" onClick={(() => setSimStart(true))}>Start Simulation!</button>
@@ -93,25 +97,46 @@ function App() {
           <button className="SimTimer">Elapsed Time: {simTime}</button>
 
       </div>
-    <TestGame onSceneReady={setScene}/>
-      {controlsVisible ? ( 
-        //Change to slider labels:
-          <div className="SimSliders"> 
-            <label className="SimControlText">Current Temperature: {temperatureValue}&deg; Celcius <RangeSlider min={8} max={44} middle={true} onChange={setTemperatureValue} /> </label> 
-            <label className="SimControlText">Current Light Level: {lightValue}%  <RangeSlider min={1} max={100} middle={true} onChange={setLightValue} /> </label> 
-            <label className="SimControlText">Current Pollution Level: {pollutionValue}%  <RangeSlider min={0} max={100} onChange={setPollutionValue} /> </label>
-            <label className="SimControlText">Current Nutrient Scalar: {nutrientValue}  <RangeSlider min={1} max={3} onChange={setNutrientValue} /> </label>
-            <label className="SimControlText">Current Cloud Coverage: {coverageValue}%  <RangeSlider min={0} max={100} onChange={setCoverageValue} /> </label>
+    <TestGame onSceneReady={setScene} />
+        {controlsVisible ? (
+          <div className="SimSliders">
+            <label className="SimControlText">
+              Current Temperature: {temperatureValue}° Celcius
+              <RangeSlider min={8} max={44} middle={true} onChange={setTemperatureValue} />
+            </label>
+            <label className="SimControlText">
+              Current Light Level: {lightValue}%
+              <RangeSlider min={1} max={100} middle={true} onChange={setLightValue} />
+            </label>
+
+            <label className="SimControlText">
+              Current Pollution Level: {pollutionValue}%
+              <RangeSlider min={0} max={100} onChange={setPollutionValue} />
+            </label>
+
+            <label className="SimControlText">
+              Current Nutrient Scalar: {nutrientValue}
+              <RangeSlider min={1} max={3} onChange={setNutrientValue} />
+            </label>
+
+            <label className="SimControlText">
+              Current Cloud Coverage: {coverageValue}%
+              <RangeSlider min={0} max={100} onChange={setCoverageValue} />
+            </label>
+
             <label>Current Stress: {simStress}</label>
             <label>Current StressRate: {simStressRate}</label>
-          </div>) : null}  
-            {simEnd ? (
-              <div className="ChartContainer">
-                <StressChart data = {scene.stressData}/>
-              </div>
-            ): null}
+          </div>
+        ) : null}
 
-        
+        {simEnd ? (
+          <div className="ChartContainer">
+            <StressChart data={scene.stressData} />
+          </div>
+        ) : null}
+      </>
+    )}
+
     </>
   )
 }

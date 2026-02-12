@@ -59,7 +59,19 @@ class TestScene extends Phaser.Scene{
 
         const cam = this.cameras.main;
         const coral2 = this.add.image(200,cam.height - 160,"Coral2").setScale(0.13).setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
-        this.fish = this.add.image(200,550,"Fish").setScale(0.25)
+        this.fish = this.add.image(200,500,"Fish").setScale(0.25)
+
+        this.guide = this.add.image(300,300,"Guide")
+        this.guide.setInteractive();
+
+        this.isDraggingGuide = false; 
+        this.input.on("pointerdown", () => { 
+            this.isDraggingGuide = true; 
+            }); 
+        this.input.on("pointerup", () => { 
+            this.isDraggingGuide = false; 
+            });
+
         this.trashbag1 = this.add.image(310,370,"Trash").setScale(0.1).setVisible(false)
         this.trashbag2 = this.add.image(370,370,"Trash").setScale(0.1).setVisible(false)
         this.coral = this.add.image(140,cam.height - 130,"Coral").setScale(0.07).setVisible(true).setScrollFactor(1, 0.7);
@@ -198,6 +210,14 @@ class TestScene extends Phaser.Scene{
 
     update(time, delta) {
         if (!this.simStart) return;
+            if (this.isDraggingGuide) {
+                const pointer = this.input.activePointer;
+                    const speed = 0.05; 
+
+                    this.guide.x += (pointer.worldX - this.guide.x) * speed;
+                    this.guide.y += (pointer.worldY - this.guide.y) * speed;
+                }
+
             if (this.timerRunning) {
                 this.simTime += delta;
             

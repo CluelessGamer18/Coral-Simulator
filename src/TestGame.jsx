@@ -14,19 +14,12 @@ function TestGame({onSceneReady}){
         const sim = new Phaser.Game({
 
             type: Phaser.AUTO,
-            width: 1025,
-            height: 650,
             parent: "phaserContainer",
-            scene: [
-                    Boot,
-                    Preloader,
-                    TestScene
-                ],
+            scene: [Boot,Preloader,TestScene],
             backgroundColor: "#ADD8E6",
-            scale: {
-            mode: Phaser.Scale.FIT,
-            autoCenter: Phaser.Scale.CENTER_BOTH,
-            },
+            scale: { mode: Phaser.Scale.RESIZE, 
+                autoCenter: Phaser.Scale.CENTER_BOTH, 
+                width: "100%", height: "100%" }
             
         });
 

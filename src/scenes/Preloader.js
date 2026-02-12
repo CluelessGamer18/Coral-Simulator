@@ -26,6 +26,7 @@ export class Preloader extends Phaser.Scene {
     }
 
     preload() {
+        this.load.image("Guide","./fish.png")
         this.load.image("Fish", "./SampleFish.jpg")
         this.load.image("Coral", "./coral1.png")
         this.load.image("Coral2", "./coral2.png")
