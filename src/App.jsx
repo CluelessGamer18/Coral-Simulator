@@ -19,6 +19,7 @@ function App() {
   const [boxValue, setBoxValue] = useState(false);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
+  const [simStart, setSimStart] = useState(false);
   const [simEnd, setSimEnd] = useState(false);
   const [simTime, setSimTime] = useState('0');
   const [simStress, setSimStress] = useState(0);
