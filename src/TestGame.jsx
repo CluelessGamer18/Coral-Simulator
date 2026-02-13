@@ -1,9 +1,10 @@
 import {useRef, useEffect} from "react";
 import Phaser from "phaser";
-import TestScene from "./TestScene.js";
+import TestScene from "./scenes/TestScene.js";
 import Boot from "./scenes/Boot.js";
 import Preloader from "./scenes/Preloader.js";
-import './TestScene.css';
+import './styles/TestScene.css';
+import { useState } from "react";
 
 function TestGame({onSceneReady}){
     const sceneRef = useRef(null);
@@ -17,13 +18,14 @@ function TestGame({onSceneReady}){
             parent: "phaserContainer",
             scene: [Boot,Preloader,TestScene],
             backgroundColor: "#ADD8E6",
-            scale: { mode: Phaser.Scale.RESIZE, 
-                autoCenter: Phaser.Scale.CENTER_BOTH, 
-                width: "100%", height: "100%" }
+            scale: { mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.NO_CENTER, 
+                width: 1280, height: 720 }
             
         });
 
         sceneRef.current = sim;
+
 
         // This is the bridge
         sim.events.on("scene-ready", (sceneInstance) => {

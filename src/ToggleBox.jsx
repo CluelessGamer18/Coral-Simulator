@@ -1,5 +1,5 @@
 import {useState} from "react";
-import "./BoxStyle.css";
+import "./styles/BoxStyle.css";
 
 function ToggleBox({onChange}){
     const [on, SetOn] = useState(false);

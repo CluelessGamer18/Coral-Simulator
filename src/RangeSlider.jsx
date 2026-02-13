@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import './SliderStyle.css'
+import './styles/SliderStyle.css'
 
 function RangeSlider({ min = 0, max = 100, middle = false, onChange }) {
     const initialValue = middle ? Math.floor((min + max) / 2) : min;

@@ -103,7 +103,7 @@
 }
 
 .TopBar{
-  position: fixed;
+  position: sticky;
   top: 0;
   background-color: #f0ebd8;
   width: 100%;
@@ -112,7 +112,6 @@
   display: flex;
   align-items: center;
   box-shadow: 0px 0px 15px#f0ebd8;
-
 }
 
 .DropDownToggle{
@@ -138,3 +137,10 @@
   left: 20px;
 }
 
+.MainContent {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  align-items: center;
+  gap: 20px;
+}

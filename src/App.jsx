@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import './styles/App.css'
 
 import RangeSlider from './RangeSlider.jsx'
 import ToggleBox from './ToggleBox.jsx'
@@ -86,6 +84,7 @@ function App() {
     <>
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
+        <main className="MainContent">
        <div className="TopBar">
           <button className="DropDownToggle" onClick={(() => setControlsVisible(!controlsVisible))}>↕️</button>
           {!simStart ? (
@@ -98,7 +97,11 @@ function App() {
           <button className="SimTimer">Elapsed Time: {simTime}</button>
 
       </div>
-    <TestGame onSceneReady={setScene} />
+
+          <div className="GameContainer">
+              <TestGame onSceneReady={setScene} />
+          </div>
+      </main>
         {controlsVisible ? (
           <div className="SimSliders">
             <label className="SimControlText">
