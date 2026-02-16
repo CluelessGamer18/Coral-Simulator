@@ -1,7 +1,7 @@
 .phaserContainer {
   
-  width: min(85vw, calc(85vh * 16 / 9));
-  aspect-ratio: 16 / 9;
+  width: min(85vw, calc(85vh * 45 / 32));
+  aspect-ratio: 45 / 32;
   
 }
 
