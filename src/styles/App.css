@@ -103,9 +103,9 @@
 }
 
 .TopBar{
-  position: sticky;
+  position: absolute;
   top: 0;
-  background-color: #f0ebd8;
+  background-color: #f0ebd84e;
   width: 100%;
   z-index: 1000;
   height: 50px;
@@ -142,7 +142,8 @@
   flex-direction: column;
   height: 100vh;
   align-items: center;
-  gap: 20px;
+  justify-content: center;
+  /* gap: 20px; */
 }
 
 .OptionsButtonIcon{

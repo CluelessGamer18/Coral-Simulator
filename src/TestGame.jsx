@@ -20,7 +20,7 @@ function TestGame({onSceneReady}){
             backgroundColor: "#ADD8E6",
             scale: { mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.NO_CENTER, 
-                width: 1280, height: 720 }
+                width: 1440, height: 1024 }
             
         });
 

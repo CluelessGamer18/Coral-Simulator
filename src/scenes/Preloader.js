@@ -30,16 +30,16 @@ init() {
 
     preload() {
         this.load.image("Guide","./fish.png")
-        this.load.image("Fish", "./SampleFish.jpg")
+        this.load.image("Fish", "./fish2.png")
         this.load.image("Coral", "./coral1.png")
-        this.load.image("Coral2", "./coral2.png")
+        this.load.image("Coral2", "/assets/wireframe1/pink_coral_wireframe1.png")
         this.load.image("Trash", "./trashbag.jpg")
 
         // wireframe assets
-        this.load.image("floor_layer1", "/assets/wireframe1/floor_layer1_wireframe1.png")
-        this.load.image("floor_layer2", "/assets/wireframe1/floor_layer2_wireframe1.png")
-        this.load.image("pink_coral", "/assets/wireframe1/pink_coral_wireframe1.png")
-
+        this.load.image("floor_layer1", "/assets/wireframe2/floor_layer1_7000x512_wireframe2.png") //closest layer = 1
+        this.load.image("floor_layer2", "/assets/wireframe2/floor_layer2_4050x650_wireframe2.png")
+        this.load.image("floor_layer3", "/assets/wireframe2/floor_layer3_1919x507_wireframe2.png")
+        this.load.image("bg_gradient", "./waterStockBg.jpg") //farthest layer = 4
 
     }
 

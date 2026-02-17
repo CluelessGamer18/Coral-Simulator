@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { createFishSchools } from "./FishSchools.js";
+
 class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
@@ -55,10 +57,48 @@ class TestScene extends Phaser.Scene{
 
     create(){
 
+        this.WORLD_WIDTH = 7000;
+        this.WORLD_HEIGHT = 1700;
+
+
         this.cameras.main.setBackgroundColor("#1d5986");
 
         const cam = this.cameras.main;
-        const coral2 = this.add.image(200,cam.height - 160,"Coral2").setScale(0.13).setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
+        const coral2 = this.add.image(200,cam.height - 160,"Coral2").setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
+        
+
+
+        const bgGradient = this.add.image(0, 0, "bg_gradient")
+        .setOrigin(0, 0)
+        .setScrollFactor(0) //background does not move
+        .setScale(0.26)
+        .setTint(0xbbbbff); //tinted darker
+
+
+        const floorLayer3 = this.add.image(0, 0, "floor_layer3")
+        .setOrigin(0, 0)
+        
+        // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
+        .setScrollFactor((1919 - cam.width) / (this.WORLD_WIDTH - cam.width), 1); //farthest layer = 0.3
+        floorLayer3.y = this.WORLD_HEIGHT - floorLayer3.height;
+
+        const floorLayer2 = this.add.image(0, 0, "floor_layer2")
+        .setOrigin(0, 0)
+        .setScrollFactor((4050 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
+        
+
+        const floorLayer1 = this.add.image(0, 0, "floor_layer1")
+        .setOrigin(0, 0)
+        .setScrollFactor((7000 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        floorLayer1.y = this.WORLD_HEIGHT - floorLayer1.height;
+
+
+        //educated fish (schools)
+        createFishSchools(this);
+
+
+
         this.fish = this.add.image(200,500,"Fish").setScale(0.25)
 
         this.guide = this.add.image(300,300,"Guide")
@@ -94,7 +134,7 @@ class TestScene extends Phaser.Scene{
 
         this.controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig);
 
-        cam.setBounds(0, -1000, 0, cam.height + 1000);
+        cam.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT);
         this.onSimTimeUpdate = null;
         this.game.events.emit("scene-ready", this);
 
@@ -114,20 +154,6 @@ class TestScene extends Phaser.Scene{
 
             this.showPopUpMessage();
         });
-
-        // coral2.on('pointerout', function (pointer)
-        // {
-
-        //     this.clearTint();
-
-        // });
-
-        // coral2.on('pointerup', function (pointer)
-        // {
-
-        //     this.clearTint();
-
-        // });
 
     }
 
@@ -156,6 +182,8 @@ class TestScene extends Phaser.Scene{
             this.cameras.main.setBackgroundColor("#36a8ff");
         } 
     }
+
+    
 
     updatePollutionLevel(){
         if (this.pollutionValue <= 33) {
