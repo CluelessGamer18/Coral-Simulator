@@ -144,3 +144,26 @@
   align-items: center;
   gap: 20px;
 }
+
+.OptionsButtonIcon{
+  height: 60px;
+  width: 60px;
+  position: absolute;
+  left: 30px;
+  top: 60px;
+  border-radius: 25px;
+  background-color: transparent;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgb(186, 184, 184);
+  padding: 0px;
+  font-size: 40px;
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+}
+
+.OptionsButtonIcon:hover{
+  background-color: rgba(251, 105, 0, 0.864);
+}
+

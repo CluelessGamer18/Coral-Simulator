@@ -210,13 +210,43 @@ class TestScene extends Phaser.Scene{
 
     update(time, delta) {
         if (!this.simStart) return;
-            if (this.isDraggingGuide) {
-                const pointer = this.input.activePointer;
-                    const speed = 0.05; 
 
-                    this.guide.x += (pointer.worldX - this.guide.x) * speed;
-                    this.guide.y += (pointer.worldY - this.guide.y) * speed;
-                }
+        if (this.isDraggingGuide) {
+            const pointer = this.input.activePointer;
+
+            const speed = 0.05;
+
+            const targetAngle = Phaser.Math.Angle.Between(
+                this.guide.x, this.guide.y,
+                pointer.worldX, pointer.worldY
+            );
+
+            const spriteFacingOffset = Phaser.Math.DegToRad(-25);
+            const desiredRotation = targetAngle + spriteFacingOffset;
+
+            this.guide.rotation = Phaser.Math.Angle.RotateTo(
+                this.guide.rotation,
+                desiredRotation,
+                0.2
+            );
+            const angleDiff = Phaser.Math.Angle.Wrap(desiredRotation - this.guide.rotation);
+
+            if (Math.abs(angleDiff) < 0.15) {
+                this.guide.x += (pointer.worldX - this.guide.x) * speed;
+                this.guide.y += (pointer.worldY - this.guide.y) * speed;
+                
+                const time = this.time.now;
+                const wiggleAmount = 1;
+                const wiggleSpeed = 0.01;
+                const wiggle = Math.sin(time*wiggleSpeed)*wiggleAmount;
+
+                this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
+                this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
+            }
+
+            // Add in a different movement if fish is close to the cursor.
+
+        }
 
             if (this.timerRunning) {
                 this.simTime += delta;
@@ -274,6 +304,10 @@ class TestScene extends Phaser.Scene{
             minutes.toString().padStart(2, "0"),
             seconds.toString().padStart(2, "0")
         ].join(":");
+    }
+
+    RestartSim(){
+        this.scene.restart();
     }
 }
 

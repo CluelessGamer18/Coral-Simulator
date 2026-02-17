@@ -6,6 +6,7 @@ import ToggleBox from './ToggleBox.jsx'
 import TestGame from './TestGame.jsx'
 import StressChart from './StressChart.jsx'
 import TitleScreen from "./TitleScreen/TitleScreen.jsx"
+import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(26);
@@ -25,11 +26,11 @@ function App() {
   const [controlsVisible, setControlsVisible] = useState(false);
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
-
-  const array = [1,2,3,4,7,8,5,2,1,43,5,234,0]
+  const [showOptions, setShowOptions] = useState(false);
+  const [sceneRunning, setSceneRunning] = useState(false);
 
   useEffect(() => {
-    if(scene){
+    if(scene && sceneRunning){
       scene.startTimer();
       scene.startRandomFishIdle();
       console.log("Simulation Started with time: " + scene.getSimTime())
@@ -79,25 +80,38 @@ function App() {
   // A temp range interval could be defined as [8,20) U [20,32] U (32,44]
   // https://naturefins.com/what-is-the-average-temperature-in-the-coral-reef-biome/
 
+  const endSim = () => {
+    scene.RestartSim();
+    setSceneRunning(false);
+    setSimStart(false);
+    setSimTime('0');
+  }
+
+  const startSim = () => {
+    setSceneRunning(true);
+    setSimStart(true);
+  }
+
 
   return (
     <>
+        {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
         <main className="MainContent">
+        <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}>⚙️</button>
        <div className="TopBar">
           <button className="DropDownToggle" onClick={(() => setControlsVisible(!controlsVisible))}>↕️</button>
           {!simStart ? (
-          <button className="SimStartButton" onClick={(() => setSimStart(true))}>Start Simulation!</button>
+          <button className="SimStartButton" onClick={(startSim)}>Start Simulation!</button>
           ): null}
 
           {simStart ? (
-          <button className="SimEndButton" onClick={(() => setSimEnd(true))}>End Simulation!</button>
+          <button className="SimEndButton" onClick={(endSim)}>End Simulation!</button>
           ): null}
           <button className="SimTimer">Elapsed Time: {simTime}</button>
 
       </div>
-
           <div className="GameContainer">
               <TestGame onSceneReady={setScene} />
           </div>

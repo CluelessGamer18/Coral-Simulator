@@ -9,7 +9,8 @@ const [showOptions, setShowOptions] = useState(false);
  return(
     <>
         <div className="TitleScreenContainer">
-            <img src={titleCard} className="TitleArt"></img>
+            {/*<img src={titleCard} className="TitleArt"></img>*/}
+            <h1 className="CoralSimTitle">CORAL LIFE WATCH</h1>
             <button className="StartButton" onClick={() => setShowTitleScreen(false)}>Start</button>
             <button className="OptionsButton" onClick={() => setShowOptions(true)}>Options</button>
         </div>
