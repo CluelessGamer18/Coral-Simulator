@@ -34,6 +34,7 @@ init() {
         this.load.image("Coral", "./coral1.png")
         this.load.image("Coral2", "/assets/wireframe1/pink_coral_wireframe1.png")
         this.load.image("Trash", "./trashbag.jpg")
+        this.load.image("Bubble","./normalbubble.png")
 
         // wireframe assets
         this.load.image("floor_layer1", "/assets/wireframe2/floor_layer1_7000x512_wireframe2.png") //closest layer = 1

@@ -17,6 +17,7 @@ function TestGame({onSceneReady}){
             type: Phaser.AUTO,
             parent: "phaserContainer",
             scene: [Boot,Preloader,TestScene],
+            physics: { default: 'arcade', arcade: { debug: false }},
             backgroundColor: "#ADD8E6",
             scale: { mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.NO_CENTER, 

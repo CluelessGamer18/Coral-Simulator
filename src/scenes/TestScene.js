@@ -14,6 +14,7 @@ class TestScene extends Phaser.Scene{
         this.stressData = [];
         this.deltaTimer = 0;
         this.simStart = false;
+        this.testBubbleScore = 0;
 
         this.maxStress = 1000;
         this.meanTemp = 26;
@@ -46,6 +47,8 @@ class TestScene extends Phaser.Scene{
             duration: 500,
             ease: 'Back.Out'
         });
+
+        
 
         overlay.on('pointerdown', () => {
             message.destroy();
@@ -101,9 +104,10 @@ class TestScene extends Phaser.Scene{
 
         this.fish = this.add.image(200,500,"Fish").setScale(0.25)
 
-        this.guide = this.add.image(300,300,"Guide")
+        this.guide = this.physics.add.image(300,300,"Guide")
         this.guide.setInteractive();
-
+        
+        this.spawnBubbles();
         this.isDraggingGuide = false; 
         this.input.on("pointerdown", () => { 
             this.isDraggingGuide = true; 
@@ -155,6 +159,51 @@ class TestScene extends Phaser.Scene{
             this.showPopUpMessage();
         });
 
+    }
+    spawnBubbles() {
+    const x1 = Phaser.Math.Between(50, 750);
+    const y1 = Phaser.Math.Between(50, 550);
+
+    const x2 = Phaser.Math.Between(50, 750);
+    const y2 = Phaser.Math.Between(50, 550);
+     
+    this.bubbleGood = this.physics.add.image(x1, y1, 'Bubble');
+    this.bubbleBad = this.physics.add.image(x2, y2, 'Bubble').setTint(0x8b0000);
+
+    // Reattach overlap handlers
+    this.physics.add.overlap(
+        this.guide,
+        this.bubbleGood,
+        () => this.handleBubbleCollect('good'),
+        null,
+        this
+    );
+
+    this.physics.add.overlap(
+        this.guide,
+        this.bubbleBad,
+        () => this.handleBubbleCollect('bad'),
+        null,
+        this
+        );
+
+        this.bubbleIdle(this.bubbleGood);
+        this.bubbleIdle(this.bubbleBad);
+    }
+
+    handleBubbleCollect(type) {
+        if (type === 'good') {
+            this.testBubbleScore++;
+            console.log('Score:', this.testBubbleScore);
+        } else {
+            this.testBubbleScore--;
+            console.log('Score:', this.testBubbleScore);
+        }
+
+        this.bubbleGood.destroy();
+        this.bubbleBad.destroy();
+
+        this.spawnBubbles();
     }
 
     updateLightLevel() {
@@ -235,6 +284,18 @@ class TestScene extends Phaser.Scene{
                 }
         })
     }
+
+    bubbleIdle(bubble) {
+        this.tweens.add({
+            targets: bubble,
+            y: bubble.y - 50, 
+            duration: 1000,
+            yoyo: true,
+            repeat: -1,
+            ease: "Sine.inOut"
+        });
+    }
+
 
     update(time, delta) {
         if (!this.simStart) return;
