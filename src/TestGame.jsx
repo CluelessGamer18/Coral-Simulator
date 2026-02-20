@@ -8,6 +8,7 @@ import { useState } from "react";
 
 function TestGame({onSceneReady}){
     const sceneRef = useRef(null);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         if (sceneRef.current) return
@@ -31,6 +32,7 @@ function TestGame({onSceneReady}){
         // This is the bridge
         sim.events.on("scene-ready", (sceneInstance) => {
             onSceneReady(sceneInstance);
+            setLoaded(true); // add overlay img after preloader completes
         });
 
 
@@ -42,7 +44,12 @@ function TestGame({onSceneReady}){
 
     }, []);
     return (
-        <div id="phaserContainer" className="phaserContainer"></div>
+        <>
+            <div id="phaserContainer" className="phaserContainer">
+                {/* add overlays here */}
+                <img style={{ opacity: loaded ? 1 : 0 }} draggable="false" onContextMenu={(e) => e.preventDefault()} id="timelineImage" src="/assets/wireframe1/timeline_1390x88_wireframe1.png"></img>
+            </div>
+        </>
     )
 }
 

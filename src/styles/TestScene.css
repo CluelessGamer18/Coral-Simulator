@@ -2,6 +2,18 @@
   height: 95vh;
   width: calc(95vh * 45 / 32);
   max-width: 95vw;
-
+  max-height: calc(95vw * 32 / 45);
+  position: relative;
   margin: auto;
+}
+
+#timelineImage{
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96.5%;
+  padding: 20px;
+
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(0, 0, 0, 0.732) 100%);
 }
