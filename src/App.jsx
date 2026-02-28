@@ -7,74 +7,37 @@ import TestGame from './TestGame.jsx'
 import StressChart from './StressChart.jsx'
 import TitleScreen from "./TitleScreen/TitleScreen.jsx"
 import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
+import SimInfoDisplay from './SimInfoDisplay.jsx'
 
 function App() {
-  const [temperatureValue, setTemperatureValue] = useState(26);
-  const [lightValue, setLightValue] = useState(50)
-  const [pollutionValue, setPollutionValue] = useState(0);
-  const [nutrientValue, setNutrientValue] = useState(1);
-  const [coverageValue, setCoverageValue] = useState(0);
+  const [temperatureValue, setTemperatureValue] = useState(0);
+  const [stressValue, setStressValue] = useState(0);
 
   const [boxValue, setBoxValue] = useState(false);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
-  const [simStart, setSimStart] = useState(false);
   const [simEnd, setSimEnd] = useState(false);
-  const [simTime, setSimTime] = useState('0');
-  const [simStress, setSimStress] = useState(0);
-  const [simStressRate, setSimStressRate] = useState(0);
-  const [controlsVisible, setControlsVisible] = useState(false);
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
   const [sceneRunning, setSceneRunning] = useState(false);
 
   useEffect(() => {
-    if(scene && sceneRunning){
-      scene.startTimer();
-      scene.startRandomFishIdle();
-      console.log("Simulation Started with time: " + scene.getSimTime())
-      scene.updateStressRate();
-      scene.startSim();
-      const id = setInterval(() => {
-      setSimTime(scene.getSimTime());
-      setSimStress(scene.stress);
-      setSimStressRate(scene.stressRate);
-      }, 1000);
-      return () => clearInterval(id); 
-    }
-  }, [simStart])
+    if (!scene) return;
 
-  useEffect(() => {
-    if(scene){
-      scene.lightLevel = lightValue;
-      scene.coverageValue = coverageValue;
-      scene.updateLightLevel();
-      scene.updateStressRate();
-    }
-  },[lightValue, coverageValue])
+    let frameId;
 
-  useEffect(() => {
-    if(scene){
-      scene.temperature = temperatureValue;
-      scene.updateStressRate();
-    }
-  },[temperatureValue])
+    const loop = () => {
+      setTemperatureValue(scene.temperature)
+      setStressValue(scene.stress)
+      frameId = requestAnimationFrame(loop);
+    };
 
-  useEffect(() => {
-    if(scene){
-      scene.pollutionValue = pollutionValue;
-      scene.updatePollutionLevel();
-      scene.updateStressRate();
-    }
-  },[pollutionValue])
+    frameId = requestAnimationFrame(loop);
 
-  useEffect(() => {
-    if(scene){
-      scene.nutrientScalar = nutrientValue;
-      scene.updateStressRate();
-    }
-  },[nutrientValue])
+    return () => cancelAnimationFrame(frameId);
+  }, [scene]);
+
   // Average Coral Reef Temperature is 22 - 29 Celcius
   // Rarely 20 - 32 Celcius
   // A temp range interval could be defined as [8,20) U [20,32] U (32,44]
@@ -87,66 +50,18 @@ function App() {
     setSimTime('0');
   }
 
-  const startSim = () => {
-    setSceneRunning(true);
-    setSimStart(true);
-  }
-
-
   return (
     <>
-        {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim}/> : null}
+        {scene && !showTitleScreen ? <SimInfoDisplay temp={temperatureValue}/> : null}
+        {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
         <main className="MainContent">
-        <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}>⚙️</button>
-       <div className="TopBar">
-          <button className="DropDownToggle" onClick={(() => setControlsVisible(!controlsVisible))}>↕️</button>
-          {!simStart ? (
-          <button className="SimStartButton" onClick={(startSim)}>Start Simulation!</button>
-          ): null}
-
-          {simStart ? (
-          <button className="SimEndButton" onClick={(endSim)}>End Simulation!</button>
-          ): null}
-          <button className="SimTimer">Elapsed Time: {simTime}</button>
-
-      </div>
+        {scene ? <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}>⚙️</button> : null}
           <div className="GameContainer">
               <TestGame onSceneReady={setScene} />
           </div>
       </main>
-        {controlsVisible ? (
-          <div className="SimSliders">
-            <label className="SimControlText">
-              Current Temperature: {temperatureValue}° Celcius
-              <RangeSlider min={8} max={44} middle={true} onChange={setTemperatureValue} />
-            </label>
-            <label className="SimControlText">
-              Current Light Level: {lightValue}%
-              <RangeSlider min={1} max={100} middle={true} onChange={setLightValue} />
-            </label>
-
-            <label className="SimControlText">
-              Current Pollution Level: {pollutionValue}%
-              <RangeSlider min={0} max={100} onChange={setPollutionValue} />
-            </label>
-
-            <label className="SimControlText">
-              Current Nutrient Scalar: {nutrientValue}
-              <RangeSlider min={1} max={3} onChange={setNutrientValue} />
-            </label>
-
-            <label className="SimControlText">
-              Current Cloud Coverage: {coverageValue}%
-              <RangeSlider min={0} max={100} onChange={setCoverageValue} />
-            </label>
-
-            <label>Current Stress: {simStress}</label>
-            <label>Current StressRate: {simStressRate}</label>
-          </div>
-        ) : null}
-
         {simEnd ? (
           <div className="ChartContainer">
             <StressChart data={scene.stressData} />

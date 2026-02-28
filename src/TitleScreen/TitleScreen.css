@@ -59,6 +59,7 @@
   border-width: 5px;
   border-style: solid;
   border-color: rgb(186, 184, 184);
+  z-index: 9999;
 }
 
 .OptionsDialogButton{

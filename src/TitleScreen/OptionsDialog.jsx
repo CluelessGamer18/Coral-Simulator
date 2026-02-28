@@ -1,11 +1,12 @@
 import "./TitleScreen.css";
 
-function OptionsDialog({setShowOptions, setShowTitleScreen = null, endSim = null}){
+function OptionsDialog({setShowOptions, setShowTitleScreen = null, endSim = null, setScene= null}){
 
     const returnToTitle = () => {
         setShowOptions(false);
-        if(setShowTitleScreen){
+        if(setShowTitleScreen && setScene){
             setShowTitleScreen(true);
+            setScene(null)
             endSim();
         }
     }

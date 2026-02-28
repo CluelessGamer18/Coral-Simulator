@@ -1,0 +1,104 @@
+.SimInfoDisplayContainer{
+    width: 400px;
+    height: 150px;
+    /*background-color: red;*/
+    position: absolute; 
+    top: 85%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    z-index: 100;
+}
+
+.SimInfoTimeline {
+    position: relative;
+    width: 400px;
+    height: 60px;
+    background: #0292A5;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    margin-bottom: -2px;
+    margin-top: -2px;
+}
+
+.TimelineDotLarge{
+    width: 5px;
+    height: 5px;
+    border-radius: 100%;
+    background-color: aliceblue;
+}
+
+.TimelineDotLarge.active{
+    scale: 2.25;
+    background-color: rgba(251, 105, 0, 0.864);
+    border-width: 1px;
+    border-color: aliceblue;
+    border-style: solid;
+}
+
+.TimelineDotSmall{
+    width: 3px;
+    height: 3px;
+    border-radius: 100%;
+    background-color: aliceblue;
+}
+
+.SimInfoText{
+    font-size: 12px;
+}
+
+
+.SimInfoDial{
+    width: 90px; 
+    height: 45px; 
+    background: #0292A5; 
+    border-top-left-radius: 45px; 
+    border-top-right-radius: 45px;
+    margin: 0;
+    background: linear-gradient(to right,#0292A5,white);
+    border-style: solid;
+    border-width: 3px;
+    border-color: #0292A5;
+    padding: 0;
+    position: relative;
+}
+
+.SimInfoDialIcon{
+    position: absolute;
+    bottom: -30%;
+    left: 50%;
+    padding: 0;
+    margin: 0;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-size: 20px;
+}
+
+.SimInfoDialPin{
+    position: absolute;
+    top: -35%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 0;
+    z-index: 20;
+    font-size: 20px;
+}
+
+.SimInfoBottom{
+    width: 200px;
+    height: 30px;
+    background: #0292A5;
+    border-bottom-left-radius: 30px; 
+    border-bottom-right-radius: 30px;
+    margin: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}

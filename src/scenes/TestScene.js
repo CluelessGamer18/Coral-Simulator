@@ -5,7 +5,7 @@ class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
         this.lightLevel = 50;
-        this.temperature = 26;
+        this.temperature = 20;
         this.pollutionValue = 0;
         this.coverageValue = 0;
         this.nutrientScalar = 1;
@@ -298,7 +298,7 @@ class TestScene extends Phaser.Scene{
 
 
     update(time, delta) {
-        if (!this.simStart) return;
+        //if (!this.simStart) return;
 
         if (this.isDraggingGuide) {
             const pointer = this.input.activePointer;
@@ -345,12 +345,6 @@ class TestScene extends Phaser.Scene{
                     }
             }
 
-            this.stress = Phaser.Math.Clamp(
-                this.stress + (this.stressRate * delta) / 100,
-                0,
-                this.maxStress
-            );
-
             this.deltaTimer+=delta;
             if (this.deltaTimer >= 100){
                 this.stressData.push(this.stress);
@@ -358,6 +352,9 @@ class TestScene extends Phaser.Scene{
             }
         
             this.controls.update(delta);
+
+            this.temperature = 20 + this.testBubbleScore
+            this.stress = Phaser.Math.Clamp(this.testBubbleScore*5,100)
         
  
     }

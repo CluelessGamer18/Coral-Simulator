@@ -150,10 +150,10 @@
   height: 60px;
   width: 60px;
   position: absolute;
-  left: 30px;
-  top: 60px;
+  left: 20px;
+  top: 20px;
   border-radius: 25px;
-  background-color: transparent;
+  background-color: #0292A5;
   border-width: 5px;
   border-style: solid;
   border-color: rgb(186, 184, 184);
@@ -162,6 +162,7 @@
   display: flex; 
   justify-content: center; 
   align-items: center;
+  z-index: 100;
 }
 
 .OptionsButtonIcon:hover{

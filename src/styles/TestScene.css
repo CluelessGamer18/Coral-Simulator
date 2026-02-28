@@ -1,8 +1,9 @@
 .phaserContainer {
-  height: 95vh;
-  width: calc(95vh * 45 / 32);
-  max-width: 95vw;
-  max-height: calc(95vw * 32 / 45);
+  height: 100vh;
+  /*width: calc(95vh * 45 / 32);*/
+  width: 100vw;
+  /*max-width: 100vw;*/
+  /*max-height: calc(95vw * 32 / 45);*/;
   position: relative;
   margin: auto;
 }

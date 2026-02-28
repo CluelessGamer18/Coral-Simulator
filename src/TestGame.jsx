@@ -20,7 +20,7 @@ function TestGame({onSceneReady}){
             scene: [Boot,Preloader,TestScene],
             physics: { default: 'arcade', arcade: { debug: false }},
             backgroundColor: "#ADD8E6",
-            scale: { mode: Phaser.Scale.FIT,
+            scale: { mode: Phaser.Scale.RESIZE,
                 autoCenter: Phaser.Scale.NO_CENTER, 
                 width: 1440, height: 1024 }
             
@@ -47,7 +47,7 @@ function TestGame({onSceneReady}){
         <>
             <div id="phaserContainer" className="phaserContainer">
                 {/* add overlays here */}
-                <img style={{ opacity: loaded ? 1 : 0 }} draggable="false" onContextMenu={(e) => e.preventDefault()} id="timelineImage" src="/assets/wireframe1/timeline_1390x88_wireframe1.png"></img>
+                {/*<img style={{ opacity: loaded ? 1 : 0 }} draggable="false" onContextMenu={(e) => e.preventDefault()} id="timelineImage" src="/assets/wireframe1/timeline_1390x88_wireframe1.png"></img>*/}
             </div>
         </>
     )
