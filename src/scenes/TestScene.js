@@ -26,6 +26,10 @@ class TestScene extends Phaser.Scene{
         this.stdDevPollution = 28.57;
         this.meanCoverage = 50;
         this.stdDevCoverage = 28.57;
+
+        this.camVelX = 0;
+        this.moveCameraLeft = false;
+        this.moveCameraRight = false;
         
     }
 
@@ -121,7 +125,7 @@ class TestScene extends Phaser.Scene{
         this.trashbag2 = this.add.image(370,370,"Trash").setScale(0.1).setVisible(false)
         this.coral = this.add.image(140,cam.height - 130,"Coral").setScale(0.07).setVisible(true).setScrollFactor(1, 0.7);
 
-         const cursors = this.input.keyboard.createCursorKeys();
+        const cursors = this.input.keyboard.createCursorKeys();
 
          //camera presettings
         const controlConfig = {
@@ -138,6 +142,41 @@ class TestScene extends Phaser.Scene{
         };
 
         this.controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig);
+
+        // move right on hover
+        const rectRight = this.add.rectangle(
+        this.cameras.main.width - 50,
+        this.cameras.main.height / 2,
+        100,
+        this.cameras.main.height, 0xFFFFFF
+        ).setScrollFactor(0).setInteractive().setAlpha(0.05);
+
+            rectRight.on("pointerover", () => {
+            this.moveCameraRight = true;
+            });
+
+            rectRight.on("pointerout", () => {
+            this.moveCameraRight = false;
+            });
+
+                // move left on hover
+        const rectLeft = this.add.rectangle(
+        50,
+        this.cameras.main.height / 2,
+        100,
+        this.cameras.main.height, 0xFFFFFF
+        ).setScrollFactor(0).setInteractive().setAlpha(0.05);
+
+            rectLeft.on("pointerover", () => {
+            this.moveCameraLeft = true;
+            });
+
+            rectLeft.on("pointerout", () => {
+            this.moveCameraLeft = false;
+            });
+
+            
+        
 
         cam.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT);
         this.onSimTimeUpdate = null;
@@ -161,6 +200,7 @@ class TestScene extends Phaser.Scene{
         });
 
     }
+
     spawnBubbles() {
     const x1 = Phaser.Math.Between(50, 750);
     const y1 = Phaser.Math.Between(50, 550);
@@ -335,8 +375,25 @@ class TestScene extends Phaser.Scene{
             }
 
             // Add in a different movement if fish is close to the cursor.
-
         }
+
+            //mouse movement
+            const accel = 0.6;
+            const friction = 0.9;
+            const maxSpeed = 15;
+
+            if (this.moveCameraRight) {
+            this.camVelX += accel;
+            } else if (this.moveCameraLeft) {
+            this.camVelX -= accel;
+            } else {
+            this.camVelX *= friction;
+            }
+
+            this.camVelX = Phaser.Math.Clamp(this.camVelX, -maxSpeed, maxSpeed);
+
+            this.cameras.main.scrollX += this.camVelX;
+
 
             if (this.timerRunning) {
                 this.simTime += delta;
@@ -355,8 +412,7 @@ class TestScene extends Phaser.Scene{
             this.controls.update(delta);
 
             this.temperature = 20 + this.testBubbleScore
-            this.stress = Phaser.Math.Clamp(this.testBubbleScore*5,100)
-        
+            this.stress = Phaser.Math.Clamp(this.testBubbleScore*5,100);
  
     }
 
