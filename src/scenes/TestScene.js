@@ -16,7 +16,8 @@ class TestScene extends Phaser.Scene{
         this.stressData = [];
         this.deltaTimer = 0;
         this.simStart = false;
-        this.testBubbleScore = 0;
+        this.timeJump = 0;
+        this.bubbleCollision = false;
 
         this.maxStress = 1000;
         this.meanTemp = 26;
@@ -238,18 +239,15 @@ class TestScene extends Phaser.Scene{
     }
 
     handleBubbleCollect(type) {
-        if (type === 'good') {
-            this.testBubbleScore++;
-            console.log('Score:', this.testBubbleScore);
-        } else {
-            this.testBubbleScore--;
-            console.log('Score:', this.testBubbleScore);
-        }
+        this.bubbleCollision = true;
+        this.timeJump++;
+        this.timeJump = Phaser.Math.Clamp(this.timeJump, 0, 20);
 
         this.bubbleGood.destroy();
         this.bubbleBad.destroy();
 
         this.spawnBubbles();
+        this.bubbleCollision = false;
     }
 
     updateLightLevel() {
@@ -345,10 +343,9 @@ class TestScene extends Phaser.Scene{
 
     update(time, delta) {
         //if (!this.simStart) return;
-
-        if (this.isDraggingGuide) {
-            const pointer = this.input.activePointer;
-
+        const pointer = this.input.activePointer;
+        if (!this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 30) {
+            
             const speed = 0.05;
 
             const targetAngle = Phaser.Math.Angle.Between(
@@ -416,8 +413,8 @@ class TestScene extends Phaser.Scene{
         
             this.controls.update(delta);
 
-            this.temperature = 20 + this.testBubbleScore
-            this.stress = Phaser.Math.Clamp(this.testBubbleScore*5,100);
+            this.temperature = 20 + this.timeJump
+            this.stress = Phaser.Math.Clamp(this.timeJump*5,100);
  
     }
 

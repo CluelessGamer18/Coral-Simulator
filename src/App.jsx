@@ -12,6 +12,7 @@ import SimInfoDisplay from './SimInfoDisplay.jsx'
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(0);
   const [stressValue, setStressValue] = useState(0);
+  const [timeAdvanced, setTimeAdvanced] = useState(0);
 
   const [boxValue, setBoxValue] = useState(false);
 
@@ -30,6 +31,7 @@ function App() {
     const loop = () => {
       setTemperatureValue(scene.temperature)
       setStressValue(scene.stress)
+      setTimeAdvanced(scene.timeJump)
       frameId = requestAnimationFrame(loop);
     };
 
@@ -52,7 +54,7 @@ function App() {
 
   return (
     <>
-        {scene && !showTitleScreen ? <SimInfoDisplay temp={temperatureValue}/> : null}
+        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} temp={temperatureValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>

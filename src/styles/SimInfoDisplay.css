@@ -31,7 +31,11 @@
     height: 5px;
     border-radius: 100%;
     background-color: aliceblue;
-}
+    transition: transform 200ms ease; 
+    transform: scale(1); 
+} 
+
+.TimelineDotLarge.scaled { transform: scale(1.3); }
 
 .TimelineDotLarge.active{
     scale: 2.25;
@@ -46,6 +50,14 @@
     height: 3px;
     border-radius: 100%;
     background-color: aliceblue;
+}
+
+.TimelineDotSmall.active{
+    scale: 2.25;
+    background-color: rgba(251, 105, 0, 0.864);
+    border-width: 1px;
+    border-color: aliceblue;
+    border-style: solid;
 }
 
 .SimInfoText{
