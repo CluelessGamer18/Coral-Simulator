@@ -1,9 +1,9 @@
-let numOfSchools = 40;
-let schoolChance = 70; // 70% chance a school will have more than 1 fish
-let maxSchoolSize = 35;
+let numOfSchools = 30;
+let schoolChance = 50; // 70% chance a school will have more than 1 fish
+let maxSchoolSize = 15;
 
-let maxFishScale = 0.08;
-let minFishScale = 0.01;
+let maxFishScale = 0.5;
+let minFishScale = 0.3;
 
 export function createFishSchools(scene) {
   for (let i = 0; i < numOfSchools; i++) {
@@ -14,25 +14,36 @@ export function createFishSchools(scene) {
       numFish = Phaser.Math.Between(1, maxSchoolSize);
     }
 
-    const school = createSchool(scene, numFish);
+    let type = Phaser.Math.Between(0, 7); // random fish type
+    let depth = Phaser.Math.Between(0, 2);
+
+    const school = createSchool(scene, numFish, type, depth);
 
     repeatMovement(scene, school);
   }
 }
 
-function createSchool(scene, count) {
+function createSchool(scene, count, type, depth) {
+
+  const tints = [0x0292A5, 0x75999F, null];
 
   const container = scene.add.container(
     Phaser.Math.Between(0, scene.WORLD_WIDTH),
     Phaser.Math.Between(0, scene.WORLD_HEIGHT)
   );
 
+  container.setDepth(depth);
+
 
   for (let i = 0; i < count; i++) {
     let staticScale = Phaser.Math.FloatBetween(minFishScale, maxFishScale);
+    const depthScale = [0.2, 0.5, 1.0];
 
-    const fish = scene.add.image(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100), "Fish").setScale(staticScale);
+    const fish = scene.add.image(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100), 'fishTypes', type).setScale(staticScale * depthScale[depth]);
 
+      if (tints[depth]) {
+      fish.setTintFill(tints[depth]);
+    }
     container.add(fish);
   }
 
@@ -47,6 +58,7 @@ function repeatMovement(scene, school) {
 
   const nextCall = Phaser.Math.Between(minInterval, maxInterval);
 
+  // chooseNextPos(scene, school, nextCall);
   chooseNextPos(scene, school, nextCall);
 
   scene.time.delayedCall(nextCall, () => {

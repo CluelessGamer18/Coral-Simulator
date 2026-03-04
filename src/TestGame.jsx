@@ -6,9 +6,13 @@ import Preloader from "./scenes/Preloader.js";
 import './styles/TestScene.css';
 import { useState } from "react";
 
+
+
 function TestGame({onSceneReady}){
     const sceneRef = useRef(null);
     const [loaded, setLoaded] = useState(false);
+    console.log(window.innerWidth);
+    const widthSize = window.innerWidth;
 
     useEffect(() => {
         if (sceneRef.current) return
@@ -20,7 +24,7 @@ function TestGame({onSceneReady}){
             scene: [Boot,Preloader,TestScene],
             physics: { default: 'arcade', arcade: { debug: false }},
             backgroundColor: "#ADD8E6",
-            scale: { mode: Phaser.Scale.RESIZE,
+            scale: { mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.NO_CENTER, 
                 width: 1440, height: 1024 }
             
