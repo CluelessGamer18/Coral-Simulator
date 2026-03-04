@@ -93,13 +93,16 @@
 
 .SimInfoDialPin{
     position: absolute;
-    top: -35%;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 36px;
+    left: 31px;
+    transform: translateX(-50%) rotate(var(--angle, 0deg)); 
+    transform-origin: 50% 66px; 
     margin: 0;
     padding: 0;
     z-index: 20;
     font-size: 20px;
+    transition: transform 0.2s ease-out;
+
 }
 
 .SimInfoBottom{

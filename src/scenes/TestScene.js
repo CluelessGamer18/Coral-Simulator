@@ -124,6 +124,7 @@ class TestScene extends Phaser.Scene{
 
         this.guide = this.physics.add.image(300,300,"Guide")
         this.guide.setInteractive();
+        this.guide.setDepth(9999);
         
         this.spawnBubbles();
         this.isDraggingGuide = false; 
@@ -157,34 +158,34 @@ class TestScene extends Phaser.Scene{
         this.controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig);
 
         // move right on hover
-        const rectRight = this.add.rectangle(
+        this.rectRight = this.add.rectangle(
         this.cameras.main.width - 50,
         this.cameras.main.height / 2,
         100,
         this.cameras.main.height, 0xFFFFFF
         ).setScrollFactor(0).setInteractive().setAlpha(0.05);
 
-            rectRight.on("pointerover", () => {
+            this.rectRight.on("pointerover", () => {
             this.moveCameraRight = true;
             });
 
-            rectRight.on("pointerout", () => {
+            this.rectRight.on("pointerout", () => {
             this.moveCameraRight = false;
             });
 
                 // move left on hover
-        const rectLeft = this.add.rectangle(
+        this.rectLeft = this.add.rectangle(
         50,
         this.cameras.main.height / 2,
         100,
         this.cameras.main.height, 0xFFFFFF
         ).setScrollFactor(0).setInteractive().setAlpha(0.05);
 
-            rectLeft.on("pointerover", () => {
+            this.rectLeft.on("pointerover", () => {
             this.moveCameraLeft = true;
             });
 
-            rectLeft.on("pointerout", () => {
+            this.rectLeft.on("pointerout", () => {
             this.moveCameraLeft = false;
             });
 
@@ -248,7 +249,7 @@ class TestScene extends Phaser.Scene{
     handleBubbleCollect(type) {
         this.bubbleCollision = true;
         this.timeJump++;
-        this.timeJump = Phaser.Math.Clamp(this.timeJump, 0, 20);
+        this.timeJump = Phaser.Math.Clamp(this.timeJump,0,20);
 
         this.bubbleGood.destroy();
         this.bubbleBad.destroy();
@@ -351,6 +352,7 @@ class TestScene extends Phaser.Scene{
     update(time, delta) {
         //if (!this.simStart) return;
         const pointer = this.input.activePointer;
+
         if (!this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 30) {
             
             const speed = 0.05;

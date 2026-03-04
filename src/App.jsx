@@ -11,6 +11,7 @@ import SimInfoDisplay from './SimInfoDisplay.jsx'
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(0);
+  const [lightLevel, setLightLevel] = useState(50);
   const [stressValue, setStressValue] = useState(0);
   const [timeAdvanced, setTimeAdvanced] = useState(0);
 
@@ -54,7 +55,8 @@ function App() {
 
   return (
     <>
-        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} temp={temperatureValue}/> : null}
+    <RangeSlider middle={true} onChange={setLightLevel}/>
+        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} light={lightLevel} temp={temperatureValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>

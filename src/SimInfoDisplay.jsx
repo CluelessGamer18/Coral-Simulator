@@ -1,6 +1,6 @@
 import "./styles/SimInfoDisplay.css";
 
-function SimInfoDisplay({timejump=0,light=50,temp=20,stress=0,pollution=0}){
+function SimInfoDisplay({timejump=0,light=0,temp=20,stress=0,pollution=0}){
     const dots = [ 
         "large", "small", 
         "large", "small", 
@@ -17,7 +17,7 @@ function SimInfoDisplay({timejump=0,light=50,temp=20,stress=0,pollution=0}){
         <div className="SimInfoDisplayContainer">
             <div className="SimInfoDial">
                 <span className="SimInfoDialIcon">🌞</span>
-                <span className="SimInfoDialPin">🔻</span>
+                <span className="SimInfoDialPin" style={{ transform: `rotate(${light * 1.8 - 90}deg)` }} >🔻</span>
             </div>
             <div className="SimInfoTimeline">
             <span className="SimInfoText">2026</span>
