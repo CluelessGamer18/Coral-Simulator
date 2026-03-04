@@ -66,8 +66,8 @@ class TestScene extends Phaser.Scene{
 
     create(){
 
-        this.WORLD_WIDTH = 7000;
-        this.WORLD_HEIGHT = 1700;
+        this.WORLD_WIDTH = 3581;
+        this.WORLD_HEIGHT = 1024;
 
 
         this.cameras.main.setBackgroundColor("#1d5986");
@@ -81,20 +81,22 @@ class TestScene extends Phaser.Scene{
         .setOrigin(0, 0)
         .setScrollFactor(0) //background does not move
         .setScale(0.26)
-        .setTint(0xbbbbff); //tinted darker
-
+        .setTint(0x07c5ff); //tinted darker
 
         const floorLayer3 = this.add.image(0, 0, "floor_layer3")
-        .setOrigin(0, 0)
+        .setOrigin(0, 0).setDepth(1)
         
         // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
-        .setScrollFactor((1919 - cam.width) / (this.WORLD_WIDTH - cam.width), 1); //farthest layer = 0.3
+        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1); //farthest layer = 0.3
         floorLayer3.y = this.WORLD_HEIGHT - floorLayer3.height;
 
         const floorLayer2 = this.add.image(0, 0, "floor_layer2")
-        .setOrigin(0, 0)
-        .setScrollFactor((4050 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        .setOrigin(0, 0).setDepth(2)
+        .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
+
+        //educated fish (schools)
+        createFishSchools(this);
 
         createCorals(this); 
 
@@ -102,13 +104,18 @@ class TestScene extends Phaser.Scene{
         
 
         const floorLayer1 = this.add.image(0, 0, "floor_layer1")
-        .setOrigin(0, 0)
-        .setScrollFactor((7000 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        .setOrigin(0, 0).setDepth(5)
+        .setScrollFactor((3581 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer1.y = this.WORLD_HEIGHT - floorLayer1.height;
 
 
-        //educated fish (schools)
-        createFishSchools(this);
+
+        const bgCoverGradient = this.add.image(0, 0, "bg_gradient")
+        .setOrigin(0, 0)
+        .setScrollFactor(0) //background does not move
+        .setScale(0.26)
+        .setTint(0x07c5ff) //tinted darker
+        .setAlpha(0.08); //tinted darker
 
 
 
@@ -128,7 +135,7 @@ class TestScene extends Phaser.Scene{
 
         this.trashbag1 = this.add.image(310,370,"Trash").setScale(0.1).setVisible(false)
         this.trashbag2 = this.add.image(370,370,"Trash").setScale(0.1).setVisible(false)
-        this.coral = this.add.image(140,cam.height - 130,"Coral").setScale(0.07).setVisible(true).setScrollFactor(1, 0.7);
+        // this.coral = this.add.image(140,cam.height - 130,"Coral").setScale(0.07).setVisible(true).setScrollFactor(1, 0.7);
 
         const cursors = this.input.keyboard.createCursorKeys();
 

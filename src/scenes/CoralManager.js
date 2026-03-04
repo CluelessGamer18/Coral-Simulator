@@ -2,19 +2,21 @@ export function createCorals(scene) {
 
     scene.corals = [];
 
-    const group = createCoralGroup(scene, 20);
+    const group = createCoralGroup(scene, 10);
+    
 
 }
 
 function createCoralGroup(scene, count) {
 
   const container = scene.add.container(0, 0);
+  container.setDepth(2);
 
   for (let i = 0; i < count; i++) {
 
     const coral = scene.add
-      .image(Phaser.Math.Between(0, scene.WORLD_WIDTH), scene.WORLD_HEIGHT - 150, 'orangeCoral', 0)
-      .setOrigin(0.5, 1);;
+      .image(Phaser.Math.Between(0, scene.WORLD_WIDTH), scene.WORLD_HEIGHT - 100, 'orangeCoral', 0)
+      .setOrigin(0.5, 1);
 
     coral.bleachStage = 1;
 
