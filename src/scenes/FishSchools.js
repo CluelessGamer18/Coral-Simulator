@@ -1,6 +1,3 @@
-
-// fishTank.js
-
 let numOfSchools = 40;
 let schoolChance = 70; // 70% chance a school will have more than 1 fish
 let maxSchoolSize = 35;

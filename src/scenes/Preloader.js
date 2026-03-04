@@ -36,6 +36,9 @@ init() {
         this.load.image("Trash", "./trashbag.jpg")
         this.load.image("Bubble","./normalbubble.png")
 
+        //spritesheet
+        this.load.spritesheet('orangeCoral', '/assets/wireframe1/orange-coral_180x190_5_wireframe1.png', { frameWidth: 180, frameHeight: 190 });
+
         // wireframe assets
         this.load.image("floor_layer1", "/assets/wireframe2/floor_layer1_7000x512_wireframe2.png") //closest layer = 1
         this.load.image("floor_layer2", "/assets/wireframe2/floor_layer2_4050x650_wireframe2.png")

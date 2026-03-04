@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
+import { createCorals, updateBleachStage } from "./CoralManager.js";
 
 
 class TestScene extends Phaser.Scene{
@@ -72,7 +73,7 @@ class TestScene extends Phaser.Scene{
         this.cameras.main.setBackgroundColor("#1d5986");
 
         const cam = this.cameras.main;
-        const coral2 = this.add.image(200,cam.height - 160,"Coral2").setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
+        // const coral2 = this.add.image(200,cam.height - 160,"Coral2").setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
         
 
 
@@ -94,6 +95,10 @@ class TestScene extends Phaser.Scene{
         .setOrigin(0, 0)
         .setScrollFactor((4050 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
+
+        createCorals(this); 
+
+        updateBleachStage(this, 0); // set bleach stage (0-4)
         
 
         const floorLayer1 = this.add.image(0, 0, "floor_layer1")
@@ -185,19 +190,19 @@ class TestScene extends Phaser.Scene{
 
 
         // coral mouse detection
-        coral2.setInteractive();
+        // coral2.setInteractive();
 
-        coral2.on('pointerdown', () => {
-            this.tweens.add({
-                targets: coral2,
-                scale: { from: coral2.scale, to: coral2.scale * 1.025 },
-                duration: 100,
-                yoyo: true,
-                ease: 'Sine.Out'
-            });
+        // coral2.on('pointerdown', () => {
+        //     this.tweens.add({
+        //         targets: coral2,
+        //         scale: { from: coral2.scale, to: coral2.scale * 1.025 },
+        //         duration: 100,
+        //         yoyo: true,
+        //         ease: 'Sine.Out'
+        //     });
 
-            this.showPopUpMessage();
-        });
+        //     this.showPopUpMessage();
+        // });
 
     }
 
@@ -455,26 +460,3 @@ class TestScene extends Phaser.Scene{
 }
 
 export default TestScene;
-
-/** Useful Notes:
- * 
- * Here we are creating a class called TestScene by extending phaser's built
- * in scene class. 
- * 
- * A scene is similar to a specific screen or game state.
- * 
- * constructor(): class constructor, similar to __init__ in python
- * 
- * super("SceneKey") Registers the scene with phaser with the provided key in 
- * this case: TestScene
- * 
- * Assets used for simulation do in fact go under preload. (Lifecycle method)
- * 
- * create() (Lifecycle method). Essentially creates the scene. 
- * this (refers to this class)
- * .add Phasers method of adding objects to the scene
- * .text(Self explantory)
- * 
- * 
- * 
- */
