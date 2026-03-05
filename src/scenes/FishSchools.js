@@ -5,6 +5,7 @@ let maxSchoolSize = 15;
 let maxFishScale = 0.5;
 let minFishScale = 0.3;
 
+
 export function createFishSchools(scene) {
   for (let i = 0; i < numOfSchools; i++) {
 
