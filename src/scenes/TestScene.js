@@ -7,7 +7,7 @@ class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
         this.lightLevel = 50;
-        this.temperature = 20;
+        this.temperature = 22;
         this.pollutionValue = 0;
         this.coverageValue = 0;
         this.nutrientScalar = 1;
@@ -18,6 +18,7 @@ class TestScene extends Phaser.Scene{
         this.simStart = false;
         this.timeJump = 0;
         this.bubbleCollision = false;
+        this.collisionType = "None";
 
         this.maxStress = 1000;
         this.meanTemp = 26;
@@ -222,40 +223,37 @@ class TestScene extends Phaser.Scene{
     const x2 = Phaser.Math.Between(50, 750);
     const y2 = Phaser.Math.Between(50, 550);
      
-    this.bubbleGood = this.physics.add.image(x1, y1, 'Bubble');
-    this.bubbleBad = this.physics.add.image(x2, y2, 'Bubble').setTint(0x8b0000);
+    this.tempBubble = this.physics.add.image(x1, y1, 'Bubble');
+    this.lightBubble = this.physics.add.image(x2, y2, 'Bubble').setTint(0x8b0000);
 
     // Reattach overlap handlers
     this.physics.add.overlap(
         this.guide,
-        this.bubbleGood,
-        () => this.handleBubbleCollect('good'),
+        this.tempBubble,
+        () => this.handleBubbleCollect('temp'),
         null,
         this
     );
 
     this.physics.add.overlap(
         this.guide,
-        this.bubbleBad,
-        () => this.handleBubbleCollect('bad'),
+        this.lightBubble,
+        () => this.handleBubbleCollect('light'),
         null,
         this
         );
 
-        this.bubbleIdle(this.bubbleGood);
-        this.bubbleIdle(this.bubbleBad);
+        this.bubbleIdle(this.tempBubble);
+        this.bubbleIdle(this.lightBubble);
     }
 
     handleBubbleCollect(type) {
-        this.bubbleCollision = true;
-        this.timeJump++;
-        this.timeJump = Phaser.Math.Clamp(this.timeJump,0,20);
+        if (type == 'temp'){
+            this.bubbleCollision = true;
+            this.collisionType = type;
+        }
+        
 
-        this.bubbleGood.destroy();
-        this.bubbleBad.destroy();
-
-        this.spawnBubbles();
-        this.bubbleCollision = false;
     }
 
     updateLightLevel() {
@@ -422,7 +420,6 @@ class TestScene extends Phaser.Scene{
         
             this.controls.update(delta);
 
-            this.temperature = 20 + this.timeJump
             this.stress = Phaser.Math.Clamp(this.timeJump*5,100);
  
     }
@@ -462,6 +459,19 @@ class TestScene extends Phaser.Scene{
 
     RestartSim(){
         this.scene.restart();
+    }
+
+    updateTemperature(temp){
+        this.temperature = temp;
+    }
+
+    freeFish(){
+        this.bubbleCollision = false;
+        this.tempBubble.destroy();
+        this.lightBubble.destroy();
+
+        this.spawnBubbles();
+        this.timeJump+=2;
     }
 }
 

@@ -8,6 +8,7 @@ import StressChart from './StressChart.jsx'
 import TitleScreen from "./TitleScreen/TitleScreen.jsx"
 import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
 import SimInfoDisplay from './SimInfoDisplay.jsx'
+import SimBubblePopUp from './SimBubblePopUp.jsx'
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(0);
@@ -15,7 +16,7 @@ function App() {
   const [stressValue, setStressValue] = useState(0);
   const [timeAdvanced, setTimeAdvanced] = useState(0);
 
-  const [boxValue, setBoxValue] = useState(false);
+  const [bubbleCollision, setBubbleCollision] = useState(false);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
   const [simEnd, setSimEnd] = useState(false);
@@ -33,6 +34,7 @@ function App() {
       setTemperatureValue(scene.temperature)
       setStressValue(scene.stress)
       setTimeAdvanced(scene.timeJump)
+      setBubbleCollision(scene.bubbleCollision)
       frameId = requestAnimationFrame(loop);
     };
 
@@ -40,6 +42,18 @@ function App() {
 
     return () => cancelAnimationFrame(frameId);
   }, [scene]);
+
+  useEffect(() => {
+    if (!scene) {return}
+    scene.updateTemperature(temperatureValue);
+  },[temperatureValue]);
+
+  useEffect(() => {
+    if (!scene) {return}
+    if (!bubbleCollision){
+      scene.freeFish()
+    }
+  },[bubbleCollision])
 
   // Average Coral Reef Temperature is 22 - 29 Celcius
   // Rarely 20 - 32 Celcius
@@ -49,13 +63,12 @@ function App() {
   const endSim = () => {
     scene.RestartSim();
     setSceneRunning(false);
-    setSimStart(false);
     setSimTime('0');
   }
 
   return (
     <>
-    <RangeSlider middle={true} onChange={setLightLevel}/>
+        {bubbleCollision ? <SimBubblePopUp type={scene.collisionType} onChange={setTemperatureValue} setCollision={setBubbleCollision}/> : null}
         {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} light={lightLevel} temp={temperatureValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
