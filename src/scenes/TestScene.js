@@ -57,6 +57,7 @@ class TestScene extends Phaser.Scene{
         });
 
         
+        
 
         overlay.on('pointerdown', () => {
             message.destroy();
@@ -89,7 +90,8 @@ class TestScene extends Phaser.Scene{
         .setOrigin(0, 0).setDepth(1)
         
         // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
-        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1); //farthest layer = 0.3
+        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        
         floorLayer3.y = this.WORLD_HEIGHT - floorLayer3.height;
 
         const floorLayer2 = this.add.image(0, 0, "floor_layer2")
