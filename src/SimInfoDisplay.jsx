@@ -1,6 +1,6 @@
 import "./styles/SimInfoDisplay.css";
 
-function SimInfoDisplay({timejump=0,light=0,temp=20,stress=0,pollution=0}){
+function SimInfoDisplay({timejump=0,light=0,temp=20,stress=0,poll=0}){
     const dots = [ 
         "large", "small", 
         "large", "small", 
@@ -41,7 +41,7 @@ function SimInfoDisplay({timejump=0,light=0,temp=20,stress=0,pollution=0}){
                 <span className="SimInfoIcon">❤️‍🩹</span>
                 <span className="SimInfoText">{stress}%</span>
                 <span className="SimInfoIcon">🗑️</span>
-                <span className="SimInfoText">{pollution}</span>
+                <span className="SimInfoText">{poll}</span>
             </div>
         </div>
     )

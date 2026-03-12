@@ -7,8 +7,8 @@ class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
         this.lightLevel = 50;
-        this.temperature = 22;
-        this.pollutionValue = 0;
+        this.temperature = 27;
+        this.pollutionValue = 2;
         this.coverageValue = 0;
         this.nutrientScalar = 1;
         this.stress = 0;
@@ -484,13 +484,18 @@ class TestScene extends Phaser.Scene{
         this.temperature = temp;
     }
 
-    freeFish(){
+    updatePollution(poll){
+        this.pollutionValue = poll;
+    }
+
+    freeFish(cancelled){
         this.bubbleCollision = false;
         this.tempBubble.destroy();
         this.lightBubble.destroy();
         this.pollutionBubble.destroy();
         this.spawnBubbles();
-        this.timeJump+=2;
+        if (!cancelled){ this.timeJump+=2; } 
+
     }
 }
 

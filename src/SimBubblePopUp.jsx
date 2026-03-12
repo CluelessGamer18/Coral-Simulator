@@ -1,13 +1,12 @@
 import './styles/SimBubblePopUp.css'
-import { useState, useEffect, useRef } from 'react';
-function SimBubblePopUp({type,onChange, setCollision}){
-    let min, max, initialValue,label, graph, dangerA, dangerB;
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled}){
+    let min, max, label, graph, dangerA, dangerB;
 
     //Change Initial value to current value w/some sort of logic
     if(type == "temp"){
         min = 18;
         max = 35;
-        initialValue = 27;
         label = "temperaturebubbletitle.png";
         graph = "temperaturegraph.png";
         dangerA = 24;
@@ -15,7 +14,6 @@ function SimBubblePopUp({type,onChange, setCollision}){
     } else if(type == "light"){
         min = 0;
         max = 2000;
-        initialValue = 250;
         label = "/lightlevelbubbletitle.png"
         graph = "/lightlevelgraph.png";
         dangerA = 140;
@@ -23,7 +21,6 @@ function SimBubblePopUp({type,onChange, setCollision}){
     } else if(type == "poll"){
         min = 0;
         max = 13;
-        initialValue = 2;
         label = "/pollutionbubbletitle.png";
         graph = "pollutiongraph.png";
         dangerA = 0;
@@ -33,6 +30,13 @@ function SimBubblePopUp({type,onChange, setCollision}){
     const [value, setValue] = useState(initialValue);
     const [displayLeft, setdisplayLeft] = useState(0);
     const sliderRef = useRef(null);
+    
+    useEffect(() => {
+        if (initialValue >= dangerB || initialValue <= dangerA){
+            setDanger(true);
+        } 
+    },[])
+
     useEffect(() => {
         const slider = sliderRef.current;
         if (!slider) return;
@@ -63,6 +67,11 @@ function SimBubblePopUp({type,onChange, setCollision}){
         onChange(value);
         setCollision(false);
     }
+
+    const handleCancelClick = () => {
+        setCollision(false);
+        setCancelled(true);
+    }
     return(
         <div className="SimBubblePopUp">
             <img className="SimBubblePopUpGraph" src={graph}></img>
@@ -85,7 +94,7 @@ function SimBubblePopUp({type,onChange, setCollision}){
             <p className="SimBubblePopUpTutorial">Move the slider to the desired value under a custom duration over time</p>
             {danger ? <img className="SimBubblePopUpWarning"src="/warning.png"></img> : null}
             <button className="SimBubblePopUpSubmit" onClick={handleSubmitClick}>Apply</button>
-            <button className="SimBubblePopUpGoBack">Cancel</button>
+            <button className="SimBubblePopUpGoBack" onClick={handleCancelClick}>Cancel</button>
         </div>
     )
 }

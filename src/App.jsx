@@ -12,7 +12,8 @@ import SimBubblePopUp from './SimBubblePopUp.jsx'
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(0);
-  const [lightLevel, setLightLevel] = useState(50);
+  const [lightValue, setLightValue] = useState(50);
+  const [pollutionValue, setPollutionValue] = useState(2);
   const [stressValue, setStressValue] = useState(0);
   const [timeAdvanced, setTimeAdvanced] = useState(0);
 
@@ -24,6 +25,28 @@ function App() {
   const [showTitleScreen, setShowTitleScreen] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
   const [sceneRunning, setSceneRunning] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
+  let handler, initialValue;
+  if (scene){
+    switch (scene.collisionType) {
+      case "temp":
+        handler = setTemperatureValue;
+        initialValue = temperatureValue;
+        break;
+
+      case "light":
+        handler = setLightValue;
+        initialValue = lightValue;
+        break;
+
+      case "poll":
+        handler = setPollutionValue;
+        initialValue = pollutionValue;
+        break;
+    }
+  }
+ 
 
   useEffect(() => {
     if (!scene) return;
@@ -50,8 +73,13 @@ function App() {
 
   useEffect(() => {
     if (!scene) {return}
+    scene.updatePollution(pollutionValue);
+  },[pollutionValue]);
+
+  useEffect(() => {
+    if (!scene) {return}
     if (!bubbleCollision){
-      scene.freeFish()
+      scene.freeFish(cancelled)
     }
   },[bubbleCollision])
 
@@ -68,8 +96,12 @@ function App() {
 
   return (
     <>
-        {bubbleCollision ? <SimBubblePopUp type={scene.collisionType} onChange={setTemperatureValue} setCollision={setBubbleCollision}/> : null}
-        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} light={lightLevel} temp={temperatureValue}/> : null}
+        {bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
+        initialValue={initialValue}
+        onChange={handler} 
+        setCollision={setBubbleCollision} 
+        setCancelled={setCancelled}/> : null}
+        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} poll={pollutionValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
