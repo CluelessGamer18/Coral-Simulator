@@ -372,7 +372,8 @@ class TestScene extends Phaser.Scene{
 
 
     update(time, delta) {
-        //if (!this.simStart) return;
+
+
         const pointer = this.input.activePointer;
 
         if (!this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 30) {
@@ -384,14 +385,30 @@ class TestScene extends Phaser.Scene{
                 pointer.worldX, pointer.worldY
             );
 
-            const spriteFacingOffset = Phaser.Math.DegToRad(-25);
-            const desiredRotation = targetAngle + spriteFacingOffset;
 
-            this.guide.rotation = Phaser.Math.Angle.RotateTo(
-                this.guide.rotation,
-                desiredRotation,
-                0.5
-            );
+        // Decide if sprite should flip
+        const flip = Math.cos(targetAngle) < 0;
+        this.guide.setFlipY(flip);
+
+        // Adjust offset depending on flip
+        const offset = Phaser.Math.DegToRad(-25);
+        const desiredRotation = targetAngle + (flip ? -offset : offset);
+
+        // Smooth rotation
+        this.guide.rotation = Phaser.Math.Angle.RotateTo(
+            this.guide.rotation,
+            desiredRotation,
+            0.5
+        );
+
+        
+
+            const minScale = 0.7;   // guide scale at the top
+            const maxScale = 1.5;   // guide scale at the bottom
+
+            const t = this.guide.y / this.cameras.main.height;
+            const easedT = t * t;   // easing
+            this.guide.setScale(minScale + (maxScale - minScale) * easedT);
 
             const angleDiff = Phaser.Math.Angle.Wrap(desiredRotation - this.guide.rotation);
 

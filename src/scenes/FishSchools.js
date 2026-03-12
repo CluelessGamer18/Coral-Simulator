@@ -72,12 +72,12 @@ function chooseNextPos(scene, school, duration) {
   // max distance a school can move in one tween
   const maxDistance = 2000;
 
-  var newX = Phaser.Math.Between(-scene.WORLD_WIDTH, scene.WORLD_WIDTH);
-  var newY = Phaser.Math.Between(-scene.WORLD_HEIGHT, scene.WORLD_HEIGHT);
+  var newX = Phaser.Math.Between(0, scene.WORLD_WIDTH);
+  var newY = Phaser.Math.Between(0, scene.WORLD_HEIGHT);
 
   while (Phaser.Math.Distance.Between(school.x, school.y, newX, newY) > maxDistance) {
-    newX = Phaser.Math.Between(-scene.WORLD_WIDTH, scene.WORLD_WIDTH);
-    newY = Phaser.Math.Between(-scene.WORLD_HEIGHT, scene.WORLD_HEIGHT);
+    newX = Phaser.Math.Between(0, scene.WORLD_WIDTH);
+    newY = Phaser.Math.Between(0, scene.WORLD_HEIGHT);
   }
 
   const isRight = newX > school.x;
