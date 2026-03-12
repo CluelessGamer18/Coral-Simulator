@@ -219,14 +219,18 @@ class TestScene extends Phaser.Scene{
     }
 
     spawnBubbles() {
-    const x1 = Phaser.Math.Between(50, 750);
-    const y1 = Phaser.Math.Between(50, 550);
+    const x1 = Phaser.Math.Between(50, 2000);
+    const y1 = Phaser.Math.Between(50, 500);
 
-    const x2 = Phaser.Math.Between(50, 750);
-    const y2 = Phaser.Math.Between(50, 550);
+    const x2 = Phaser.Math.Between(50, 2000);
+    const y2 = Phaser.Math.Between(50, 500);
+
+    const x3 = Phaser.Math.Between(50, 2000);
+    const y3 = Phaser.Math.Between(50, 500);
      
     this.tempBubble = this.physics.add.image(x1, y1, 'Bubble');
     this.lightBubble = this.physics.add.image(x2, y2, 'Bubble').setTint(0x8b0000);
+    this.pollutionBubble = this.physics.add.image(x3, y3, 'Bubble').setTint(0x8b4513);
 
     // Reattach overlap handlers
     this.physics.add.overlap(
@@ -243,19 +247,32 @@ class TestScene extends Phaser.Scene{
         () => this.handleBubbleCollect('light'),
         null,
         this
-        );
+    );
+
+    this.physics.add.overlap(
+        this.guide,
+        this.pollutionBubble,
+        () => this.handleBubbleCollect('poll'),
+        null,
+        this
+    );
 
         this.bubbleIdle(this.tempBubble);
         this.bubbleIdle(this.lightBubble);
+        this.bubbleIdle(this.pollutionBubble);
     }
 
     handleBubbleCollect(type) {
         if (type == 'temp'){
             this.bubbleCollision = true;
             this.collisionType = type;
+        } else if (type == 'light'){
+            this.bubbleCollision = true;
+            this.collisionType = type;
+        } else if (type == 'poll'){
+            this.bubbleCollision = true;
+            this.collisionType = type;
         }
-        
-
     }
 
     updateLightLevel() {
@@ -471,7 +488,7 @@ class TestScene extends Phaser.Scene{
         this.bubbleCollision = false;
         this.tempBubble.destroy();
         this.lightBubble.destroy();
-
+        this.pollutionBubble.destroy();
         this.spawnBubbles();
         this.timeJump+=2;
     }

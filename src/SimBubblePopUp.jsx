@@ -1,20 +1,62 @@
 import './styles/SimBubblePopUp.css'
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 function SimBubblePopUp({type,onChange, setCollision}){
-    let min, max, initialValue,label;
+    let min, max, initialValue,label, graph, dangerA, dangerB;
 
     //Change Initial value to current value w/some sort of logic
     if(type == "temp"){
-        min = 15;
+        min = 18;
         max = 35;
-        initialValue = 22;
-        label = "Change Temperature";
+        initialValue = 27;
+        label = "temperaturebubbletitle.png";
+        graph = "temperaturegraph.png";
+        dangerA = 24;
+        dangerB = 31;
+    } else if(type == "light"){
+        min = 0;
+        max = 2000;
+        initialValue = 250;
+        label = "/lightlevelbubbletitle.png"
+        graph = "/lightlevelgraph.png";
+        dangerA = 140;
+        dangerB = 1840;
+    } else if(type == "poll"){
+        min = 0;
+        max = 13;
+        initialValue = 2;
+        label = "/pollutionbubbletitle.png";
+        graph = "pollutiongraph.png";
+        dangerA = 0;
+        dangerB = 5;
     }
+    const [danger, setDanger] = useState(false);
     const [value, setValue] = useState(initialValue);
-    
+    const [displayLeft, setdisplayLeft] = useState(0);
+    const sliderRef = useRef(null);
+    useEffect(() => {
+        const slider = sliderRef.current;
+        if (!slider) return;
+
+        const percent = (value - min) / (max - min);
+
+        const thumbWidth = 20;    
+        const thumbRadius = thumbWidth / 2;
+        const offset = 2;
+
+        const sliderWidth = slider.offsetWidth;
+        const usableWidth = sliderWidth - thumbWidth;
+
+        setdisplayLeft(percent * usableWidth + thumbRadius + offset);
+    }, [value, min, max]);
+
     const handleChange = (e) => {
         const newValue = Number(e.target.value);
         setValue(newValue);
+        if (newValue >= dangerB || newValue <= dangerA){
+            setDanger(true);
+        } else {
+            setDanger(false);
+        }
     };
 
     const handleSubmitClick = () => {
@@ -23,25 +65,27 @@ function SimBubblePopUp({type,onChange, setCollision}){
     }
     return(
         <div className="SimBubblePopUp">
-            <div className="SimBubblePopUpSliderContainer">
-                <div className="SimBubblePopUpSlider">
-                    <input
-                        type="range"
-                        min={min}
-                        max={max}
-                        value={value}
-                        onChange={handleChange}
-                        className="slider"
-                    />
+            <img className="SimBubblePopUpGraph" src={graph}></img>
+            <div className="SimBubblePopUpSlider">
+                <input
+                    ref={sliderRef}
+                    type="range"
+                    min={min}
+                    max={max}
+                    value={value}
+                    onChange={handleChange}
+                    className="slider"
+                />
+                {/*<div className="SimBubblePopUpSliderOutputLine" style={{ left: displayLeft }}></div>*/}
+                <div className="SimBubblePopUpSliderOutput" style={{ left: displayLeft }}>
+                {value}
                 </div>
-                <p className="SimBubblePopUpSliderLabel">{value}°C</p>
             </div>
-            <div className="SimBubblePopUpIconContainer">
-                <img className="SimBubblePopUpIcon" src="/temperature.png"></img>
-                <p className="SimBubblePopUpIconLabel">{label}</p>
-            </div>
-            <button className="SimBubblePopUpSubmit" onClick={handleSubmitClick}>Save & Jump Forward 1 Year</button>
-            <button className="SimBubblePopUpGoBack">Go Back</button>
+            <img className="SimBubblePopUpTitle"src={label}></img>
+            <p className="SimBubblePopUpTutorial">Move the slider to the desired value under a custom duration over time</p>
+            {danger ? <img className="SimBubblePopUpWarning"src="/warning.png"></img> : null}
+            <button className="SimBubblePopUpSubmit" onClick={handleSubmitClick}>Apply</button>
+            <button className="SimBubblePopUpGoBack">Cancel</button>
         </div>
     )
 }
