@@ -1,6 +1,6 @@
 import "./styles/SimInfoDisplay.css";
 
-function SimInfoDisplay({timejump,light,temp,stress,poll}){
+function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
     const dots = [ 
         "large", "small", 
         "large", "small", 
