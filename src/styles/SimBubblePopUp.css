@@ -1,6 +1,6 @@
 .SimBubblePopUp{
-    width: 550px;
-    height: 300px;
+    width: 750px;
+    height: 600px;
     background-color: rgba(2, 146, 165, 0.8);
     position: absolute; 
     top: 50%; 
@@ -13,34 +13,48 @@
     border-width: 2px;
 }
 
+.SimBubblePopUpGraph{
+    position: absolute;
+    width: 650px;
+    top: 250px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
 .SimBubblePopUpSubmit{
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: 40px;
+    right: 60px;
     height: 50px;
-    width: 250px;
-    background-color: #809F36;
+    width: 170px;
+    background-color: white;
     border-radius: 25px;
     border-style: solid;
     border-color: white;
     border-width: 2px;
     padding: 5px;
-    font-size: 16px;
+    color:rgba(2, 146, 165, 0.8);
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
 }
 
 .SimBubblePopUpGoBack{
     position: absolute;
-    bottom: 20px;
-    left: 20px;
+    bottom: 40px;
+    left: 60px;
     height: 50px;
-    width: 100px;
-    background-color: #F86A1C;
+    width: 120px;
+    background-color: rgba(2, 146, 165, 0.8);
     border-radius: 25px;
     border-style: solid;
     border-color: white;
     border-width: 2px;
     padding: 5px;
-
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
 }
 
 .SimBubblePopUpSliderLabel{
@@ -48,21 +62,13 @@
     top: 2px;
 }
 
-.SimBubblePopUpSliderContainer{    
+.SimBubblePopUpSlider{
     position: absolute; 
-    top: 50%; 
-    left: 50%; 
+    top: 375px; 
+    left: 392px; 
     transform: translate(-50%, -50%);
     height: 50px;
-    width: 350px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.SimBubblePopUpSlider{
-    width: 250px;
-    margin-right: 20px;
+    width: 613px;
 }
 
 .SimBubblePopUpSlider input[type="range"] {
@@ -83,24 +89,56 @@
   border: 2px solid white;
   cursor: pointer; 
 }
-
-.SimBubblePopUpIconContainer{
+.SimBubblePopUpSliderOutput {
+  position: absolute;
+  top: 30px;
+  background: #0E2A2E;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+.SimBubblePopUpSliderOutputLine {
+  position: absolute;
+  border-left: 2px dashed #F86A1C;
+  height: 150px;
+}
+.SimBubblePopUpWarning{
+  position: absolute;
+  top: 450px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.SimBubblePopUpTitle{
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+.SimBubblePopUpTutorial{
     position: absolute;
-    top: 20px;
-    left: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 150px;
-    height: 60px;
+    top: 400px;
+    left: 130px;
 }
 
-.SimBubblePopUpIcon{
-    font-size: 48px;
-    margin-right: 10px;
+.SimBubblePopUpSubmit:hover{
+  background-color: #F86A1C; 
+  color: white;
+  scale: 1.10;
 }
 
-.SimBubblePopUpIconLabel{
-    font-style: bold;
-    font-size: 20px;
+.SimBubblePopUpGoBack:hover{
+  background-color: #F86A1C; 
+  color: white;
+  scale: 1.10;
 }
+
+.SimBubblePopUpSlider::-webkit-slider-thumb:hover{
+    scale: 1.10;
+}
+
