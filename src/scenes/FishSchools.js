@@ -1,4 +1,4 @@
-let numOfSchools = 30;
+let numOfSchools = 15;
 let schoolChance = 50; // 70% chance a school will have more than 1 fish
 let maxSchoolSize = 15;
 
@@ -26,7 +26,7 @@ export function createFishSchools(scene) {
 
 function createSchool(scene, count, type, depth) {
 
-  const tints = [0x0292A5, 0x75999F, null];
+  const tints = [0x32AFAC, 0x143F45, null];
 
   const container = scene.add.container(
     Phaser.Math.Between(0, scene.WORLD_WIDTH),

@@ -42,10 +42,12 @@ init() {
         this.load.spritesheet('fishTypes', '/assets/wireframe1/fish_spritesheet_200x200_11_wireframe1.png', { frameWidth: 200, frameHeight: 200 });
 
         // wireframe assets
-        this.load.image("floor_layer1", "/assets/wireframe3/Group 18.png") //closest layer = 1
-        this.load.image("floor_layer2", "/assets/wireframe3/Group 19.png")
-        this.load.image("floor_layer3", "/assets/wireframe3/Vector 26.png")
+        this.load.image("floor_layer0", "/assets/wireframe4/foreforeground_2860x161.png")
+        this.load.image("floor_layer1", "/assets/wireframe4/foreground_2860x467.png") //closest layer = 1
+        this.load.image("floor_layer2", "/assets/wireframe4/middleground_2072x691.png")
+        this.load.image("floor_layer3", "/assets/wireframe4/farground_1440x804.png")
         this.load.image("bg_gradient", "./waterStockBg.jpg") //farthest layer = 4
+        this.load.image("surface", "/assets/wireframe4/surface_1440x155.png")
 
         this.load.image("pipe", "/assets/wireframe1/pipe_808x808.png")
     }

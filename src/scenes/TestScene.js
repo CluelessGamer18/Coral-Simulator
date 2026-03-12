@@ -69,22 +69,23 @@ class TestScene extends Phaser.Scene{
 
     create(){
 
-        this.WORLD_WIDTH = 3581;
+        this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
 
 
-        this.cameras.main.setBackgroundColor("#1d5986");
+        this.cameras.main.setBackgroundColor("#8ACFC9");
 
         const cam = this.cameras.main;
         // const coral2 = this.add.image(200,cam.height - 160,"Coral2").setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
         
 
 
-        const bgGradient = this.add.image(0, 0, "bg_gradient")
-        .setOrigin(0, 0)
-        .setScrollFactor(0) //background does not move
-        .setScale(0.26)
-        .setTint(0x07c5ff); //tinted darker
+        // const bgGradient = this.add.image(0, 0, "bg_gradient")
+        // .setOrigin(0, 0)
+        // .setScrollFactor(0) //background does not move
+        // .setScale(0.26)
+        // .setTint(0x07c5ff); //tinted darker
+
 
         const floorLayer3 = this.add.image(0, 0, "floor_layer3")
         .setOrigin(0, 0).setDepth(1)
@@ -100,9 +101,9 @@ class TestScene extends Phaser.Scene{
         floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
 
         const pipe = this.add.image(0, 0, "pipe")
-        .setOrigin(0, 0).setDepth(2)
+        .setOrigin(0, 0).setDepth(6)
         .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        pipe.y = this.WORLD_HEIGHT - pipe.height;
+        pipe.y = this.WORLD_HEIGHT - pipe.height - 40;
 
         //educated fish (schools)
         createFishSchools(this);
@@ -114,17 +115,27 @@ class TestScene extends Phaser.Scene{
 
         const floorLayer1 = this.add.image(0, 0, "floor_layer1")
         .setOrigin(0, 0).setDepth(5)
-        .setScrollFactor((3581 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer1.y = this.WORLD_HEIGHT - floorLayer1.height;
 
+        const floorLayer0 = this.add.image(0, 0, "floor_layer0")
+        .setOrigin(0, 0).setDepth(6)
+        .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        floorLayer0.y = this.WORLD_HEIGHT - floorLayer0.height;
+
+        const surface = this.add.image(0, 0, "surface")
+        .setOrigin(0, 0).setDepth(0)
+        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        surface.y = -10;
 
 
-        const bgCoverGradient = this.add.image(0, 0, "bg_gradient")
-        .setOrigin(0, 0)
-        .setScrollFactor(0) //background does not move
-        .setScale(0.26)
-        .setTint(0x07c5ff) //tinted darker
-        .setAlpha(0.08); //tinted darker
+
+        // const bgCoverGradient = this.add.image(0, 0, "bg_gradient")
+        // .setOrigin(0, 0)
+        // .setScrollFactor(0) //background does not move
+        // .setScale(0.26)
+        // .setTint(0x07c5ff) //tinted darker
+        // .setAlpha(0.08); //tinted darker
 
 
 
@@ -233,9 +244,9 @@ class TestScene extends Phaser.Scene{
     const x3 = Phaser.Math.Between(50, 2000);
     const y3 = Phaser.Math.Between(50, 500);
      
-    this.tempBubble = this.physics.add.image(x1, y1, 'Bubble');
-    this.lightBubble = this.physics.add.image(x2, y2, 'Bubble').setTint(0x8b0000);
-    this.pollutionBubble = this.physics.add.image(x3, y3, 'Bubble').setTint(0x8b4513);
+    this.tempBubble = this.physics.add.image(x1, y1, 'Bubble').setDepth(7);
+    this.lightBubble = this.physics.add.image(x2, y2, 'Bubble').setTint(0x8b0000).setDepth(7);
+    this.pollutionBubble = this.physics.add.image(x3, y3, 'Bubble').setTint(0x8b4513).setDepth(7);
 
     // Reattach overlap handlers
     this.physics.add.overlap(
@@ -391,7 +402,7 @@ class TestScene extends Phaser.Scene{
         this.guide.setFlipY(flip);
 
         // Adjust offset depending on flip
-        const offset = Phaser.Math.DegToRad(-25);
+        const offset = Phaser.Math.DegToRad(0);
         const desiredRotation = targetAngle + (flip ? -offset : offset);
 
         // Smooth rotation

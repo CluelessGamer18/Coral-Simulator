@@ -20,6 +20,8 @@ function TestGame({onSceneReady}){
         const sim = new Phaser.Game({
 
             type: Phaser.AUTO,
+            width: 1440,
+            height: 1024,
             parent: "phaserContainer",
             scene: [Boot,Preloader,TestScene],
             physics: { default: 'arcade', arcade: { debug: false }},

@@ -10,22 +10,22 @@ export function createCorals(scene) {
 function createCoralGroup(scene, count) {
 
   const container = scene.add.container(0, 0);
-  container.setDepth(2);
+  container.setDepth(6);
 
   for (let i = 0; i < count; i++) {
 
     const coral = scene.add
-      .image(Phaser.Math.Between(0, scene.WORLD_WIDTH), scene.WORLD_HEIGHT - 100, 'orangeCoral', 0)
+      .image(Phaser.Math.Between(0, scene.WORLD_WIDTH), scene.WORLD_HEIGHT - 120, 'orangeCoral', 0)
       .setOrigin(0.5, 1);
 
       coral.setInteractive();
 
 coral.on('pointerover', () => {
 
-  scene.corals.forEach(c => c.setTint(0xffcc88));
+  coral.setTint(0xffcc88);
 
-  scene.coralPulse = scene.tweens.add({
-    targets: scene.corals,
+  coral.coralPulse = scene.tweens.add({
+    targets: coral,
     scale: { from: 1, to: 1.05 },
     duration: 500,
     yoyo: true,
@@ -37,13 +37,10 @@ coral.on('pointerover', () => {
 
 coral.on('pointerout', () => {
 
-  scene.corals.forEach(c => {
-    c.clearTint();
-    c.setScale(1);
-  });
+  coral.clearTint().setScale(1);
 
-  if (scene.coralPulse) {
-    scene.coralPulse.stop();
+  if (coral.coralPulse) {
+    coral.coralPulse.stop();
   }
 
 });
