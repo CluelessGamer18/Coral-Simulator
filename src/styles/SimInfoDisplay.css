@@ -1,11 +1,11 @@
 .SimInfoDisplayContainer{
-    width: 400px;
-    height: 150px;
+    width: 500px;
+    height: 170px;
     /*background-color: red;*/
     position: absolute; 
-    top: 85%; 
+    bottom: 5px;
     left: 50%; 
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
     display: flex;
     justify-content: center;
     flex-direction: column;
@@ -15,8 +15,8 @@
 
 .SimInfoTimeline {
     position: relative;
-    width: 400px;
-    height: 60px;
+    width: 500px;
+    height: 50px;
     background: #0292A5;
     border-radius: 30px;
     display: flex;
@@ -61,16 +61,18 @@
 }
 
 .SimInfoText{
-    font-size: 12px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
 }
 
 
 .SimInfoDial{
-    width: 90px; 
-    height: 45px; 
+    width: 120px; 
+    height: 60px; 
     background: #0292A5; 
-    border-top-left-radius: 45px; 
-    border-top-right-radius: 45px;
+    border-top-left-radius: 60px; 
+    border-top-right-radius: 60px;
     margin: 0;
     background: linear-gradient(to right,#0292A5,white);
     border-style: solid;
@@ -88,15 +90,15 @@
     margin: 0;
     transform: translateX(-50%);
     z-index: 20;
-    font-size: 20px;
 }
+
 
 .SimInfoDialPin{
     position: absolute;
-    bottom: 36px;
-    left: 31px;
+    bottom: 62px;
+    left: 53px;
     transform: translateX(-50%) rotate(var(--angle, 0deg)); 
-    transform-origin: 50% 66px; 
+    transform-origin: 50% 89px; 
     margin: 0;
     padding: 0;
     z-index: 20;
@@ -106,8 +108,8 @@
 }
 
 .SimInfoBottom{
-    width: 200px;
-    height: 30px;
+    width: 250px;
+    height: 40px;
     background: #0292A5;
     border-bottom-left-radius: 30px; 
     border-bottom-right-radius: 30px;

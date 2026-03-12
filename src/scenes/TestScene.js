@@ -6,30 +6,15 @@ import { createCorals, updateBleachStage } from "./CoralManager.js";
 class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
-        this.lightLevel = 50;
+        this.lightLevel = 500; // Default
         this.temperature = 27;
-        this.pollutionValue = 2;
-        this.coverageValue = 0;
-        this.nutrientScalar = 1;
-        this.stress = 0;
-        this.stressRate = 0;
-        this.stressData = [];
+        this.pollutionValue = 1;
+        this.stressValue = 0;
         this.deltaTimer = 0;
         this.simStart = false;
         this.timeJump = 0;
         this.bubbleCollision = false;
         this.collisionType = "None";
-
-        this.maxStress = 1000;
-        this.meanTemp = 26;
-        this.stdDevTemp = 10.39;
-        this.meanLight = 50;
-        this.stdDevLight = 28.57;
-        this.meanPollution = 50;
-        this.stdDevPollution = 28.57;
-        this.meanCoverage = 50;
-        this.stdDevCoverage = 28.57;
-
         this.camVelX = 0;
         this.moveCameraLeft = false;
         this.moveCameraRight = false;
@@ -290,47 +275,6 @@ class TestScene extends Phaser.Scene{
             this.collisionType = type;
         }
     }
-
-    updateLightLevel() {
-        this.lightLevel = ((100 - this.coverageValue) / 100)*this.lightLevel
-
-        if (this.lightLevel <= 10){
-            this.cameras.main.setBackgroundColor("#06121a");
-        } else if (this.lightLevel > 10 && this.lightLevel <= 20){
-            this.cameras.main.setBackgroundColor("#0b2232");
-        } else if (this.lightLevel > 20 && this.lightLevel <= 30){
-            this.cameras.main.setBackgroundColor("#11364f");
-        } else if (this.lightLevel > 30 && this.lightLevel <= 40){
-            this.cameras.main.setBackgroundColor("#174767");
-        } else if (this.lightLevel > 40 && this.lightLevel <= 50){
-            this.cameras.main.setBackgroundColor("#1d5986");
-        } else if (this.lightLevel > 50 && this.lightLevel <= 60){
-            this.cameras.main.setBackgroundColor("#216498");
-        } else if (this.lightLevel > 60 && this.lightLevel <= 70){
-            this.cameras.main.setBackgroundColor("#2572ad");
-        } else if (this.lightLevel > 70 && this.lightLevel <= 80){
-            this.cameras.main.setBackgroundColor("#2b85c9");
-        } else if (this.lightLevel > 80 && this.lightLevel <= 90){
-            this.cameras.main.setBackgroundColor("#3192dc");
-        } else if (this.lightLevel > 90 && this.lightLevel <= 100){
-            this.cameras.main.setBackgroundColor("#36a8ff");
-        } 
-    }
-
-    
-
-    updatePollutionLevel(){
-        if (this.pollutionValue <= 33) {
-            this.trashbag1.setVisible(false)
-            this.trashbag2.setVisible(false)
-        } else if (this.pollutionValue > 33 && this.pollutionValue <= 66){
-            this.trashbag1.setVisible(true)
-            this.trashbag2.setVisible(false)
-        } else if (this.pollutionValue > 66){
-            this.trashbag1.setVisible(true)
-            this.trashbag2.setVisible(true)
-        }
-    }
     // Conditional Rendering w/ Phaser
     updateFishVisibility(show){
         if(this.fish){
@@ -373,7 +317,7 @@ class TestScene extends Phaser.Scene{
     bubbleIdle(bubble) {
         this.tweens.add({
             targets: bubble,
-            y: bubble.y - 50, 
+            y: bubble.y - 20, 
             duration: 1000,
             yoyo: true,
             repeat: -1,
@@ -465,27 +409,8 @@ class TestScene extends Phaser.Scene{
                     }
             }
 
-            this.deltaTimer+=delta;
-            if (this.deltaTimer >= 100){
-                this.stressData.push(this.stress);
-                this.deltaTimer -= 100;
-            }
-        
-            this.controls.update(delta);
-
-            this.stress = Phaser.Math.Clamp(this.timeJump*5,100);
- 
-    }
-
-
-    updateStressRate(){
-        const zTemp = ((this.temperature - this.meanTemp) / this.stdDevTemp) / 1.73;
-        const zLight = ((this.lightLevel - this.meanLight) / this.stdDevLight) / 1.75;
-        const zPollution = ((this.pollutionValue - this.meanPollution) / this.stdDevPollution) / 1.75;
-        console.log("zTemp:", zTemp); 
-        console.log("zLight:", zLight); 
-        console.log("zPollution:", zPollution);
-        this.stressRate = this.nutrientScalar * ((4*zTemp**2 - 0.25) + (4*zLight**2 - 0.2) - ((4 ** (-zPollution)) - 2));
+            this.deltaTimer+=delta;        
+            this.controls.update(delta); 
     }
 
     startTimer(){
@@ -510,17 +435,13 @@ class TestScene extends Phaser.Scene{
         ].join(":");
     }
 
-    RestartSim(){
-        this.scene.restart();
-    }
+    RestartSim(){this.scene.restart();}
 
-    updateTemperature(temp){
-        this.temperature = temp;
-    }
+    updateTemperature(temp){this.temperature = temp;}
 
-    updatePollution(poll){
-        this.pollutionValue = poll;
-    }
+    updatePollution(poll){this.pollutionValue = poll;}
+
+    updateLight(light){this.lightLevel = light;}
 
     freeFish(cancelled){
         this.bubbleCollision = false;
