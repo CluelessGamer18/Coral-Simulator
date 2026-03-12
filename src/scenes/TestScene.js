@@ -56,7 +56,7 @@ class TestScene extends Phaser.Scene{
             ease: 'Back.Out'
         });
 
-        
+
         
 
         overlay.on('pointerdown', () => {
@@ -98,6 +98,11 @@ class TestScene extends Phaser.Scene{
         .setOrigin(0, 0).setDepth(2)
         .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
+
+        const pipe = this.add.image(0, 0, "pipe")
+        .setOrigin(0, 0).setDepth(2)
+        .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        pipe.y = this.WORLD_HEIGHT - pipe.height;
 
         //educated fish (schools)
         createFishSchools(this);
@@ -368,8 +373,9 @@ class TestScene extends Phaser.Scene{
             this.guide.rotation = Phaser.Math.Angle.RotateTo(
                 this.guide.rotation,
                 desiredRotation,
-                0.2
+                0.5
             );
+
             const angleDiff = Phaser.Math.Angle.Wrap(desiredRotation - this.guide.rotation);
 
             if (Math.abs(angleDiff) < 0.15) {

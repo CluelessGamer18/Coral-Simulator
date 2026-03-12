@@ -47,6 +47,7 @@ init() {
         this.load.image("floor_layer3", "/assets/wireframe3/Vector 26.png")
         this.load.image("bg_gradient", "./waterStockBg.jpg") //farthest layer = 4
 
+        this.load.image("pipe", "/assets/wireframe1/pipe_808x808.png")
     }
 
     create() {

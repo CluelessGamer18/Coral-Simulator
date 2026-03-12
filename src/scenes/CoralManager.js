@@ -18,6 +18,36 @@ function createCoralGroup(scene, count) {
       .image(Phaser.Math.Between(0, scene.WORLD_WIDTH), scene.WORLD_HEIGHT - 100, 'orangeCoral', 0)
       .setOrigin(0.5, 1);
 
+      coral.setInteractive();
+
+coral.on('pointerover', () => {
+
+  scene.corals.forEach(c => c.setTint(0xffcc88));
+
+  scene.coralPulse = scene.tweens.add({
+    targets: scene.corals,
+    scale: { from: 1, to: 1.05 },
+    duration: 500,
+    yoyo: true,
+    repeat: -1,
+    ease: 'sine.inOut'
+  });
+
+});
+
+coral.on('pointerout', () => {
+
+  scene.corals.forEach(c => {
+    c.clearTint();
+    c.setScale(1);
+  });
+
+  if (scene.coralPulse) {
+    scene.coralPulse.stop();
+  }
+
+});
+
     coral.bleachStage = 1;
 
     container.add(coral);
@@ -48,3 +78,5 @@ export function updateBleachStage(scene, stage) {
   });
 
 }
+
+
