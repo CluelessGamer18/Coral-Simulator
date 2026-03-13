@@ -5,6 +5,70 @@ let maxSchoolSize = 15;
 let maxFishScale = 0.5;
 let minFishScale = 0.3;
 
+const fishTypes = { //examples **replace with actual spritesheets later**
+  yellowTang: {
+    key: 'orangeCoral',
+    min: 3,
+    max: 5
+  },
+  moorishIdol: {
+    key: 'orangeCoral',
+    min: 2,
+    max: 3
+  },
+  clownFish: {
+    key: 'orangeCoral',
+    min: 1,
+    max: 3
+  },
+  frenchAngelFish: {
+    key: 'orangeCoral',
+    min: 2,
+    max: 2
+  },
+  yellowLongNoseButterfly: {
+    key: 'orangeCoral',
+    min: 1,
+    max: 3
+  },
+  regalTang: {
+    key: 'orangeCoral',
+    min: 8,
+    max: 14
+  },
+  lionFish: {
+    key: 'orangeCoral',
+    min: 1,
+    max: 2
+  },
+  baracuda: {
+    key: 'orangeCoral',
+    min: 1,
+    max: 2
+  },
+  school: {
+    key: 'orangeCoral',
+    min: 6,
+    max: 10
+  },
+  yellowBoxfish: {
+    key: 'orangeCoral',
+    min: 1,
+    max: 1
+  },
+  commonTrout: {
+    key: 'orangeCoral',
+    min: 4,
+    max: 6
+  },
+  jellyfish: {
+    key: 'orangeCoral',
+    min: 1,
+    max: 2
+  }
+
+};
+
 
 export function createFishSchools(scene) {
   for (let i = 0; i < numOfSchools; i++) {

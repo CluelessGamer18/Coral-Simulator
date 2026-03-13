@@ -34,7 +34,10 @@ init() {
         this.load.image("Coral", "./coral1.png")
         this.load.image("Coral2", "/assets/wireframe1/pink_coral_wireframe1.png")
         this.load.image("Trash", "./trashbag.jpg")
-        this.load.image("Bubble","./normalbubble.png")
+        this.load.image("PollutionBubble","/assets/wireframe4/pollutionBubble.png")
+        this.load.image("TempBubble","/assets/wireframe4/tempBubble.png")
+        this.load.image("LightBubble","/assets/wireframe4/light_levelBubble.png")
+
         
 
         //spritesheet
