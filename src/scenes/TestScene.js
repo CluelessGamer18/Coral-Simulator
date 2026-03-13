@@ -124,7 +124,7 @@ class TestScene extends Phaser.Scene{
         floorLayer0.y = this.WORLD_HEIGHT - floorLayer0.height;
 
         const surface = this.add.image(0, 0, "surface")
-        .setOrigin(0, 0).setDepth(0)
+        .setOrigin(0, 0).setDepth(-4)
         .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         surface.y = -10;
 
