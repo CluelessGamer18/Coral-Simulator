@@ -230,9 +230,9 @@ class TestScene extends Phaser.Scene{
     const x3 = Phaser.Math.Between(50, 2000);
     const y3 = Phaser.Math.Between(50, 500);
      
-    this.tempBubble = this.physics.add.image(x1, y1, 'Bubble').setDepth(7);
-    this.lightBubble = this.physics.add.image(x2, y2, 'Bubble').setTint(0x8b0000).setDepth(7);
-    this.pollutionBubble = this.physics.add.image(x3, y3, 'Bubble').setTint(0x8b4513).setDepth(7);
+    this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
+    this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
+    this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
 
     // Reattach overlap handlers
     this.physics.add.overlap(
