@@ -1,6 +1,6 @@
 import "./styles/SimInfoDisplay.css";
 
-function SimInfoDisplay({timejump=0,light=0,temp=20,stress=0,poll=0}){
+function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
     const dots = [ 
         "large", "small", 
         "large", "small", 
@@ -16,8 +16,8 @@ function SimInfoDisplay({timejump=0,light=0,temp=20,stress=0,poll=0}){
     return(
         <div className="SimInfoDisplayContainer">
             <div className="SimInfoDial">
-                <span className="SimInfoDialIcon">🌞</span>
-                <span className="SimInfoDialPin" style={{ transform: `rotate(${light * 1.8 - 90}deg)` }} >🔻</span>
+                <img className="SimInfoDialIcon" src="/stress_level.png"></img>
+                <img className="SimInfoDialPin" src="/SimInfoDialPin.png" style={{ transform: `rotate(${stress * 1.8 - 90}deg)` }} ></img>
             </div>
             <div className="SimInfoTimeline">
             <span className="SimInfoText">2026</span>
@@ -36,11 +36,11 @@ function SimInfoDisplay({timejump=0,light=0,temp=20,stress=0,poll=0}){
             <span className="SimInfoText">2036</span>
             </div>
             <div className="SimInfoBottom">
-                <span className="SimInfoIcon">🌡️</span>
+                <img className="SimInfoIcon" src="/temperature.png"></img>
                 <span className="SimInfoText">{temp}°C</span>
-                <span className="SimInfoIcon">❤️‍🩹</span>
-                <span className="SimInfoText">{stress}%</span>
-                <span className="SimInfoIcon">🗑️</span>
+                <img className="SimInfoIcon" src="/light_level.png"></img>
+                <span className="SimInfoText">{light}</span>
+                <img className="SimInfoIcon" src="/poop.png"></img>
                 <span className="SimInfoText">{poll}</span>
             </div>
         </div>

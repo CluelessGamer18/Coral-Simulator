@@ -11,9 +11,9 @@ import SimInfoDisplay from './SimInfoDisplay.jsx'
 import SimBubblePopUp from './SimBubblePopUp.jsx'
 
 function App() {
-  const [temperatureValue, setTemperatureValue] = useState(0);
-  const [lightValue, setLightValue] = useState(50);
-  const [pollutionValue, setPollutionValue] = useState(2);
+  const [temperatureValue, setTemperatureValue] = useState(27);
+  const [lightValue, setLightValue] = useState(500);
+  const [pollutionValue, setPollutionValue] = useState(1);
   const [stressValue, setStressValue] = useState(0);
   const [timeAdvanced, setTimeAdvanced] = useState(0);
 
@@ -54,8 +54,10 @@ function App() {
     let frameId;
 
     const loop = () => {
-      setTemperatureValue(scene.temperature)
       setStressValue(scene.stress)
+      setLightValue(scene.lightLevel)
+      setTemperatureValue(scene.temperature)
+      setPollutionValue(scene.pollutionValue)
       setTimeAdvanced(scene.timeJump)
       setBubbleCollision(scene.bubbleCollision)
       frameId = requestAnimationFrame(loop);
@@ -78,30 +80,30 @@ function App() {
 
   useEffect(() => {
     if (!scene) {return}
+    scene.updateLight(lightValue);
+  },[lightValue]);
+
+  useEffect(() => {
+    if (!scene) {return}
     if (!bubbleCollision){
       scene.freeFish(cancelled)
     }
   },[bubbleCollision])
 
-  // Average Coral Reef Temperature is 22 - 29 Celcius
-  // Rarely 20 - 32 Celcius
-  // A temp range interval could be defined as [8,20) U [20,32] U (32,44]
-  // https://naturefins.com/what-is-the-average-temperature-in-the-coral-reef-biome/
-
   const endSim = () => {
     scene.RestartSim();
     setSceneRunning(false);
-    setSimTime('0');
   }
 
   return (
     <>
+        {/*<RangeSlider onChange={setStressValue}/>*/}
         {bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
         onChange={handler} 
         setCollision={setBubbleCollision} 
         setCancelled={setCancelled}/> : null}
-        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} poll={pollutionValue}/> : null}
+        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
