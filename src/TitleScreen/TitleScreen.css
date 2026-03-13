@@ -21,12 +21,14 @@
   margin-top: 40px;
   width: 370px;
   height: 45px;
-  border-radius: 15px;
-  background-color: rgb(235, 235, 235);
+  border-width: 2px;
+  border-color: white;
+  border-radius: 100px;
+  background-color: #0292A5;
   letter-spacing: 0.1em;
   font-size: 20px;
   padding: 0px;
-  color: rgb(0, 54, 82);
+  color: white;
   transition: background-color 0.3s ease-in-out;
 }
 
@@ -34,11 +36,13 @@
   margin-top: 40px;
   width: 370px;
   height: 40px;
-  border-radius: 15px;
-  background-color: rgb(235, 235, 235);
+  border-width: 2px;
+  border-color: white;
+  border-radius: 100px;
+  background-color: #0292A5;
   letter-spacing: 0.1em;
   font-size: 20px;
-  color: rgb(0, 54, 82);
+  color: white;
   padding: 0px;
   transition: background-color 0.3s ease-in-out;
 }
@@ -98,8 +102,8 @@ margin-top: 15px;
   font-size: 90px;
   letter-spacing: 0.2rem;
   animation: fadeIn 1.2s ease-out forwards;
-  font-style: bold;
-  text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+  font-style: extraBold;
+  /* text-shadow: 3px 3px 6px rgba(0,0,0,0.3); */
 }
 
 @keyframes fadeIn { 

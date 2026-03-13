@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
-import { createCorals, updateBleachStage } from "./CoralManager.js";
+import { createCorals, updateCoralStress } from "./CoralManager.js";
 
 
 class TestScene extends Phaser.Scene{
@@ -95,7 +95,8 @@ class TestScene extends Phaser.Scene{
 
         createCorals(this); 
 
-        updateBleachStage(this, 0); // set bleach stage (0-4)
+
+        updateCoralStress(this, 0);
         
 
         const floorLayer1 = this.add.image(0, 0, "floor_layer1")
