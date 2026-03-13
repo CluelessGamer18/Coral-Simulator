@@ -1,7 +1,7 @@
 .SimBubblePopUp{
     width: 750px;
     height: 600px;
-    background-color: rgba(2, 146, 165, 0.8);
+    background-color: rgba(2, 146, 165, 0.9);
     position: absolute; 
     top: 50%; 
     left: 50%; 
@@ -11,6 +11,8 @@
     border-style: solid;
     border-color: white;
     border-width: 2px;
+    backdrop-filter: blur(4px);
+
 }
 
 .SimBubblePopUpGraph{
@@ -123,7 +125,7 @@
 .SimBubblePopUpTutorial{
     position: absolute;
     top: 400px;
-    left: 130px;
+    left: 87px;
 }
 
 .SimBubblePopUpSubmit:hover{

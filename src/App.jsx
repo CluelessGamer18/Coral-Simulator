@@ -54,7 +54,7 @@ function App() {
     let frameId;
 
     const loop = () => {
-      setStressValue(scene.stress)
+      //setStressValue(scene.stress)
       setLightValue(scene.lightLevel)
       setTemperatureValue(scene.temperature)
       setPollutionValue(scene.pollutionValue)
