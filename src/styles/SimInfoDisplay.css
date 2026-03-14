@@ -95,10 +95,10 @@
 
 .SimInfoDialPin{
     position: absolute;
-    bottom: 62px;
-    left: 53px;
+    bottom: 50px;
+    left: 52px;
     transform: translateX(-50%) rotate(var(--angle, 0deg)); 
-    transform-origin: 50% 89px; 
+    transform-origin: 50% 79px; 
     margin: 0;
     padding: 0;
     z-index: 20;

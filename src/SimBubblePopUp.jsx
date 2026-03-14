@@ -91,7 +91,7 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled
                 </div>
             </div>
             <img className="SimBubblePopUpTitle"src={label}></img>
-            <p className="SimBubblePopUpTutorial">Move the slider to the desired value under a custom duration over time</p>
+            <p className="SimBubblePopUpTutorial">Move the slider to the desired value under a custom duration over time.</p>
             {danger ? <img className="SimBubblePopUpWarning"src="/warning.png"></img> : null}
             <button className="SimBubblePopUpSubmit" onClick={handleSubmitClick}>Apply</button>
             <button className="SimBubblePopUpGoBack" onClick={handleCancelClick}>Cancel</button>

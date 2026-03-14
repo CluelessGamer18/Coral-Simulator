@@ -9,6 +9,7 @@ import TitleScreen from "./TitleScreen/TitleScreen.jsx"
 import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
 import SimInfoDisplay from './SimInfoDisplay.jsx'
 import SimBubblePopUp from './SimBubblePopUp.jsx'
+import SimTutorial from './SimTutorial.jsx'
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(27);
@@ -24,6 +25,7 @@ function App() {
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(true);
   const [sceneRunning, setSceneRunning] = useState(false);
   const [cancelled, setCancelled] = useState(false);
 
@@ -54,7 +56,7 @@ function App() {
     let frameId;
 
     const loop = () => {
-      setStressValue(scene.stress)
+      //setStressValue(scene.stress)
       setLightValue(scene.lightLevel)
       setTemperatureValue(scene.temperature)
       setPollutionValue(scene.pollutionValue)
@@ -98,12 +100,13 @@ function App() {
   return (
     <>
         {/*<RangeSlider onChange={setStressValue}/>*/}
+        {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
         {bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
         onChange={handler} 
         setCollision={setBubbleCollision} 
         setCancelled={setCancelled}/> : null}
-        {scene && !showTitleScreen ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue}/> : null}
+        {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>

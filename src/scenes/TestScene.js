@@ -336,7 +336,7 @@ class TestScene extends Phaser.Scene{
 
         const pointer = this.input.activePointer;
 
-        if (!this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 30) {
+        if (!this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 100) {
             
             const speed = 0.05;
 
