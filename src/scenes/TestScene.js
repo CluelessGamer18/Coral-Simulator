@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
 import { createCorals, updateCoralStress } from "./CoralManager.js";
 
+let oval;
 
 class TestScene extends Phaser.Scene{
     constructor(){
@@ -50,6 +51,7 @@ class TestScene extends Phaser.Scene{
             // this.restartGame(); //instead restart, remove overlay
         });
     }
+    
 
 
     create(){
@@ -202,6 +204,8 @@ class TestScene extends Phaser.Scene{
         this.game.events.emit("scene-ready", this);
 
 
+
+        oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
 
         // coral mouse detection
         // coral2.setInteractive();
@@ -370,7 +374,11 @@ class TestScene extends Phaser.Scene{
 
             if (Math.abs(angleDiff) < 0.15) {
                 this.guide.x += (pointer.worldX - this.guide.x) * speed;
-                this.guide.y += (pointer.worldY - this.guide.y) * speed;
+
+                if (this.guide.y + ((pointer.worldY - this.guide.y) * speed) < 850) { // stay above shadow
+                    this.guide.y += (pointer.worldY - this.guide.y) * speed;
+                }
+
                 
                 const time = this.time.now;
                 const wiggleAmount = 1;
@@ -378,7 +386,9 @@ class TestScene extends Phaser.Scene{
                 const wiggle = Math.sin(time*wiggleSpeed)*wiggleAmount;
 
                 this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
-                this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
+                if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
+                    this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
+                }
             }
 
             // Add in a different movement if fish is close to the cursor.
@@ -412,6 +422,12 @@ class TestScene extends Phaser.Scene{
 
             this.deltaTimer+=delta;        
             this.controls.update(delta); 
+
+
+            oval.clear();
+
+            // Redraw oval at new position
+            oval.fillEllipse(this.guide.x, 950, this.guide.scale*100, 10);
     }
 
     startTimer(){
