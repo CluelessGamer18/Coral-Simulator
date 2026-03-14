@@ -2,6 +2,19 @@
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+
+   /* background-color:#8ACFC9; */
+  /*background-image: url("bg.png");*/
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  background-color:#8ACFC9;
   font-family: Poppins;
 
   line-height: 1.5;
@@ -9,13 +22,6 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color:#8ACFC9;
-  /*background-image: url("bg.png");*/
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 a {

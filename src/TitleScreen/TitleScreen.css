@@ -1,6 +1,6 @@
 .TitleScreenContainer {
-  width: 80vw;
-  height: 80vh;
+  width: 100vw;
+  height: 100vh;
   position: absolute; 
   top: 50%; 
   left: 50%; 
@@ -9,6 +9,7 @@
   justify-content: center;
   flex-direction: column;
   align-items: center;
+  overflow: hidden;
 }
 
 .TitleArt {
@@ -125,4 +126,50 @@ margin-top: 15px;
 
 .OptionsXButton:hover{
   background-color: rgba(251, 105, 0, 0.864);
+}
+
+
+.backgroundWave {
+  position: absolute;
+  left: 0;
+  bottom: -10%;
+  width: 100vw;
+  height:90%;
+  background-color: #0292A5;
+  --mask:
+    radial-gradient(111.8px at 50% 150px,#000 100%,#0000 100%) calc(50% - 100px) 0/200px 100%,
+    radial-gradient(111.8px at 50% -100px,#0000 100%,#000 100%) 50% 50px/200px 100% repeat-x;
+  -webkit-mask: var(--mask);
+          mask: var(--mask);
+
+  animation: float 2s ease-in-out 2s infinite alternate;
+}
+
+
+.waveWrapper {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 65%;
+  animation: slideUp 2s ease forwards;
+  z-index: -5;
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0); /* start low */
+  }
+  100% {
+    transform: translate(0, +10%); /* move up to final pos */
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translate(0, 65%); /* start low */
+  }
+  100% {
+    transform: translate(0, -10%); /* move up to final pos */
+  }
 }

@@ -111,7 +111,8 @@ function App() {
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
         <main className="MainContent">
-        {scene ? <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}>⚙️</button> : null}
+        {scene ? <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}><img src="/settings.svg" alt="Description of the image" width="45" height="45"></img>
+</button> : null}
           <div className="GameContainer">
               <TestGame onSceneReady={setScene} />
           </div>

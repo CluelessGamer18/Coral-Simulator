@@ -7,25 +7,44 @@ export class Preloader extends Phaser.Scene {
     }
 
 init() {
-    const { width, height } = this.scale;
+  const { width, height } = this.scale;
 
-    // Outline
-    this.add
-        .rectangle(width / 2, height / 2, 468, 32)
-        .setStrokeStyle(2, 0xffffff);
+  this.add
+    .rectangle(width / 2, height / 2, 468, 32)
+    .setStrokeStyle(2, 0xffffff);
 
-    // Progress bar
-    const bar = this.add.rectangle(
-        width / 2 - 230,    // left edge of outline
-        height / 2,
-        4,
-        28,
-        0xffffff
-    ).setOrigin(0, 0.5); 
+  this.bar = this.add.rectangle(
+    width / 2 - 230,
+    height / 2,
+    4,
+    28,
+    0xffffff
+  ).setOrigin(0, 0.5);
 
-    this.load.on('progress', (progress) => {
-        bar.width = 460 * progress;
-    });
+  this.displayProgress = 0;
+  this.actualProgress = 0; 
+
+  this.load.on('progress', (progress) => {
+    this.actualProgress = progress;
+  });
+    this.load.on('complete', () => {
+  this.loadingDone = true;
+});
+}
+
+
+update() {
+  this.displayProgress = Phaser.Math.Linear(
+    this.displayProgress,
+    this.actualProgress,
+    0.08
+  );
+
+  this.bar.width = 460 * this.displayProgress;
+
+          if (this.loadingDone && this.displayProgress > 0.95) {
+        this.scene.start('TestScene');
+        }
 }
 
     preload() {
@@ -59,9 +78,6 @@ init() {
     create() {
         //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
         //  For example, you can define global animations here, so we can use them in other scenes.
-
-        //  Move to the Game scene
-        this.scene.start('TestScene');
     }
 }
 

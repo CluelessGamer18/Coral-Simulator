@@ -26,7 +26,7 @@ function TestGame({onSceneReady}){
             parent: "phaserContainer",
             scene: [Boot,Preloader,TestScene],
             physics: { default: 'arcade', arcade: { debug: false }},
-            backgroundColor: "#ADD8E6",
+            backgroundColor: "#0292A5",
             scale: { mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.NO_CENTER, 
                 width: 1440, height: 1024 }
