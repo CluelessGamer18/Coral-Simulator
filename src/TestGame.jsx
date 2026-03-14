@@ -5,7 +5,7 @@ import Boot from "./scenes/Boot.js";
 import Preloader from "./scenes/Preloader.js";
 import './styles/TestScene.css';
 import { useState } from "react";
-
+import CoralPopup from './CoralPopup.jsx';
 
 
 function TestGame({onSceneReady}){
@@ -13,6 +13,7 @@ function TestGame({onSceneReady}){
     const [loaded, setLoaded] = useState(false);
     console.log(window.innerWidth);
     const widthSize = window.innerWidth;
+    const [selectedCoral, setSelectedCoral] = useState(null);
 
     useEffect(() => {
         if (sceneRef.current) return
@@ -34,26 +35,44 @@ function TestGame({onSceneReady}){
 
         sceneRef.current = sim;
 
+    sim.events.on("scene-ready", (sceneInstance) => {
+      onSceneReady(sceneInstance);
+      setLoaded(true);
+    });
 
-        // This is the bridge
-        sim.events.on("scene-ready", (sceneInstance) => {
-            onSceneReady(sceneInstance);
-            setLoaded(true); // add overlay img after preloader completes
-        });
+    return () => {
+      sim.destroy(true);
+      sceneRef.current = null;
+    };
+  }, []);
 
 
+  // Listen for coral click to call popup
+  useEffect(() => {
+    if (!sceneRef.current) return;
 
-        return () => {
-            sim.destroy(true);
-            sceneRef.current = null;
-        };
+    const sim = sceneRef.current;
 
-    }, []);
+    const handler = (data) => {
+      setSelectedCoral(data);
+    };
+
+    sim.events.on("coralInfo", handler);
+
+    return () => {
+      sim.events.off("coralInfo", handler);
+    };
+  }, []);
+
+
     return (
         <>
             <div id="phaserContainer" className="phaserContainer">
                 {/* add overlays here */}
-                {/*<img style={{ opacity: loaded ? 1 : 0 }} draggable="false" onContextMenu={(e) => e.preventDefault()} id="timelineImage" src="/assets/wireframe1/timeline_1390x88_wireframe1.png"></img>*/}
+                <CoralPopup className="coralPopup"
+                    coral={selectedCoral} 
+                    onClose={() => setSelectedCoral(null)} 
+                />
             </div>
         </>
     )

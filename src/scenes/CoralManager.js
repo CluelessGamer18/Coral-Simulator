@@ -89,6 +89,13 @@ function createCoralGroup(scene, count) {
         stage: coral.bleachStage
       });
 
+      scene.game.events.emit('coralInfo', {
+        type: coral.type,
+        bleachRate: coral.bleachRate,
+        stress: coral.stress,
+        stage: coral.bleachStage
+      });
+
     });
 
     coral.bleachStage = 1;
