@@ -368,7 +368,7 @@ class TestScene extends Phaser.Scene{
 
             const t = this.guide.y / this.cameras.main.height;
             const easedT = t * t;   // easing
-            this.guide.setScale(minScale + (maxScale - minScale) * easedT);
+            this.guide.setScale((minScale + (maxScale - minScale) * easedT)/1.5);
 
             const angleDiff = Phaser.Math.Angle.Wrap(desiredRotation - this.guide.rotation);
 

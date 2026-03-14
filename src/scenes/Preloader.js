@@ -42,7 +42,8 @@ init() {
 
         //spritesheet
         this.load.spritesheet('orangeCoral', '/assets/wireframe1/orange-coral_180x190_5_wireframe1.png', { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet('fishTypes', '/assets/wireframe1/fish_spritesheet_200x200_11_wireframe1.png', { frameWidth: 200, frameHeight: 200 });
+        this.load.spritesheet('fishTypes', '/assets/wireframe4/fishSpriteSheet.png', { frameWidth: 239, frameHeight: 239 });
+        this.load.spritesheet('shellTypes', '/assets/wireframe4/shellSpriteSheet.png', { frameWidth: 55, frameHeight: 55 });
 
         // wireframe assets
         this.load.image("floor_layer0", "/assets/wireframe4/foreforeground_2860x161.png")

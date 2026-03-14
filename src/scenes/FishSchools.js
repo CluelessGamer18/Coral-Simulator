@@ -1,68 +1,74 @@
-let numOfSchools = 15;
+let numOfSchools = 25;
 let schoolChance = 50; // 70% chance a school will have more than 1 fish
-let maxSchoolSize = 15;
+let maxSchoolSize = 8;
 
 let maxFishScale = 0.5;
 let minFishScale = 0.3;
 
+const depthSettings = [
+  { scale: 0.1, scroll: 1440, speed: 1.6, distance: 0.3, tint: 0x32AFAC}, // background
+  { scale: 0.3, scroll: 2072, speed: 1.3, distance: 0.6, tint: 0x143F45}, // mid
+  { scale: 0.85, scroll: 2860, speed: 1.0, distance: 1.0, tint: null}  // foreground
+];
+
 const fishTypes = { //examples **replace with actual spritesheets later**
   yellowTang: {
-    key: 'orangeCoral',
+    key: 0,
     min: 3,
     max: 5
   },
   moorishIdol: {
-    key: 'orangeCoral',
+    key: 1,
     min: 2,
     max: 3
   },
   clownFish: {
-    key: 'orangeCoral',
+    key: 2,
     min: 1,
     max: 3
   },
   frenchAngelFish: {
-    key: 'orangeCoral',
+    key: 3,
     min: 2,
     max: 2
   },
   yellowLongNoseButterfly: {
-    key: 'orangeCoral',
+    key: 4,
     min: 1,
     max: 3
   },
   regalTang: {
-    key: 'orangeCoral',
+    key: 5,
     min: 8,
     max: 14
   },
   lionFish: {
-    key: 'orangeCoral',
+    key: 6,
     min: 1,
     max: 2
   },
   baracuda: {
-    key: 'orangeCoral',
+    key: 7,
     min: 1,
     max: 2
   },
   school: {
-    key: 'orangeCoral',
+    key: 8,
     min: 6,
     max: 10
   },
   yellowBoxfish: {
-    key: 'orangeCoral',
+    key: 9,
     min: 1,
     max: 1
   },
   commonTrout: {
-    key: 'orangeCoral',
+    key: 10,
     min: 4,
     max: 6
   },
   jellyfish: {
-    key: 'orangeCoral',
+    key: 11,
     min: 1,
     max: 2
   }
@@ -73,14 +79,18 @@ const fishTypes = { //examples **replace with actual spritesheets later**
 export function createFishSchools(scene) {
   for (let i = 0; i < numOfSchools; i++) {
 
+    const types = Object.keys(fishTypes);
+
+    const typeName = Phaser.Utils.Array.GetRandom(types); // random fish type
+    const type = fishTypes[typeName];
+    const depthWeights = [0,0,0,0,0, 1, 2,2,2];
+    let depth = Phaser.Utils.Array.GetRandom(depthWeights);
+
     let numFish = 1;
 
     if (Phaser.Math.Between(0, 100) > (100 - schoolChance)) {
-      numFish = Phaser.Math.Between(1, maxSchoolSize);
+      numFish = Phaser.Math.Between(type.min, type.max);
     }
-
-    let type = Phaser.Math.Between(0, 7); // random fish type
-    let depth = Phaser.Math.Between(0, 2);
 
     const school = createSchool(scene, numFish, type, depth);
 
@@ -90,24 +100,22 @@ export function createFishSchools(scene) {
 
 function createSchool(scene, count, type, depth) {
 
-  const tints = [0x32AFAC, 0x143F45, null];
-
   const container = scene.add.container(
     Phaser.Math.Between(0, scene.WORLD_WIDTH),
     Phaser.Math.Between(0, scene.WORLD_HEIGHT)
   );
 
-  container.setDepth(depth);
+  container.depthLevel = depth;
+  container.setDepth(depth).setScrollFactor((depthSettings[depth].scroll - 1440) / (scene.WORLD_WIDTH - 1440), 1);
 
 
   for (let i = 0; i < count; i++) {
     let staticScale = Phaser.Math.FloatBetween(minFishScale, maxFishScale);
-    const depthScale = [0.2, 0.5, 1.0];
 
-    const fish = scene.add.image(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100), 'fishTypes', type).setScale(staticScale * depthScale[depth]);
+    const fish = scene.add.image(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-100, 100), 'fishTypes', type.key).setScale(staticScale * depthSettings[depth].scale);
 
-      if (tints[depth]) {
-      fish.setTintFill(tints[depth]);
+      if (depthSettings[depth].tint) {
+      fish.setTintFill(depthSettings[depth].tint);
     }
     container.add(fish);
   }
@@ -131,18 +139,21 @@ function repeatMovement(scene, school) {
   });
 }
 
+
+
 function chooseNextPos(scene, school, duration) {
 
-  // max distance a school can move in one tween
-  const maxDistance = 2000;
+  // max distance/speed a school can move in one tween
+  const maxDistance = 2000 * depthSettings[school.depthLevel].distance;
 
-  var newX = Phaser.Math.Between(0, scene.WORLD_WIDTH);
-  var newY = Phaser.Math.Between(0, scene.WORLD_HEIGHT);
+const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+const distance = Phaser.Math.Between(200, maxDistance);
 
-  while (Phaser.Math.Distance.Between(school.x, school.y, newX, newY) > maxDistance) {
-    newX = Phaser.Math.Between(0, scene.WORLD_WIDTH);
-    newY = Phaser.Math.Between(0, scene.WORLD_HEIGHT);
-  }
+let newX = school.x + Math.cos(angle) * distance;
+let newY = school.y + Math.sin(angle) * distance;
+
+newX = Phaser.Math.Clamp(newX, 0, depthSettings[school.depthLevel].scroll);
+newY = Phaser.Math.Clamp(newY, 0, scene.WORLD_HEIGHT - ((2-school.depthLevel)*100)-400);
 
   const isRight = newX > school.x;
 
@@ -150,7 +161,7 @@ function chooseNextPos(scene, school, duration) {
     targets: school,
     x: newX,
     y: newY,
-    duration: duration,
+    duration: duration * depthSettings[school.depthLevel].speed,
     ease: "Sine.easeInOut"
   });
 
@@ -166,7 +177,7 @@ function chooseNextPos(scene, school, duration) {
       targets: child,
       x: offsetX,
       y: offsetY,
-      duration: duration
+      duration: duration * depthSettings[school.depthLevel].speed
     });
 
   });
