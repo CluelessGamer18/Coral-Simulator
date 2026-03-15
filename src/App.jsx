@@ -92,6 +92,11 @@ function App() {
     }
   },[bubbleCollision])
 
+  useEffect(() => {
+    if (!scene) {return}
+    if(!showTutorial){scene.unlockFish()}
+  })
+
   const endSim = () => {
     scene.RestartSim();
     setSceneRunning(false);
@@ -101,7 +106,7 @@ function App() {
     <>
         {/*<RangeSlider onChange={setStressValue}/>*/}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
-        {bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
+        {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
         onChange={handler} 
         setCollision={setBubbleCollision} 

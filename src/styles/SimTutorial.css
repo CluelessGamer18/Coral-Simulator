@@ -3,6 +3,54 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    background-color: red;
     z-index: 9999;
+}
+
+.SimTutorialAdvanceButton{
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    height: 50px;
+    width: 170px;
+    background-color: white;
+    border-radius: 25px;
+    border-style: solid;
+    border-color: white;
+    border-width: 2px;
+    padding: 5px;
+    color:rgba(2, 146, 165, 0.8);
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.SimTutorialPreviousButton{
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    height: 50px;
+    width: 120px;
+    background-color: rgba(2, 146, 165, 0.8);
+    border-radius: 25px;
+    border-style: solid;
+    border-color: white;
+    border-width: 2px;
+    padding: 5px;
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.SimTutorialAdvanceButton:hover{
+  background-color: #F86A1C; 
+  color: white;
+  scale: 1.10;
+}
+
+.SimTutorialPreviousButton:hover{
+  background-color: #F86A1C; 
+  color: white;
+  scale: 1.10;
 }

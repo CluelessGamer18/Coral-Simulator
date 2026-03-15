@@ -8,8 +8,8 @@ class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
         this.lightLevel = 500; // Default
-        this.temperature = 27;
-        this.pollutionValue = 1;
+        this.temperature = 27; // Default
+        this.pollutionValue = 1; // Default
         this.stressValue = 0;
         this.deltaTimer = 0;
         this.simStart = false;
@@ -19,6 +19,7 @@ class TestScene extends Phaser.Scene{
         this.camVelX = 0;
         this.moveCameraLeft = false;
         this.moveCameraRight = false;
+        this.tutorialComplete = false;
         
     }
 
@@ -336,7 +337,7 @@ class TestScene extends Phaser.Scene{
 
         const pointer = this.input.activePointer;
 
-        if (!this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 100) {
+        if (this.tutorialComplete && !this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 100) {
             
             const speed = 0.05;
 
@@ -459,6 +460,8 @@ class TestScene extends Phaser.Scene{
     updatePollution(poll){this.pollutionValue = poll;}
 
     updateLight(light){this.lightLevel = light;}
+
+    unlockFish(){this.tutorialComplete = true;}
 
     freeFish(cancelled){
         this.bubbleCollision = false;

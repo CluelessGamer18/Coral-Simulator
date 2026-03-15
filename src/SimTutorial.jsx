@@ -1,38 +1,40 @@
 import { useState } from 'react';
-import './styles/SimTutorial.css';
+import "./styles/SimTutorial.css";
 
 
 
-function SimTutorial({closeTutorial=null}){
-    const [currentPage, setCurrentPage] = useState(1);
-    const lastPage = 3;
+function SimTutorial({ closeTutorial = null }) {
+  const [currentPage, setCurrentPage] = useState(1);
 
-    const nextPage = () => {
-        if(currentPage != lastPage){
-            setCurrentPage(currentPage + 1)
-        } else {
-            closeTutorial();
-        }
+  const lastPage = 5;
+
+  const nextPage = () => {
+    if (currentPage !== lastPage) {
+      setCurrentPage(currentPage + 1);
+    } else {
+      closeTutorial();
     }
-    return(
-        <>
-        {(currentPage) == 1 ? 
-        <div className="SimTutorialPage">
-            <p> I am Page 1</p>
-            <button onClick={nextPage}>Next Page</button>
-        </div> : null}
-        {(currentPage) == 2 ? 
-        <div className="SimTutorialPage">
-            <p> I am Page 2</p>
-            <button onClick={nextPage}>Next Page</button>
-        </div> : null}
-        {(currentPage) == 3 ? 
-        <div className="SimTutorialPage">
-            <p> I am Page 3</p>
-            <button onClick={nextPage}>Next Page</button>
-        </div> : null}
-        </>
-    )
+  };
+
+  const prevPage = () => {
+    setCurrentPage(currentPage - 1);
+  };
+
+  return (
+    <div className="SimTutorialPage">
+      <img src={`./tutorial/tutorialpage${currentPage}.png`} />
+
+      <button className="SimTutorialAdvanceButton" onClick={nextPage}>
+        {currentPage === lastPage ? "Let's Go!" : "Next"}
+      </button>
+
+      {currentPage > 1 && (
+        <button className="SimTutorialPreviousButton" onClick={prevPage}>
+          Go Back
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default SimTutorial;
