@@ -10,7 +10,25 @@ class TestScene extends Phaser.Scene{
         this.lightLevel = 500; // Default
         this.temperature = 27; // Default
         this.pollutionValue = 1; // Default
-        this.stressValue = 0;
+        this.stressValue = 0; // Will range from 0 - 4 
+        // 0 means healthy
+        // 1 means slightly stressed
+        // 2 means more stressed
+        // 3 means bleached
+        // 4 means death
+
+        // Data Values
+        this.tempHistory = []
+        this.lightHistory = []
+        this.pollutionHistory = []
+        this.stressHistory = []
+
+        //Individual Flags
+        this.poorTemp = 0;
+        this.poorLight = 0;
+        this.poorPollution = 0;
+        this.reefDead = false;
+
         this.deltaTimer = 0;
         this.simStart = false;
         this.timeJump = 0;
@@ -20,6 +38,7 @@ class TestScene extends Phaser.Scene{
         this.moveCameraLeft = false;
         this.moveCameraRight = false;
         this.tutorialComplete = false;
+        // If (tutorialComplete)
         
     }
 
@@ -455,22 +474,113 @@ class TestScene extends Phaser.Scene{
 
     RestartSim(){this.scene.restart();}
 
-    updateTemperature(temp){this.temperature = temp;}
+    updateTemperature(temp){
+        this.temperature = temp;
+        const stressedA = 25; const stressedB = 27; // First Bleaching Interval [a,b]
+        const stressedC = 29; const stressedD = 31; // Second Bleaching Interval [c,d]
 
-    updatePollution(poll){this.pollutionValue = poll;}
+        if(this.temperature >= stressedA && this.temperature < stressedB){
+            this.poorTemp = 1;
+            this.reefDead = false;
+        } else if (this.temperature > stressedC && this.temperature <= stressedD){
+            this.poorTemp = 1;
+            this.reefDead = false;
+        } else if (this.temperature <= stressedA){
+            this.reefDead = true; // Reef is Dead
+        } else if (this.temperature >= stressedD){
+            this.reefDead = true;
+        } else {
+            this.poorTemp = 0;
+            this.reefDead = false;
+        }
 
-    updateLight(light){this.lightLevel = light;}
+        this.updateStress()
+        this.updateHistory()
+    }
 
+    updatePollution(poll){
+        this.pollutionValue = poll;
+        const stressedA = 0; const stressedB = 1; 
+        const stressedC = 3; const stressedD = 5; 
+
+        if(this.pollutionValue >= stressedA && this.pollutionValue < stressedB){
+            this.poorPollution = 1;
+            this.reefDead = false;
+        } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD){
+            this.poorPollution = 1;
+            this.reefDead = false;
+        } else if (this.pollutionValue <= stressedA){
+            this.reefDead = true; // Reef is Dead
+        } else if (this.pollutionValue >= stressedD){
+            this.reefDead = true;
+        } else {
+            this.poorPollution = 0;
+            this.reefDead = false;
+        }
+
+        this.updateStress()
+        this.updateHistory()
+    }
+
+    updateLight(light){
+        this.lightLevel = light;
+        const stressedA = 141; const stressedB = 200; 
+        const stressedC = 1100; const stressedD = 1839; 
+
+        if(this.lightLevel >= stressedA && this.lightLevel < stressedB){
+            this.poorLight = 1;
+            this.reefDead = false;
+        } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD){
+            this.poorLight = 1;
+            this.reefDead = false;
+        } else if (this.lightLevel <= stressedA){
+            this.reefDead = true; // Reef is Dead
+        } else if (this.lightLevel >= stressedD){
+            this.reefDead = true;
+        } else {
+            this.poorLight = 0;
+            this.reefDead = false;
+        }
+
+        this.updateStress()
+        this.updateHistory()
+    }
+
+    updateStress(){
+        if(this.reefDead){
+            this.stressValue = 4
+        } else{
+            this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
+        }
+        if(this.timeJump != 0){ //Avoid an index OOB error
+            if(this.stressHistory[this.timeJump - 1] == 3 && this.stressValue == 3){
+                this.stressValue = 4;
+                this.reefDead = true;
+            }
+        }
+        console.log("Stress after update =",this.stressValue)
+        this.timeJump++;
+    }
+
+    updateHistory(){
+        this.tempHistory.push(this.temperature)
+        this.lightHistory.push(this.lightLevel)
+        this.pollutionHistory.push(this.pollutionValue)
+        this.stressHistory.push(this.stressValue)
+
+        console.table(this.tempHistory);
+        console.table(this.lightHistory);
+        console.table(this.pollutionHistory);
+        console.table(this.stressHistory);
+    }
     unlockFish(){this.tutorialComplete = true;}
 
-    freeFish(cancelled){
+    freeFish(){
         this.bubbleCollision = false;
         this.tempBubble.destroy();
         this.lightBubble.destroy();
         this.pollutionBubble.destroy();
         this.spawnBubbles();
-        if (!cancelled){ this.timeJump+=2; } 
-
     }
 }
 

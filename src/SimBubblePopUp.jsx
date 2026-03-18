@@ -1,6 +1,6 @@
 import './styles/SimBubblePopUp.css'
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled}){
+import { useState, useEffect, useRef } from 'react';
+function SimBubblePopUp({type,initialValue, onChange, setCollision}){
     let min, max, label, graph, dangerA, dangerB;
 
     //Change Initial value to current value w/some sort of logic
@@ -24,7 +24,7 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled
         label = "/pollutionbubbletitle.png";
         graph = "pollutiongraph.png";
         dangerA = 0;
-        dangerB = 5;
+        dangerB = 6;
     }
     const [danger, setDanger] = useState(false);
     const [value, setValue] = useState(initialValue);
@@ -70,7 +70,6 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled
 
     const handleCancelClick = () => {
         setCollision(false);
-        setCancelled(true);
     }
     return(
         <div className="SimBubblePopUp">

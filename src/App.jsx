@@ -56,7 +56,7 @@ function App() {
     let frameId;
 
     const loop = () => {
-      //setStressValue(scene.stress)
+      setStressValue(scene.stressValue)
       setLightValue(scene.lightLevel)
       setTemperatureValue(scene.temperature)
       setPollutionValue(scene.pollutionValue)
@@ -88,7 +88,7 @@ function App() {
   useEffect(() => {
     if (!scene) {return}
     if (!bubbleCollision){
-      scene.freeFish(cancelled)
+      scene.freeFish()
     }
   },[bubbleCollision])
 
@@ -109,8 +109,7 @@ function App() {
         {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
         onChange={handler} 
-        setCollision={setBubbleCollision} 
-        setCancelled={setCancelled}/> : null}
+        setCollision={setBubbleCollision} /> : null}
         {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
