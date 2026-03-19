@@ -42,40 +42,37 @@ class TestScene extends Phaser.Scene{
         
     }
 
-    showPopUpMessage() {
-        const overlay = this.add.rectangle(this.sys.game.config.width / 2, this.sys.game.config.height / 2, this.sys.game.config.width, this.sys.game.config.height, 0x000000, 0.05);
-        overlay.setOrigin(0.5);
+    // showPopUpMessage() {
+    //     const overlay = this.add.rectangle(this.sys.game.config.width / 2, this.sys.game.config.height / 2, this.sys.game.config.width, this.sys.game.config.height, 0x000000, 0.05);
+    //     overlay.setOrigin(0.5);
 
-        overlay.setInteractive();
+    //     overlay.setInteractive();
 
-        const message = this.add.text(512, 384, 'Overlay/Popup Test', {
-            fontFamily: 'Arial',
-            fontSize: 48,
-            color: '#ffffff'
-        }).setOrigin(0.5);
+    //     const message = this.add.text(512, 384, 'Overlay/Popup Test', {
+    //         fontFamily: 'Arial',
+    //         fontSize: 48,
+    //         color: '#ffffff'
+    //     }).setOrigin(0.5);
 
-        this.tweens.add({
-            targets: message,
-            scale: { from: 0.5, to: 1 },
-            alpha: { from: 0, to: 1 },
-            duration: 500,
-            ease: 'Back.Out'
-        });
-
-
+    //     this.tweens.add({
+    //         targets: message,
+    //         scale: { from: 0.5, to: 1 },
+    //         alpha: { from: 0, to: 1 },
+    //         duration: 500,
+    //         ease: 'Back.Out'
+    //     });
         
 
-        overlay.on('pointerdown', () => {
-            message.destroy();
-            overlay.destroy();
-            // this.restartGame(); //instead restart, remove overlay
-        });
-    }
+    //     overlay.on('pointerdown', () => {
+    //         message.destroy();
+    //         overlay.destroy();
+    //         // this.restartGame(); //instead restart, remove overlay
+    //     });
+    // }
     
 
 
     create(){
-
         this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
 
@@ -117,8 +114,6 @@ class TestScene extends Phaser.Scene{
 
         createCorals(this); 
 
-
-        updateCoralStress(this, 0);
         
 
         const floorLayer1 = this.add.image(0, 0, "floor_layer1")
@@ -152,6 +147,7 @@ class TestScene extends Phaser.Scene{
         this.guide = this.physics.add.image(300,300,"Guide")
         this.guide.setInteractive();
         this.guide.setDepth(9999);
+        this.guide.preFX.addShadow(0, -8, 0.009, 1, 0x333333, 5);
         
         this.spawnBubbles();
         this.isDraggingGuide = false; 
@@ -289,16 +285,24 @@ class TestScene extends Phaser.Scene{
     }
 
     handleBubbleCollect(type) {
+        const bubblePop = this.sound.add('bubblePop');
+
+        this.tweens.paused = true;
+
         if (type == 'temp'){
             this.bubbleCollision = true;
+            this.tempBubble.destroy();
             this.collisionType = type;
         } else if (type == 'light'){
             this.bubbleCollision = true;
             this.collisionType = type;
+            this.lightBubble.destroy();
         } else if (type == 'poll'){
             this.bubbleCollision = true;
             this.collisionType = type;
+            this.pollutionBubble.destroy();
         }
+        bubblePop.play();
     }
     // Conditional Rendering w/ Phaser
     updateFishVisibility(show){
@@ -383,8 +387,8 @@ class TestScene extends Phaser.Scene{
 
         
 
-            const minScale = 0.7;   // guide scale at the top
-            const maxScale = 1.5;   // guide scale at the bottom
+            const minScale = 1.3;   // guide scale at the top
+            const maxScale = 1.3;   // guide scale at the bottom
 
             const t = this.guide.y / this.cameras.main.height;
             const easedT = t * t;   // easing
@@ -450,14 +454,15 @@ class TestScene extends Phaser.Scene{
             oval.fillEllipse(this.guide.x, 950, this.guide.scale*100, 10);
     }
 
-    startTimer(){
-        this.timerRunning = true;
-        this.simTime = 0;
-    }
-    startSim(){
-        this.simStart = true;
-        console.log(this.simStart)
-    }
+    // startTimer(){
+    //     this.timerRunning = true;
+    //     this.simTime = 0;
+    // }
+    // startSim(){
+    //     this.simStart = true;
+    //     console.log(this.simStart)
+    // }
+
     getSimTime() { 
         const totalSeconds = Math.floor(this.simTime / 1000);
 
@@ -560,6 +565,7 @@ class TestScene extends Phaser.Scene{
         }
         console.log("Stress after update =",this.stressValue)
         this.timeJump++;
+        updateCoralStress(this, this.stressValue);
     }
 
     updateHistory(){
@@ -581,6 +587,7 @@ class TestScene extends Phaser.Scene{
         this.lightBubble.destroy();
         this.pollutionBubble.destroy();
         this.spawnBubbles();
+        this.tweens.paused = false;
     }
 }
 

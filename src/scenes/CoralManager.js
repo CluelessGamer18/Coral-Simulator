@@ -1,17 +1,42 @@
 const coralTypes = { //examples **replace with actual spritesheets later**
-  orange: {
-    key: 'orangeCoral',
+  acropora: {
+    key: 'acropora',
     bleachRate: 1.0
   },
-  brain: {
-    key: 'brainCoral',
+  acropora1: {
+    key: 'acropora1',
     bleachRate: 0.6
   },
-  staghorn: {
-    key: 'staghornCoral',
+  acropora2: {
+    key: 'acropora2',
+    bleachRate: 1.4
+  },
+  acropora3: {
+    key: 'acropora3',
+    bleachRate: 1.4
+  },
+  montipora: {
+    key: 'montipora',
+    bleachRate: 1.4
+  },
+  staghorn1: {
+    key: 'staghorn1',
+    bleachRate: 1.4
+  },
+  staghorn2: {
+    key: 'staghorn2',
     bleachRate: 1.4
   }
 };
+
+// 0 = normal, 4 = fully bleached/dark
+const tintStages = [
+  0xFFFFFF,
+  0xD8D8D8,
+  0xC0C0C0,
+  0xA8A8A8,
+  0x000000
+];
 
 
 
@@ -19,7 +44,7 @@ export function createCorals(scene) {
 
     scene.corals = [];
 
-    const group = createCoralGroup(scene, 10);
+    const group = createCoralGroup(scene, 30);
     
 
 }
@@ -40,8 +65,7 @@ function createCoralGroup(scene, count) {
       .image(
         Phaser.Math.Between(0, scene.WORLD_WIDTH),
         scene.WORLD_HEIGHT - 120,
-        type.key,
-        0
+        type.key
       )
       .setOrigin(0.5, 1);
 
@@ -69,10 +93,9 @@ function createCoralGroup(scene, count) {
     });
 
 
-
     coral.on('pointerout', () => {
 
-      coral.clearTint().setScale(1);
+      coral.setTint(tintStages[coral.bleachStage]).setScale(1);
 
       if (coral.coralPulse) {
         coral.coralPulse.stop();
@@ -98,8 +121,6 @@ function createCoralGroup(scene, count) {
 
     });
 
-    coral.bleachStage = 1;
-
     container.add(coral);
     scene.corals.push(coral);
 
@@ -122,21 +143,21 @@ function coralSway(scene, coral) {
 
 export function updateCoralStress(scene, stressAmount) {
 
+
   scene.corals.forEach(coral => {
 
-    coral.stress = stressAmount;
+    // coral.stress = stressAmount;
 
-    const bleachValue = coral.stress * coral.bleachRate;
+    // const bleachValue = coral.stress * coral.bleachRate;
 
-    const stage = Phaser.Math.Clamp(
-      Math.floor(bleachValue / 20),
-      0,
-      3
-    );
+    // const stage = Phaser.Math.Clamp(
+    //   Math.floor(bleachValue / 20),
+    //   0,
+    //   3
+    // );
 
-    coral.bleachStage = stage;
-    coral.setFrame(stage);
-
+    coral.bleachStage = stressAmount;
+    coral.setTint(tintStages[stressAmount]);
   });
 
 }

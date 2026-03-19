@@ -64,6 +64,15 @@ update() {
         this.load.spritesheet('fishTypes', '/assets/wireframe4/fishSpriteSheet.png', { frameWidth: 239, frameHeight: 239 });
         this.load.spritesheet('shellTypes', '/assets/wireframe4/shellSpriteSheet.png', { frameWidth: 55, frameHeight: 55 });
 
+        //corals
+        this.load.image("acropora", "/assets/corals/acropora.png")
+        this.load.image("acropora1", "/assets/corals/acropora1.png")
+        this.load.image("acropora2", "/assets/corals/acropora2.png")
+        this.load.image("acropora3", "/assets/corals/acropora3.png")
+        this.load.image("montipora", "/assets/corals/montipora.png")
+        this.load.image("staghorn1", "/assets/corals/staghorn1.png")
+        this.load.image("staghorn2", "/assets/corals/staghorn2.png")
+
         // wireframe assets
         this.load.image("floor_layer0", "/assets/wireframe4/foreforeground_2860x161.png")
         this.load.image("floor_layer1", "/assets/wireframe4/foreground_2860x467.png") //closest layer = 1
@@ -73,6 +82,11 @@ update() {
         this.load.image("surface", "/assets/wireframe4/surface_1440x155.png")
 
         this.load.image("pipe", "/assets/wireframe1/pipe_808x808.png")
+
+
+        this.load.audio('bubblePop', [
+            'assets/BubblePOP.mp3'
+        ]);
     }
 
     create() {
