@@ -108,7 +108,7 @@ function createCoralGroup(scene, count) {
     });
 
     coral.on('pointerdown', () => {
-
+      if(scene.bubbleCollision || !scene.tutorialComplete){return}
       console.log({
         type: coral.type,
         bleachRate: coral.bleachRate,

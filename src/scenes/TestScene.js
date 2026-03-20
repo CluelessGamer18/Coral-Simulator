@@ -255,29 +255,24 @@ class TestScene extends Phaser.Scene{
     this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
 
     // Reattach overlap handlers
-    this.physics.add.overlap(
-        this.guide,
-        this.tempBubble,
-        () => this.handleBubbleCollect('temp'),
-        null,
-        this
-    );
+    this.tempBubble.setInteractive();
 
-    this.physics.add.overlap(
-        this.guide,
-        this.lightBubble,
-        () => this.handleBubbleCollect('light'),
-        null,
-        this
-    );
+    this.tempBubble.on('pointerdown', () => {
+        this.handleBubbleCollect('temp');
+    });
 
-    this.physics.add.overlap(
-        this.guide,
-        this.pollutionBubble,
-        () => this.handleBubbleCollect('poll'),
-        null,
-        this
-    );
+
+    this.lightBubble.setInteractive();
+
+    this.lightBubble.on('pointerdown', () => {
+        this.handleBubbleCollect('light');
+    });
+
+    this.pollutionBubble.setInteractive();
+
+    this.pollutionBubble.on('pointerdown', () => {
+        this.handleBubbleCollect('poll');
+    });
 
         this.bubbleIdle(this.tempBubble);
         this.bubbleIdle(this.lightBubble);
