@@ -49,10 +49,7 @@ update() {
 
     preload() {
         this.load.image("Guide","./fish.png")
-        this.load.image("Fish", "./fish2.png")
-        this.load.image("Coral", "./coral1.png")
         this.load.image("Coral2", "/assets/wireframe1/pink_coral_wireframe1.png")
-        this.load.image("Trash", "./trashbag.jpg")
         this.load.image("PollutionBubble","/assets/wireframe4/pollutionBubble.png")
         this.load.image("TempBubble","/assets/wireframe4/tempBubble.png")
         this.load.image("LightBubble","/assets/wireframe4/light_levelBubble.png")
@@ -77,8 +74,7 @@ update() {
         this.load.image("floor_layer0", "/assets/wireframe4/foreforeground_2860x161.png")
         this.load.image("floor_layer1", "/assets/wireframe4/foreground_2860x467.png") //closest layer = 1
         this.load.image("floor_layer2", "/assets/wireframe4/middleground_2072x691.png")
-        this.load.image("floor_layer3", "/assets/wireframe4/farground_1440x804.png")
-        this.load.image("bg_gradient", "./waterStockBg.jpg") //farthest layer = 4
+        this.load.image("floor_layer3", "/assets/wireframe4/farground_1440x804.png") //farthest layer = 4
         this.load.image("surface", "/assets/wireframe4/surface_1440x155.png")
 
         this.load.image("pipe", "/assets/wireframe1/pipe_808x808.png")

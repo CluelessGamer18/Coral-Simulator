@@ -41,34 +41,6 @@ class TestScene extends Phaser.Scene{
         // If (tutorialComplete)
         
     }
-
-    // showPopUpMessage() {
-    //     const overlay = this.add.rectangle(this.sys.game.config.width / 2, this.sys.game.config.height / 2, this.sys.game.config.width, this.sys.game.config.height, 0x000000, 0.05);
-    //     overlay.setOrigin(0.5);
-
-    //     overlay.setInteractive();
-
-    //     const message = this.add.text(512, 384, 'Overlay/Popup Test', {
-    //         fontFamily: 'Arial',
-    //         fontSize: 48,
-    //         color: '#ffffff'
-    //     }).setOrigin(0.5);
-
-    //     this.tweens.add({
-    //         targets: message,
-    //         scale: { from: 0.5, to: 1 },
-    //         alpha: { from: 0, to: 1 },
-    //         duration: 500,
-    //         ease: 'Back.Out'
-    //     });
-        
-
-    //     overlay.on('pointerdown', () => {
-    //         message.destroy();
-    //         overlay.destroy();
-    //         // this.restartGame(); //instead restart, remove overlay
-    //     });
-    // }
     
 
 
@@ -80,16 +52,6 @@ class TestScene extends Phaser.Scene{
         this.cameras.main.setBackgroundColor("#8ACFC9");
 
         const cam = this.cameras.main;
-        // const coral2 = this.add.image(200,cam.height - 160,"Coral2").setVisible(true).setScrollFactor(1, 0.5).setInteractive(); //scroll factor changes movement along y axis relative to camera
-        
-
-
-        // const bgGradient = this.add.image(0, 0, "bg_gradient")
-        // .setOrigin(0, 0)
-        // .setScrollFactor(0) //background does not move
-        // .setScale(0.26)
-        // .setTint(0x07c5ff); //tinted darker
-
 
         const floorLayer3 = this.add.image(0, 0, "floor_layer3")
         .setOrigin(0, 0).setDepth(1)
@@ -131,19 +93,6 @@ class TestScene extends Phaser.Scene{
         .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         surface.y = -10;
 
-
-
-        // const bgCoverGradient = this.add.image(0, 0, "bg_gradient")
-        // .setOrigin(0, 0)
-        // .setScrollFactor(0) //background does not move
-        // .setScale(0.26)
-        // .setTint(0x07c5ff) //tinted darker
-        // .setAlpha(0.08); //tinted darker
-
-
-
-        this.fish = this.add.image(200,500,"Fish").setScale(0.25)
-
         this.guide = this.physics.add.image(300,300,"Guide")
         this.guide.setInteractive();
         this.guide.setDepth(9999);
@@ -157,10 +106,6 @@ class TestScene extends Phaser.Scene{
         this.input.on("pointerup", () => { 
             this.isDraggingGuide = false; 
             });
-
-        this.trashbag1 = this.add.image(310,370,"Trash").setScale(0.1).setVisible(false)
-        this.trashbag2 = this.add.image(370,370,"Trash").setScale(0.1).setVisible(false)
-        // this.coral = this.add.image(140,cam.height - 130,"Coral").setScale(0.07).setVisible(true).setScrollFactor(1, 0.7);
 
         const cursors = this.input.keyboard.createCursorKeys();
 
@@ -222,21 +167,6 @@ class TestScene extends Phaser.Scene{
 
 
         oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
-
-        // coral mouse detection
-        // coral2.setInteractive();
-
-        // coral2.on('pointerdown', () => {
-        //     this.tweens.add({
-        //         targets: coral2,
-        //         scale: { from: coral2.scale, to: coral2.scale * 1.025 },
-        //         duration: 100,
-        //         yoyo: true,
-        //         ease: 'Sine.Out'
-        //     });
-
-        //     this.showPopUpMessage();
-        // });
 
     }
 
@@ -342,44 +272,7 @@ class TestScene extends Phaser.Scene{
         }
         bubblePop.play();
     }
-    // Conditional Rendering w/ Phaser
-    updateFishVisibility(show){
-        if(this.fish){
-            this.fish.setVisible(show)
-        }
-    }
 
-    moveFishX(x){
-        if(this.fish){
-            this.fish.x = x
-        }
-    }
-
-    startRandomFishIdle() {
-    const trigger = () => {
-        this.fishOneIdle();
-        const nextDelay = Phaser.Math.Between(10000, 16000);
-        this.time.delayedCall(nextDelay, trigger);
-    };
-
-    trigger();
-}
-
-    fishOneIdle(){
-        this.tweens.add({
-            targets: this.fish,
-            x: 100,         
-            duration: 3000,
-            yoyo: true,      
-            ease: "Linear",
-            onYoyo: () => {
-                this.fish.flipX = !this.fish.flipX;
-                },
-            onComplete: () => {
-            this.fish.flipX = !this.fish.flipX;
-                }
-        })
-    }
 
     bubbleIdle(bubble) {
         this.tweens.add({
