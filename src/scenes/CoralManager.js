@@ -96,6 +96,7 @@ function createCoralGroup(scene, count) {
 
     });
 
+    
 
     coral.on('pointerout', () => {
 
