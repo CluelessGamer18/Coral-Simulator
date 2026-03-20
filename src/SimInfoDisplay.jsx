@@ -17,8 +17,8 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
     return(
         <div className="SimInfoDisplayContainer">
             <div className="SimInfoDial">
-                <img className="SimInfoDialIcon" src="/stress_level.png"></img>
-                <img className="SimInfoDialPin" src="/SimInfoDialPin.png" style={{ transform: `rotate(${stress * 45 - 90}deg)` }} ></img>
+                <img className="SimInfoDialIcon" src="/stress_level.svg"></img>
+                <img className="SimInfoDialPin" src="/SimInfoDialPin.svg" style={{ transform: `rotate(${stress * 45 - 90}deg)` }} ></img>
             </div>
             <div className="SimInfoTimeline">
             <span className="SimInfoText">2026</span>
@@ -37,12 +37,18 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
             <span className="SimInfoText">2036</span>
             </div>
             <div className="SimInfoBottom">
-                <img className="SimInfoIcon" src="/temperature.png"></img>
-                <span className="SimInfoText">{temp}°C</span>
-                <img className="SimInfoIcon" src="/light_level.png"></img>
-                <span className="SimInfoText">{light}</span>
-                <img className="SimInfoIcon" src="/poop.png"></img>
-                <span className="SimInfoText">{poll}</span>
+                <div className="statusGroup">
+                    <img className="SimInfoIcon" src="/temperature.svg"></img>
+                    <span className="SimInfoText">{temp}°C</span>
+                </div>
+                <div className="statusGroup">
+                    <img className="SimInfoIcon" src="/light_level.svg"></img>
+                    <span className="SimInfoText">{light}</span>
+                </div>
+                <div className="statusGroup">
+                    <img className="SimInfoIcon" src="/poop.svg"></img>
+                    <span className="SimInfoText">{poll}</span>
+                </div>
             </div>
         </div>
     )

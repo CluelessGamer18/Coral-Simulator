@@ -1,39 +1,43 @@
+
 .SimBubblePopUp{
-    width: 750px;
-    height: 600px;
-    background-color: rgba(2, 146, 165, 0.9);
+    z-index: 9999;
     position: absolute; 
     top: 50%; 
     left: 50%; 
     transform: translate(-50%, -50%);
-    z-index: 9999;
-    border-radius: 30px;
-    border-style: solid;
-    border-color: white;
-    border-width: 2px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    background-color: rgba(2, 146, 165, 0.9);
+    border-radius: 16px;
+    background: linear-gradient(#0292A5, #0292A5) padding-box,
+    linear-gradient(to bottom, #0292A5, #FFFFFF) border-box;
+    border: 4px solid transparent;
     backdrop-filter: blur(4px);
 
+    padding: 40px;
+
+          /* Animation */
+  opacity: 0;
+  animation: fadeUp 0.5s ease forwards; 
 }
 
 .SimBubblePopUpGraph{
-    position: absolute;
+    display: flex;
     width: 650px;
-    top: 250px;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    padding-top: 30px;
+    
 }
 .SimBubblePopUpSubmit{
-    position: absolute;
-    bottom: 40px;
-    right: 60px;
-    height: 50px;
-    width: 170px;
     background-color: white;
     border-radius: 25px;
     border-style: solid;
     border-color: white;
     border-width: 2px;
-    padding: 5px;
+    width: 155px;
+    padding: 8px;
     color:rgba(2, 146, 165, 0.8);
     transition: 0.2s ease;
     font-family: 'Poppins', sans-serif;
@@ -42,17 +46,14 @@
 }
 
 .SimBubblePopUpGoBack{
-    position: absolute;
-    bottom: 40px;
-    left: 60px;
-    height: 50px;
-    width: 120px;
+    width: 155px;
+    text-align: center;
     background-color: rgba(2, 146, 165, 0.8);
     border-radius: 25px;
     border-style: solid;
     border-color: white;
     border-width: 2px;
-    padding: 5px;
+    padding: 8px;
     transition: 0.2s ease;
     font-family: 'Poppins', sans-serif;
     font-size: 20px;
@@ -65,10 +66,8 @@
 }
 
 .SimBubblePopUpSlider{
-    position: absolute; 
-    top: 375px; 
-    left: 392px; 
-    transform: translate(-50%, -50%);
+    position: relative;
+    align-self: flex-end;
     height: 50px;
     width: 613px;
 }
@@ -91,6 +90,7 @@
   border: 2px solid white;
   cursor: pointer; 
 }
+
 .SimBubblePopUpSliderOutput {
   position: absolute;
   top: 30px;
@@ -106,26 +106,33 @@
   font-size: 14px;
   font-weight: 500;
 }
+
 .SimBubblePopUpSliderOutputLine {
-  position: absolute;
+  display: flex;
   border-left: 2px dashed #F86A1C;
   height: 150px;
 }
-.SimBubblePopUpWarning{
-  position: absolute;
-  top: 450px;
-  left: 50%;
-  transform: translateX(-50%);
+.warningIcon{
+  display: flex;
 }
-.SimBubblePopUpTitle{
-  position: absolute;
-  top: 20px;
-  left: 20px;
+.bubbleAlert{
+  display: flex;
+  flex-direction: row;
+  align-self: center;
+  gap: 10px;
+  align-items: center;
+  animation: alertAnimateIn 0.5s ease forwards; 
+  
 }
+.alertText{
+  display: flex;
+}
+
 .SimBubblePopUpTutorial{
-    position: absolute;
-    top: 400px;
-    left: 87px;
+    display: flex;
+    align-self: center;
+    /* top: 400px;
+    left: 87px; */
 }
 
 .SimBubblePopUpSubmit:hover{
@@ -142,5 +149,65 @@
 
 .SimBubblePopUpSlider::-webkit-slider-thumb:hover{
     scale: 1.10;
+}
+
+
+
+.SimBubblePopUpHeader {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.SimBubblePopUpHeaderIcon {
+    width: 80px;
+    height: 80px;
+}
+
+.SimBubblePopUpHeaderText {
+    display: flex;
+    flex-direction: column;
+}
+
+.SimBubblePopUpHeaderTitle {
+    font-size: 36px;
+    font-weight: 600;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+}
+
+.SimBubblePopUpHeaderSubtitle {
+    font-size: 14px;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+}
+
+.submitButtonWrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%); /* start low */
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%); /* move up to final pos */
+  }
+}
+
+
+@keyframes alertAnimateIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 

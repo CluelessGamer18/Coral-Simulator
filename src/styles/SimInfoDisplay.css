@@ -74,7 +74,7 @@
     border-top-left-radius: 60px; 
     border-top-right-radius: 60px;
     margin: 0;
-    background: linear-gradient(to right,#0292A5,white);
+    background: linear-gradient(to right,#0292A5,#a2f0f9);
     border-style: solid;
     border-width: 3px;
     border-color: #0292A5;
@@ -84,7 +84,8 @@
 
 .SimInfoDialIcon{
     position: absolute;
-    bottom: -30%;
+    width: 30px; 
+    bottom: -20%;
     left: 50%;
     padding: 0;
     margin: 0;
@@ -108,8 +109,11 @@
 }
 
 .SimInfoBottom{
-    width: 250px;
-    height: 40px;
+    display: flex;
+    padding-bottom: 10px;
+    padding-left: 30px;
+    padding-right: 30px;
+    gap: 20px;
     background: #0292A5;
     border-bottom-left-radius: 30px; 
     border-bottom-right-radius: 30px;
@@ -117,5 +121,11 @@
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-evenly;
+    justify-content: center;
+}
+
+.statusGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }

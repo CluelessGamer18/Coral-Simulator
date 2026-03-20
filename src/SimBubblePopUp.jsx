@@ -1,31 +1,43 @@
 import './styles/SimBubblePopUp.css'
 import { useState, useEffect, useRef } from 'react';
-function SimBubblePopUp({type,initialValue, onChange, setCollision}){
-    let min, max, label, graph, dangerA, dangerB;
 
-    //Change Initial value to current value w/some sort of logic
-    if(type == "temp"){
-        min = 18;
-        max = 35;
-        label = "temperaturebubbletitle.png";
-        graph = "temperaturegraph.png";
-        dangerA = 24;
-        dangerB = 31;
-    } else if(type == "light"){
-        min = 0;
-        max = 2000;
-        label = "/lightlevelbubbletitle.png"
-        graph = "/lightlevelgraph.png";
-        dangerA = 140;
-        dangerB = 1840;
-    } else if(type == "poll"){
-        min = 0;
-        max = 13;
-        label = "/pollutionbubbletitle.png";
-        graph = "pollutiongraph.png";
-        dangerA = 0;
-        dangerB = 6;
-    }
+//Change Initial value to current value w/some sort of logic
+const CONFIG = {
+        temp: {
+        min: 18,
+        max: 35,
+        title: "Set Bubble Value",
+        subtitle: "Temperature (°C)",
+        icon: "/temp_bubble.svg",
+        graph: "temperatureGraph.svg",
+        dangerA: 24,
+        dangerB: 31,
+        },
+        light: {
+        min: 0,
+        max: 2000,
+        title: "Set Bubble Value",
+        subtitle: "Light Level (µMol/m2/s)",
+        icon: "/light_level_bubble.svg",
+        graph: "/light_levelGraph.svg",
+        dangerA: 140,
+        dangerB: 1840,
+        },
+        poll: {
+        min: 0,
+        max: 13,
+        title: "Set Bubble Value",
+        subtitle: "Nutrient Level (µMolar)",
+        icon: "/pollution_bubble.svg",
+        graph: "pollutionGraph.svg",
+        dangerA: 0,
+        dangerB: 6,
+        }
+
+}
+function SimBubblePopUp({type,initialValue, onChange, setCollision}){
+    const { min, max, title, subtitle, icon, graph, dangerA, dangerB } = CONFIG[type]
+
     const [danger, setDanger] = useState(false);
     const [value, setValue] = useState(initialValue);
     const [displayLeft, setdisplayLeft] = useState(0);
@@ -73,6 +85,13 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision}){
     }
     return(
         <div className="SimBubblePopUp">
+            <div className="SimBubblePopUpHeader">
+                <img className="SimBubblePopUpHeaderIcon" src={icon} />
+                <div className="SimBubblePopUpHeaderText">
+                    <div className="SimBubblePopUpHeaderTitle">{title}</div>
+                    <div className="SimBubblePopUpHeaderSubtitle">{subtitle}</div>
+                </div>
+            </div>
             <img className="SimBubblePopUpGraph" src={graph}></img>
             <div className="SimBubblePopUpSlider">
                 <input
@@ -89,11 +108,16 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision}){
                 {value}
                 </div>
             </div>
-            <img className="SimBubblePopUpTitle"src={label}></img>
             <p className="SimBubblePopUpTutorial">Move the slider to the desired value under a custom duration over time.</p>
-            {danger ? <img className="SimBubblePopUpWarning"src="/warning.png"></img> : null}
-            <button className="SimBubblePopUpSubmit" onClick={handleSubmitClick}>Apply</button>
-            <button className="SimBubblePopUpGoBack" onClick={handleCancelClick}>Cancel</button>
+            {danger ? 
+            <div className="bubbleAlert">
+                <img className="warningIcon"src="/warning.svg"></img>
+                <div className="alertText">Setting the value this high will cause coral bleaching and death within a year.</div>
+            </div> : null}
+            <div className="submitButtonWrapper">
+                <button className="SimBubblePopUpGoBack" onClick={handleCancelClick}>Cancel</button>
+                <button className="SimBubblePopUpSubmit" onClick={handleSubmitClick}>Apply</button>
+            </div>
         </div>
     )
 }
