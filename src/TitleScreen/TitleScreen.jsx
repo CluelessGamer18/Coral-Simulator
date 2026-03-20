@@ -1,4 +1,4 @@
-import titleCard from "/TitleCard.jpg";
+// import titleCard from "/TitleCard.jpg";
 import {useState} from 'react';
 import "./TitleScreen.css";
 import OptionsDialog from "./OptionsDialog.jsx";
