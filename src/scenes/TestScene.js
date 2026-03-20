@@ -451,7 +451,7 @@ class TestScene extends Phaser.Scene{
             oval.clear();
 
             // Redraw oval at new position
-            oval.fillEllipse(this.guide.x, 950, this.guide.scale*100, 10);
+            oval.fillEllipse(this.guide.x, 950, this.guide.scale*100, 10).setDepth(6);
     }
 
     // startTimer(){
