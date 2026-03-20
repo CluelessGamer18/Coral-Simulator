@@ -65,13 +65,13 @@ update() {
         this.load.spritesheet('shellTypes', '/assets/wireframe4/shellSpriteSheet.png', { frameWidth: 55, frameHeight: 55 });
 
         //corals
-        this.load.image("acropora", "/assets/corals/acropora.png")
-        this.load.image("acropora1", "/assets/corals/acropora1.png")
-        this.load.image("acropora2", "/assets/corals/acropora2.png")
-        this.load.image("acropora3", "/assets/corals/acropora3.png")
-        this.load.image("montipora", "/assets/corals/montipora.png")
-        this.load.image("staghorn1", "/assets/corals/staghorn1.png")
-        this.load.image("staghorn2", "/assets/corals/staghorn2.png")
+        this.load.spritesheet("acropora", "/assets/corals/acropora.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("acropora1", "/assets/corals/acropora1.png", { frameWidth: 186, frameHeight: 106 });
+        this.load.spritesheet("acropora2", "/assets/corals/acropora2.png", { frameWidth: 191, frameHeight: 82 });
+        this.load.spritesheet("acropora3", "/assets/corals/acropora3.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("montipora", "/assets/corals/montipora.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("staghorn1", "/assets/corals/staghorn1.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("staghorn2", "/assets/corals/staghorn2.png", { frameWidth: 180, frameHeight: 190 });
 
         // wireframe assets
         this.load.image("floor_layer0", "/assets/wireframe4/foreforeground_2860x161.png")

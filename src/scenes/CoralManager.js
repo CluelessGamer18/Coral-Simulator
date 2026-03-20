@@ -1,4 +1,4 @@
-const coralTypes = { //examples **replace with actual spritesheets later**
+const coralTypes = {
   acropora: {
     key: 'acropora',
     bleachRate: 1.0
@@ -38,6 +38,7 @@ const tintStages = [
   0x000000
 ];
 
+const depthLevels = [-10, 120, 180];
 
 
 export function createCorals(scene) {
@@ -51,8 +52,8 @@ export function createCorals(scene) {
 
 function createCoralGroup(scene, count) {
 
-  const container = scene.add.container(0, 0);
-  container.setDepth(6);
+  // const container = scene.add.container(0, 0);
+  // container.setDepth(7);
 
   const types = Object.keys(coralTypes);
 
@@ -61,13 +62,16 @@ function createCoralGroup(scene, count) {
     const typeName = Phaser.Utils.Array.GetRandom(types);
     const type = coralTypes[typeName];
 
+    let depth = Phaser.Math.Between(0, 2);
+
     const coral = scene.add
       .image(
         Phaser.Math.Between(0, scene.WORLD_WIDTH),
-        scene.WORLD_HEIGHT - 120,
-        type.key
+        scene.WORLD_HEIGHT - depthLevels[depth],
+        type.key,
       )
-      .setOrigin(0.5, 1);
+      .setOrigin(0.5, 1)
+      .setDepth(7-depth);
 
     coral.setInteractive();
 
@@ -121,13 +125,13 @@ function createCoralGroup(scene, count) {
 
     });
 
-    container.add(coral);
+    // container.add(coral);
     scene.corals.push(coral);
 
     coralSway(scene, coral);
   }
 
-  return container;
+  // return container;
 }
 
 function coralSway(scene, coral) {
@@ -157,7 +161,7 @@ export function updateCoralStress(scene, stressAmount) {
     // );
 
     coral.bleachStage = stressAmount;
-    coral.setTint(tintStages[stressAmount]);
+    coral.setFrame(stressAmount);
   });
 
 }
