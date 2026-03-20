@@ -186,7 +186,7 @@ class TestScene extends Phaser.Scene{
         this.cameras.main.height / 2,
         100,
         this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05);
+        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
 
             this.rectRight.on("pointerover", () => {
             this.moveCameraRight = true;
@@ -202,7 +202,7 @@ class TestScene extends Phaser.Scene{
         this.cameras.main.height / 2,
         100,
         this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05);
+        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
 
             this.rectLeft.on("pointerover", () => {
             this.moveCameraLeft = true;

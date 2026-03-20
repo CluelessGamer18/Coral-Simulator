@@ -99,7 +99,7 @@ function createCoralGroup(scene, count) {
 
     coral.on('pointerout', () => {
 
-      coral.setTint(tintStages[coral.bleachStage]).setScale(1);
+      coral.setTint(0xFFFFFF);
 
       if (coral.coralPulse) {
         coral.coralPulse.stop();
