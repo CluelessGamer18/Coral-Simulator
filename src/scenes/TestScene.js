@@ -254,24 +254,67 @@ class TestScene extends Phaser.Scene{
     this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
     this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
 
-    // Reattach overlap handlers
     this.tempBubble.setInteractive();
-
     this.tempBubble.on('pointerdown', () => {
         this.handleBubbleCollect('temp');
     });
-
+    this.tempBubble.on('pointerover', () => {
+        this.tweens.add({
+            targets: this.tempBubble,
+            scale: 1.15,     
+            duration: 200,
+            ease: 'Power1'
+        });
+    });
+    this.tempBubble.on('pointerout', () => {
+        this.tweens.add({
+            targets: this.tempBubble,
+            scale: 1,        
+            duration: 200,
+            ease: 'Power1'
+        });
+    });
 
     this.lightBubble.setInteractive();
-
     this.lightBubble.on('pointerdown', () => {
         this.handleBubbleCollect('light');
     });
+    this.lightBubble.on('pointerover', () => {
+        this.tweens.add({
+            targets: this.lightBubble,
+            scale: 1.15,     
+            duration: 200,
+            ease: 'Sine.inOut'
+        });
+    });
+    this.lightBubble.on('pointerout', () => {
+        this.tweens.add({
+            targets: this.lightBubble,
+            scale: 1,        
+            duration: 200,
+            ease: 'Sine.inOut'
+        });
+    });
 
     this.pollutionBubble.setInteractive();
-
     this.pollutionBubble.on('pointerdown', () => {
         this.handleBubbleCollect('poll');
+    });
+    this.pollutionBubble.on('pointerover', () => {
+        this.tweens.add({
+            targets: this.pollutionBubble,
+            scale: 1.15,     
+            duration: 200,
+            ease: 'Sine.inOut'
+        });
+    });
+    this.pollutionBubble.on('pointerout', () => {
+        this.tweens.add({
+            targets: this.pollutionBubble,
+            scale: 1,        
+            duration: 200,
+            ease: 'Sine.inOut'
+        });
     });
 
         this.bubbleIdle(this.tempBubble);

@@ -30,7 +30,7 @@
   font-size: 20px;
   padding: 0px;
   color: white;
-  transition: background-color 0.3s ease-in-out;
+  transition: 0.2s ease;
 }
 
 .OptionsButton {
@@ -45,7 +45,7 @@
   font-size: 20px;
   color: white;
   padding: 0px;
-  transition: background-color 0.3s ease-in-out;
+  transition: 0.2s ease;
 }
 
 .OptionsBoxContainer {
@@ -114,10 +114,12 @@ margin-top: 15px;
 
 .StartButton:hover{
   background-color: rgba(251, 105, 0, 0.864);
+  scale: 1.1;
 }
 
 .OptionsButton:hover{
   background-color: rgba(251, 105, 0, 0.864);
+  scale: 1.1;
 }
 
 .OptionsDialogButton:hover{
