@@ -112,7 +112,7 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision}){
             {danger ? 
             <div className="bubbleAlert">
                 <img className="warningIcon"src="/warning.svg"></img>
-                <div className="alertText">Setting the value this high will cause coral bleaching and death within a year.</div>
+                <div className="alertText">Setting to this value will cause irreversible coral bleaching and death within a year.</div>
             </div> : null}
             <div className="submitButtonWrapper">
                 <button className="SimBubblePopUpGoBack" onClick={handleCancelClick}>Cancel</button>
