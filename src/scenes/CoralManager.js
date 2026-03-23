@@ -1,30 +1,65 @@
 const coralTypes = {
   acropora: {
     key: 'acropora',
+    name: 'Acropora',
+    scientificName: '-Scientific Name Here-',
+    status: 'Healthy',
+    info: '-Coral Information Here-',
+    img: 'zoomIn.png',
     bleachRate: 1.0
   },
   acropora1: {
     key: 'acropora1',
+    name: 'Acropora clathrata',
+    scientificName: '-Scientific Name Here-',
+    status: 'Healthy',
+    information: '-Coral Information Here-',
+    img: 'zoomIn.png',
     bleachRate: 0.6
   },
   acropora2: {
     key: 'acropora2',
+    name: 'Acropora clathrata',
+    scientificName: '-Scientific Name Here-',
+    status: 'Healthy',
+    info: '-Coral Information Here-',
+    img: 'zoomIn.png',
     bleachRate: 1.4
   },
   acropora3: {
     key: 'acropora3',
+    name: 'Acropora clathrata',
+    scientificName: '-Scientific Name Here-',
+    status: 'Healthy',
+    info: '-Coral Information Here-',
+    img: 'zoomIn.png',
     bleachRate: 1.4
   },
   montipora: {
     key: 'montipora',
+    name: 'Montipora Digitata',
+    scientificName: '-Scientific Name Here-',
+    status: 'Healthy',
+    info: '-Coral Information Here-',
+    img: 'zoomIn.png',
     bleachRate: 1.4
   },
   staghorn1: {
     key: 'staghorn1',
+    name: 'Staghorn',
+    scientificName: '-Scientific Name Here-',
+    status: 'Healthy',
+    info: '-Coral Information Here-',
+    img: 'zoomIn.png',
     bleachRate: 1.4
   },
   staghorn2: {
     key: 'staghorn2',
+    name: 'Staghorn',
+    scientificName: '-Scientific Name Here-',
+    status: 'Healthy',
+    info: '-Coral Information Here-',
+    img: 'zoomIn.png',
     bleachRate: 1.4
   }
 };
@@ -118,10 +153,11 @@ function createCoralGroup(scene, count) {
       });
 
       scene.game.events.emit('coralInfo', {
-        type: coral.type,
-        bleachRate: coral.bleachRate,
-        stress: coral.stress,
-        stage: coral.bleachStage
+        name: type.name,
+        scientificName: type.scientificName,
+        status: type.status,
+        info: type.info,
+        img: type.img
       });
 
     });

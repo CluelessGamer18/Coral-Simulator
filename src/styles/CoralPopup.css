@@ -19,6 +19,64 @@
   animation: fadeUp 0.5s ease forwards; 
 }
 
+
+.CoralTitle{
+  font-size: 26px;
+  font-weight: 600;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+}
+
+.ScienceName {
+  font-size: 14px;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.statusContainer{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+  
+
+.CoralStatus {
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+.CoralInfo {
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+.microCoralView {
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 230px;
+}
+
+.CoralOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background: rgba(0,0,0,0.5); */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+
 @keyframes fadeUp {
   0% {
     opacity: 0;
