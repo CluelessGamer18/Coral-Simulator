@@ -77,7 +77,9 @@ update() {
         this.load.image("floor_layer3", "/assets/wireframe4/farground_1440x804.png") //farthest layer = 4
         this.load.image("surface", "/assets/wireframe4/surface_1440x155.png")
 
-        this.load.image("pipe", "/assets/wireframe1/pipe_808x808.png")
+        this.load.image("badOutline", "/assets/wireframe4/endangeredCoralOutline.png")
+
+        this.load.spritesheet("pipe", "/assets/wireframe4/sewage_spritesheet.png", { frameWidth: 577.93, frameHeight: 267.17 })
 
 
         this.load.audio('bubblePop', [

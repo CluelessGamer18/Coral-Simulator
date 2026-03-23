@@ -68,8 +68,11 @@ class TestScene extends Phaser.Scene{
 
         const pipe = this.add.image(0, 0, "pipe")
         .setOrigin(0, 0).setDepth(6)
-        .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        pipe.y = this.WORLD_HEIGHT - pipe.height - 40;
+        .setScrollFactor(1, 1)
+        .setAngle(-15);
+        pipe.y = this.WORLD_HEIGHT - pipe.height - 60;
+
+        pipe.setFrame(1);
 
         //educated fish (schools)
         createFishSchools(this);
@@ -97,6 +100,14 @@ class TestScene extends Phaser.Scene{
         this.guide.setInteractive();
         this.guide.setDepth(9999);
         this.guide.preFX.addShadow(0, -8, 0.009, 1, 0x333333, 5);
+
+        // const badOutline = this.add.image(-95, -95, "badOutline")
+        // .setOrigin(0, 0).setDepth(10000)
+        // .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+
+        // const lightOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, 0.25)
+        // .setOrigin(0, 0).setDepth(10000)
+        // .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         
         this.spawnBubbles();
         this.isDraggingGuide = false; 
@@ -453,6 +464,9 @@ class TestScene extends Phaser.Scene{
             this.poorPollution = 0;
             this.reefDead = false;
         }
+
+        pipe.setFrame(0); // move this to where the pollution gets too high, set to 1 when pollution is lower (no pipe output)
+
 
         this.updateStress()
         this.updateHistory()
