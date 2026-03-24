@@ -66,13 +66,13 @@ class TestScene extends Phaser.Scene{
         .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
 
-        const pipe = this.add.image(0, 0, "pipe")
+        this.pipe = this.add.image(0, 0, "pipe")
         .setOrigin(0, 0).setDepth(6)
         .setScrollFactor(1, 1)
         .setAngle(-15);
-        pipe.y = this.WORLD_HEIGHT - pipe.height - 60;
+        this.pipe.y = this.WORLD_HEIGHT - this.pipe.height - 60;
 
-        pipe.setFrame(1);
+        this.pipe.setFrame(1);
 
         //educated fish (schools)
         createFishSchools(this);
@@ -465,7 +465,7 @@ class TestScene extends Phaser.Scene{
             this.reefDead = false;
         }
 
-        pipe.setFrame(0); // move this to where the pollution gets too high, set to 1 when pollution is lower (no pipe output)
+        this.pipe.setFrame(0); // move this to where the pollution gets too high, set to 1 when pollution is lower (no pipe output)
 
 
         this.updateStress()
