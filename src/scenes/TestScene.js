@@ -79,6 +79,12 @@ class TestScene extends Phaser.Scene{
 
         createCorals(this); 
 
+        // this.load.audio('background_music', ['assets/sounds/background_music.mp3', 'assets/sounds/background_music.wav']);
+
+        // backgroundMusic = game.add.audio('background_music');
+        // backgroundMusic.loop = true;
+        // backgroundMusic.play();
+
         
 
         const floorLayer1 = this.add.image(0, 0, "floor_layer1")
