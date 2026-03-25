@@ -27,7 +27,10 @@ class TestScene extends Phaser.Scene{
         this.poorTemp = 0;
         this.poorLight = 0;
         this.poorPollution = 0;
-        this.reefDead = false;
+
+        this.reefDeadTemp = false;
+        this.reefDeadLight = false;
+        this.reefDeadPollution = false;
 
         this.deltaTimer = 0;
         this.simStart = false;
@@ -434,17 +437,17 @@ class TestScene extends Phaser.Scene{
 
         if(this.temperature >= stressedA && this.temperature < stressedB){
             this.poorTemp = 1;
-            this.reefDead = false;
+            this.reefDeadTemp = false;
         } else if (this.temperature > stressedC && this.temperature <= stressedD){
             this.poorTemp = 1;
-            this.reefDead = false;
+            this.reefDeadTemp = false;
         } else if (this.temperature <= stressedA){
-            this.reefDead = true; // Reef is Dead
+            this.reefDeadTemp = true; // Reef is Dead
         } else if (this.temperature >= stressedD){
-            this.reefDead = true;
+            this.reefDeadTemp = true;
         } else {
             this.poorTemp = 0;
-            this.reefDead = false;
+            this.reefDeadTemp = false;
         }
 
         this.updateStress()
@@ -458,17 +461,17 @@ class TestScene extends Phaser.Scene{
 
         if(this.pollutionValue >= stressedA && this.pollutionValue < stressedB){
             this.poorPollution = 1;
-            this.reefDead = false;
+            this.reefDeadPollution = false;
         } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD){
             this.poorPollution = 1;
-            this.reefDead = false;
+            this.reefDeadPollution = false;
         } else if (this.pollutionValue <= stressedA){
-            this.reefDead = true; // Reef is Dead
+            this.reefDeadPollution = true; // Reef is Dead
         } else if (this.pollutionValue >= stressedD){
-            this.reefDead = true;
+            this.reefDeadPollution = true;
         } else {
             this.poorPollution = 0;
-            this.reefDead = false;
+            this.reefDeadPollution = false;
         }
 
         this.pipe.setFrame(0); // move this to where the pollution gets too high, set to 1 when pollution is lower (no pipe output)
@@ -485,17 +488,17 @@ class TestScene extends Phaser.Scene{
 
         if(this.lightLevel >= stressedA && this.lightLevel < stressedB){
             this.poorLight = 1;
-            this.reefDead = false;
+            this.reefDeadLight = false;
         } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD){
             this.poorLight = 1;
-            this.reefDead = false;
+            this.reefDeadLight = false;
         } else if (this.lightLevel <= stressedA){
-            this.reefDead = true; // Reef is Dead
+            this.reefDeadLight = true; // Reef is Dead
         } else if (this.lightLevel >= stressedD){
-            this.reefDead = true;
+            this.reefDeadLight = true;
         } else {
             this.poorLight = 0;
-            this.reefDead = false;
+            this.reefDeadLight = false;
         }
 
         this.updateStress()
@@ -503,7 +506,7 @@ class TestScene extends Phaser.Scene{
     }
 
     updateStress(){
-        if(this.reefDead){
+        if(this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollutionch){
             this.stressValue = 4
         } else{
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
