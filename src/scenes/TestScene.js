@@ -7,6 +7,25 @@ let oval;
 class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
+
+        // Data Values
+
+
+        this.deltaTimer = 0;
+        this.simStart = false;
+
+        this.collisionType = "None";
+        this.camVelX = 0;
+        this.moveCameraLeft = false;
+        this.moveCameraRight = false;
+        this.tutorialComplete = false;
+        // If (tutorialComplete)
+        
+    }
+    
+
+
+    create(){
         this.lightLevel = 500; // Default
         this.temperature = 27; // Default
         this.pollutionValue = 1; // Default
@@ -16,8 +35,6 @@ class TestScene extends Phaser.Scene{
         // 2 means more stressed
         // 3 means bleached
         // 4 means death
-
-        // Data Values
         this.tempHistory = []
         this.lightHistory = []
         this.pollutionHistory = []
@@ -32,22 +49,10 @@ class TestScene extends Phaser.Scene{
         this.reefDeadLight = false;
         this.reefDeadPollution = false;
 
-        this.deltaTimer = 0;
-        this.simStart = false;
+        this.simEnd = false;
         this.timeJump = 0;
         this.bubbleCollision = false;
-        this.collisionType = "None";
-        this.camVelX = 0;
-        this.moveCameraLeft = false;
-        this.moveCameraRight = false;
-        this.tutorialComplete = false;
-        // If (tutorialComplete)
-        
-    }
-    
 
-
-    create(){
         this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
 
@@ -428,7 +433,9 @@ class TestScene extends Phaser.Scene{
         ].join(":");
     }
 
-    RestartSim(){this.scene.restart();}
+    RestartSim(){
+        this.scene.restart();
+    }
 
     updateTemperature(temp){
         this.temperature = temp;
@@ -451,7 +458,6 @@ class TestScene extends Phaser.Scene{
         }
 
         this.updateStress()
-        this.updateHistory()
     }
 
     updatePollution(poll){
@@ -478,7 +484,6 @@ class TestScene extends Phaser.Scene{
 
 
         this.updateStress()
-        this.updateHistory()
     }
 
     updateLight(light){
@@ -500,25 +505,32 @@ class TestScene extends Phaser.Scene{
             this.poorLight = 0;
             this.reefDeadLight = false;
         }
-
         this.updateStress()
-        this.updateHistory()
     }
 
     updateStress(){
-        if(this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollutionch){
+        if(this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution){
             this.stressValue = 4
+            this.updateHistory()
+            this.simEnd = true;
         } else{
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
+            this.updateHistory()
         }
         if(this.timeJump != 0){ //Avoid an index OOB error
             if(this.stressHistory[this.timeJump - 1] == 3 && this.stressValue == 3){
                 this.stressValue = 4;
-                this.reefDead = true;
+                this.updateHistory()
+                this.simEnd = true;
             }
         }
         console.log("Stress after update =",this.stressValue)
         this.timeJump++;
+        console.log(this.timeJump)
+        if (this.timeJump == 10){
+            this.updateHistory()
+            this.simEnd = true;
+        }
         updateCoralStress(this, this.stressValue);
     }
 
