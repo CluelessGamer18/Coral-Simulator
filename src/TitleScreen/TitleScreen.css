@@ -203,3 +203,18 @@
     transform: translate(0, -10%); /* move up to final pos */
   }
 }
+
+.OptionsSliderGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 200px;
+    margin: 10px auto;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+}
+
+.OptionsSliderGroup input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}

@@ -95,11 +95,20 @@ class TestScene extends Phaser.Scene{
 
         createCorals(this); 
 
-        // this.load.audio('background_music', ['assets/sounds/background_music.mp3', 'assets/sounds/background_music.wav']);
 
-        // backgroundMusic = game.add.audio('background_music');
-        // backgroundMusic.loop = true;
-        // backgroundMusic.play();
+        this.musicVolume = 0.5;
+
+        this.bgMusic = this.sound.add('background_music', {
+            loop: true,
+            volume: this.musicVolume
+        });
+
+        this.bgMusic.play();
+
+        window.gameScene = this;
+
+
+        
 
         
 
@@ -207,6 +216,18 @@ class TestScene extends Phaser.Scene{
 
     }
 
+    setMusicVolume(value) {
+        this.musicVolume = value;
+
+        if (this.bgMusic) {
+            this.bgMusic.setVolume(value);
+        }
+    }
+
+    setSfxVolume(value) {
+        this.sfxVolume = value;
+    }
+
     spawnBubbles() {
     const x1 = Phaser.Math.Between(50, 2000);
     const y1 = Phaser.Math.Between(50, 500);
@@ -291,6 +312,7 @@ class TestScene extends Phaser.Scene{
 
     handleBubbleCollect(type) {
         const bubblePop = this.sound.add('bubblePop');
+        
 
         this.tweens.paused = true;
 
@@ -307,7 +329,7 @@ class TestScene extends Phaser.Scene{
             this.collisionType = type;
             this.pollutionBubble.destroy();
         }
-        bubblePop.play();
+        this.sound.play('bubblePop', { volume: this.sfxVolume });
     }
 
 

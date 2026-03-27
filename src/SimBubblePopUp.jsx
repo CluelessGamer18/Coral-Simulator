@@ -2,6 +2,7 @@ import './styles/SimBubblePopUp.css'
 import { useState, useEffect, useRef } from 'react';
 
 //Change Initial value to current value w/some sort of logic
+
 const CONFIG = {
         temp: {
         min: 18,
@@ -37,6 +38,7 @@ const CONFIG = {
 }
 function SimBubblePopUp({type,initialValue, onChange, setCollision}){
     const { min, max, title, subtitle, icon, graph, dangerA, dangerB } = CONFIG[type]
+    const [ready, setReady] = useState(false);
 
     const [danger, setDanger] = useState(false);
     const [value, setValue] = useState(initialValue);
@@ -83,8 +85,26 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision}){
     const handleCancelClick = () => {
         setCollision(false);
     }
+
+useEffect(() => {
+    const handleReady = () => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setReady(true);
+            });
+        });
+    };
+
+    if (document.readyState === "complete") {
+        handleReady();
+    } else {
+        window.addEventListener("load", handleReady);
+        return () => window.removeEventListener("load", handleReady);
+    }
+}, []);
+
     return(
-        <div className="SimBubblePopUp">
+        <div className={`SimBubblePopUp ${ready ? "show" : ""}`}>
             <div className="SimBubblePopUpHeader">
                 <img className="SimBubblePopUpHeaderIcon" src={icon} />
                 <div className="SimBubblePopUpHeaderText">

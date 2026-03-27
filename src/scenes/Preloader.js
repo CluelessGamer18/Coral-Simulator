@@ -82,9 +82,8 @@ update() {
         this.load.spritesheet("pipe", "/assets/wireframe4/sewage_spritesheet.png", { frameWidth: 577.93, frameHeight: 267.17 })
 
 
-        this.load.audio('bubblePop', [
-            'assets/BubblePOP.mp3'
-        ]);
+        this.load.audio('bubblePop', ['assets/BubblePOP.mp3']);
+        this.load.audio('background_music', ['assets/Background.mp3']);
     }
 
     create() {
