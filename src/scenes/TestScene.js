@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { createFishSchools } from "./FishSchools.js";
+import { createFishSchools, timeJumpAnimate } from "./FishSchools.js";
 import { createCorals, updateCoralStress } from "./CoralManager.js";
 
 let oval;
@@ -111,9 +111,11 @@ class TestScene extends Phaser.Scene{
         // .setOrigin(0, 0).setDepth(10000)
         // .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
 
-        // const lightOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, 0.25)
-        // .setOrigin(0, 0).setDepth(10000)
-        // .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        const colorOverlay = 0;
+
+        this.lightOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, colorOverlay)
+        .setOrigin(0, 0).setDepth(10000)
+        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         
         this.spawnBubbles();
         this.isDraggingGuide = false; 
@@ -529,6 +531,19 @@ class TestScene extends Phaser.Scene{
         console.table(this.lightHistory);
         console.table(this.pollutionHistory);
         console.table(this.stressHistory);
+
+        // timeJumpAnimate(0.1);
+        this.tweens.add({
+            targets: this.colorOverlay,
+            color: 1,
+            duration: 10000,
+            ease: "Sine.easeInOut",
+            onUpdate: function ()
+            {
+                // this.lightOverlay.setAlpha(color);
+                this.colorOverlay = color;
+            }
+        });
     }
     unlockFish(){this.tutorialComplete = true;}
 

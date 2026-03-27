@@ -5,6 +5,8 @@ let maxSchoolSize = 8;
 let maxFishScale = 0.5;
 let minFishScale = 0.3;
 
+let timeJump = 1;
+
 const depthSettings = [
   { scale: 0.1, scroll: 1440, speed: 1.6, distance: 0.3, tint: 0x32AFAC}, // background
   { scale: 0.3, scroll: 2072, speed: 1.3, distance: 0.6, tint: 0x143F45}, // mid
@@ -75,6 +77,10 @@ const fishTypes = { //examples **replace with actual spritesheets later**
 
 };
 
+export function timeJumpAnimate(speed) {
+  timeJump = speed;
+}
+
 
 export function createFishSchools(scene) {
   for (let i = 0; i < numOfSchools; i++) {
@@ -129,7 +135,7 @@ function repeatMovement(scene, school) {
   const minInterval = 5000;
   const maxInterval = 20000;
 
-  const nextCall = Phaser.Math.Between(minInterval, maxInterval);
+  const nextCall = Phaser.Math.Between(minInterval * timeJump, maxInterval * timeJump);
 
   // chooseNextPos(scene, school, nextCall);
   chooseNextPos(scene, school, nextCall);
@@ -161,7 +167,7 @@ newY = Phaser.Math.Clamp(newY, 0, scene.WORLD_HEIGHT - ((2-school.depthLevel)*10
     targets: school,
     x: newX,
     y: newY,
-    duration: duration * depthSettings[school.depthLevel].speed,
+    duration: duration * depthSettings[school.depthLevel].speed * timeJump,
     ease: "Sine.easeInOut"
   });
 
@@ -177,7 +183,7 @@ newY = Phaser.Math.Clamp(newY, 0, scene.WORLD_HEIGHT - ((2-school.depthLevel)*10
       targets: child,
       x: offsetX,
       y: offsetY,
-      duration: duration * depthSettings[school.depthLevel].speed
+      duration: duration * depthSettings[school.depthLevel].speed * timeJump
     });
 
   });

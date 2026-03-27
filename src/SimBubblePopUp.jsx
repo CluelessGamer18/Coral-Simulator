@@ -17,7 +17,7 @@ const CONFIG = {
         min: 0,
         max: 2000,
         title: "Set Bubble Value",
-        subtitle: "Light Level (µMol/m2/s)",
+        subtitle: "Light Level (µMol/m\u00B2/s)",
         icon: "/light_level_bubble.svg",
         graph: "/light_levelGraph.svg",
         dangerA: 140,

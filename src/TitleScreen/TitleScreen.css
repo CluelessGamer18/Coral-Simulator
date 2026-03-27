@@ -50,7 +50,7 @@
 
 .OptionHighlightedButton {
   margin-top: 15px;
-  width: 370px;
+  width: 100%;
   height: 40px;
   border-width: 2px;
   border-color: white;
@@ -65,9 +65,9 @@
 }
 
 .OptionsBoxContainer {
-  width: 550px;
-  height: 500px;
+  display: flex;
   position: absolute; 
+  padding: 50px;
   top: 50%; 
   left: 50%; 
   transform: translate(-50%, -50%);
@@ -86,7 +86,7 @@
 
 .OptionsDialogButton{
   margin-top: 15px;
-  width: 370px;
+  width: 100%;
   height: 40px;
   border-width: 2px;
   border-color: white;
@@ -108,8 +108,12 @@
     top:20px;
     left:20px;
     padding: 0px;
-    font-style: bold;
+    font-weight: 800;
     font-size: 15px;
+    color: #FFFFFF;
+    background-color: #0292A5;
+    border-width: 2px;
+    border-color: white;
     transition: background-color 0.3s ease-in-out;
 }
 
