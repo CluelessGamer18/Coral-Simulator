@@ -74,13 +74,21 @@ class TestScene extends Phaser.Scene{
         .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
 
-        this.pipe = this.add.image(0, 0, "pipe")
+        this.pipeA = this.add.image(0, 0, "pipe")
         .setOrigin(0, 0).setDepth(6)
         .setScrollFactor(1, 1)
         .setAngle(-15);
-        this.pipe.y = this.WORLD_HEIGHT - this.pipe.height - 60;
+        this.pipeA.y = this.WORLD_HEIGHT - this.pipeA.height - 60;
 
-        this.pipe.setFrame(1);
+        this.pipeB = this.add.image(0, 0, "pipe")
+        .setOrigin(0, 0).setDepth(6)
+        .setScrollFactor(1, 1)
+        .setAngle(-15)
+        .setAlpha(0);
+        this.pipeB.y = this.WORLD_HEIGHT - this.pipeB.height - 60;
+
+        this.pipeA.setFrame(1);
+        this.pipeB.setFrame(0);
 
         //educated fish (schools)
         createFishSchools(this);
@@ -115,15 +123,18 @@ class TestScene extends Phaser.Scene{
         this.guide.setDepth(9999);
         this.guide.preFX.addShadow(0, -8, 0.009, 1, 0x333333, 5);
 
-        // const badOutline = this.add.image(-95, -95, "badOutline")
-        // .setOrigin(0, 0).setDepth(10000)
-        // .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        this.badOutline = this.add.image(-95, -95, "badOutline")
+        .setOrigin(0, 0).setDepth(10001).setAlpha(0)
+        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
 
-        const colorOverlay = 0;
-
-        this.lightOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, colorOverlay)
+        this.lightOverlay = this.add.rectangle(0, 0, 1440, 1024, 0xFFFFFF, 1)
         .setOrigin(0, 0).setDepth(10000)
         .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        this.darkOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, 1)
+        .setOrigin(0, 0).setDepth(10000)
+        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+
+        this.updateHistory();
         
         this.spawnBubbles();
         this.isDraggingGuide = false; 
@@ -184,7 +195,6 @@ class TestScene extends Phaser.Scene{
             this.moveCameraLeft = false;
             });
 
-            
         
 
         cam.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT);
@@ -482,9 +492,6 @@ class TestScene extends Phaser.Scene{
             this.reefDeadPollution = false;
         }
 
-        this.pipe.setFrame(0); // move this to where the pollution gets too high, set to 1 when pollution is lower (no pipe output)
-
-
         this.updateStress()
     }
 
@@ -547,18 +554,81 @@ class TestScene extends Phaser.Scene{
         console.table(this.pollutionHistory);
         console.table(this.stressHistory);
 
-        // timeJumpAnimate(0.1);
+        /* tween light level overlays */
+        const midpoint = 500;
+        let brightAlpha = 0;
+        let darkAlpha = 0;
+
+        if (this.lightLevel > midpoint) {
+            // Above 500 -> brighten
+            brightAlpha = Phaser.Math.Clamp(
+                (this.lightLevel - midpoint) / 3000, // scale factor
+                0,
+                0.1
+            );
+        } 
+        else if (this.lightLevel < midpoint) {
+            // Below 500 -> darken
+            darkAlpha = Phaser.Math.Clamp(
+                (midpoint - this.lightLevel) / 500,
+                0,
+                0.6
+            );
+        }
+
+        this.tweens.killTweensOf(this.lightOverlay);
+        this.tweens.killTweensOf(this.darkOverlay);
+
         this.tweens.add({
-            targets: this.colorOverlay,
-            color: 1,
-            duration: 10000,
-            ease: "Sine.easeInOut",
-            onUpdate: function ()
-            {
-                // this.lightOverlay.setAlpha(color);
-                this.colorOverlay = color;
-            }
+            targets: this.lightOverlay,
+            alpha: brightAlpha,
+            duration: 800,
+            ease: "Sine.easeInOut"
         });
+
+        this.tweens.add({
+            targets: this.darkOverlay,
+            alpha: darkAlpha,
+            duration: 800,
+            ease: "Sine.easeInOut"
+        });
+
+        /* adjust red outline as stress increases or decreases */
+        let outlineAlpha = 0;
+        if (this.stressValue >= 2) {
+            outlineAlpha = Phaser.Math.Clamp(
+                (this.stressValue - 1) / 3,
+                0,
+                0.8
+            );
+        }
+        this.tweens.killTweensOf(this.badOutline);
+
+        this.tweens.add({
+            targets: this.badOutline,
+            alpha: outlineAlpha,
+            duration: 800,
+            ease: "Sine.easeInOut"
+        });
+
+        /* adjust pipe output as pollution increases or decreases */
+        let pollAlpha = 0;
+        if (this.pollutionValue >= 3) {
+            pollAlpha = Phaser.Math.Clamp(
+                (this.pollutionValue - 1) / 5,
+                0,
+                1
+            );
+        }
+        this.tweens.killTweensOf(this.badOutline);
+
+        this.tweens.add({
+            targets: this.pipeB,
+            alpha: pollAlpha,
+            duration: 800,
+            ease: "Sine.easeInOut"
+        });
+
     }
     unlockFish(){this.tutorialComplete = true;}
 
