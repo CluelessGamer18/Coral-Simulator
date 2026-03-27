@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Chart } from "chart.js/auto";
 
-function StressChart({ data }) {
+function StressChart({ data = [], title, yRange}) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
@@ -18,21 +18,55 @@ function StressChart({ data }) {
         labels: data.map((_, i) => i),
         datasets: [
           {
-            label: "Stress",
             data,
-            borderColor: "rgb(0, 0, 0)",
-            tension: 0.25
+            borderColor: "#FFFFFF",
+            borderWidth: 2,
+            tension: 0.25,
+            pointRadius: 4,
+            pointHoverRadius: 6
           }
         ]
       },
       options: {
         responsive: true,
-        animation: false
+        maintainAspectRatio: false,
+        animation: false,
+
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: title,
+            color: "#FFFFFF",
+            font: {
+              size: 24,
+              weight: "bold"
+            },
+            padding: { top: 10, bottom: 20 }
+          }
+        },
+
+        scales: {
+          x: {
+            ticks: { color: "#FFFFFF" },
+            grid: { color: "rgba(255,255,255,0.2)" }
+          },
+          y: {
+            ticks: { color: "#FFFFFF" },
+            grid: { color: "rgba(255,255,255,0.2)" },
+            min: yRange ? yRange[0] : undefined,
+            max: yRange ? yRange[1] : undefined
+          }
+        }
       }
     });
-  }, [data]);
+  }, [data, title, yRange]);
 
-  return <canvas ref={canvasRef} />;
+  return (
+    <div style={{ width: "650px", height: "300px" }}>
+      <canvas ref={canvasRef} />
+    </div>
+  );
 }
 
 export default StressChart;

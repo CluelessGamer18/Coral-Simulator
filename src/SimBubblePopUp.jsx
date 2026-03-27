@@ -11,7 +11,7 @@ const CONFIG = {
         icon: "/temp_bubble.svg",
         graph: "temperatureGraph.svg",
         dangerA: 24,
-        dangerB: 31,
+        dangerB: 32,
         },
         light: {
         min: 0,

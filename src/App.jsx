@@ -4,11 +4,11 @@ import './styles/App.css'
 import RangeSlider from './RangeSlider.jsx'
 import ToggleBox from './ToggleBox.jsx'
 import TestGame from './TestGame.jsx'
-import StressChart from './StressChart.jsx'
 import TitleScreen from "./TitleScreen/TitleScreen.jsx"
 import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
 import SimInfoDisplay from './SimInfoDisplay.jsx'
 import SimBubblePopUp from './SimBubblePopUp.jsx'
+import SimEndPopUp from './SimEndPopUp.jsx'
 import SimTutorial from './SimTutorial.jsx'
 
 function App() {
@@ -62,6 +62,7 @@ function App() {
       setPollutionValue(scene.pollutionValue)
       setTimeAdvanced(scene.timeJump)
       setBubbleCollision(scene.bubbleCollision)
+      setSimEnd(scene.simEnd)
       frameId = requestAnimationFrame(loop);
     };
 
@@ -100,11 +101,26 @@ function App() {
   const endSim = () => {
     scene.RestartSim();
     setSceneRunning(false);
+    setTemperatureValue(27);
+    setLightValue(500);
+    setPollutionValue(1);
+    setStressValue(0);
+    setTimeAdvanced(0);
+    setBubbleCollision(false);
+    setSimEnd(false);
   }
 
   return (
     <>
         {/*<RangeSlider onChange={setStressValue}/>*/}
+        {scene && simEnd && Array.isArray(scene.stressHistory) ? (
+          <SimEndPopUp stress={scene.stressHistory}
+            temp={scene.tempHistory}
+            light={scene.lightHistory}
+            poll={scene.pollutionHistory}
+            onClose={endSim}
+            dead={scene.reefDeadTemp || scene.reefDeadLight || scene.reefDeadPollution}
+          ></SimEndPopUp>) : null}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
         {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
@@ -121,11 +137,7 @@ function App() {
               <TestGame onSceneReady={setScene} />
           </div>
       </main>
-        {simEnd ? (
-          <div className="ChartContainer">
-            <StressChart data={scene.stressData} />
-          </div>
-        ) : null}
+
       </>
     )}
 

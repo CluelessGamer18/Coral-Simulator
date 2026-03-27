@@ -7,32 +7,13 @@ let oval;
 class TestScene extends Phaser.Scene{
     constructor(){
         super("TestScene");
-        this.lightLevel = 500; // Default
-        this.temperature = 27; // Default
-        this.pollutionValue = 1; // Default
-        this.stressValue = 0; // Will range from 0 - 4 
-        // 0 means healthy
-        // 1 means slightly stressed
-        // 2 means more stressed
-        // 3 means bleached
-        // 4 means death
 
         // Data Values
-        this.tempHistory = []
-        this.lightHistory = []
-        this.pollutionHistory = []
-        this.stressHistory = []
 
-        //Individual Flags
-        this.poorTemp = 0;
-        this.poorLight = 0;
-        this.poorPollution = 0;
-        this.reefDead = false;
 
         this.deltaTimer = 0;
         this.simStart = false;
-        this.timeJump = 0;
-        this.bubbleCollision = false;
+
         this.collisionType = "None";
         this.camVelX = 0;
         this.moveCameraLeft = false;
@@ -45,6 +26,33 @@ class TestScene extends Phaser.Scene{
 
 
     create(){
+        this.lightLevel = 500; // Default
+        this.temperature = 27; // Default
+        this.pollutionValue = 1; // Default
+        this.stressValue = 0; // Will range from 0 - 4 
+        // 0 means healthy
+        // 1 means slightly stressed
+        // 2 means more stressed
+        // 3 means bleached
+        // 4 means death
+        this.tempHistory = []
+        this.lightHistory = []
+        this.pollutionHistory = []
+        this.stressHistory = []
+
+        //Individual Flags
+        this.poorTemp = 0;
+        this.poorLight = 0;
+        this.poorPollution = 0;
+
+        this.reefDeadTemp = false;
+        this.reefDeadLight = false;
+        this.reefDeadPollution = false;
+
+        this.simEnd = false;
+        this.timeJump = 0;
+        this.bubbleCollision = false;
+
         this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
 
@@ -427,7 +435,9 @@ class TestScene extends Phaser.Scene{
         ].join(":");
     }
 
-    RestartSim(){this.scene.restart();}
+    RestartSim(){
+        this.scene.restart();
+    }
 
     updateTemperature(temp){
         this.temperature = temp;
@@ -436,21 +446,20 @@ class TestScene extends Phaser.Scene{
 
         if(this.temperature >= stressedA && this.temperature < stressedB){
             this.poorTemp = 1;
-            this.reefDead = false;
+            this.reefDeadTemp = false;
         } else if (this.temperature > stressedC && this.temperature <= stressedD){
             this.poorTemp = 1;
-            this.reefDead = false;
+            this.reefDeadTemp = false;
         } else if (this.temperature <= stressedA){
-            this.reefDead = true; // Reef is Dead
+            this.reefDeadTemp = true; // Reef is Dead
         } else if (this.temperature >= stressedD){
-            this.reefDead = true;
+            this.reefDeadTemp = true;
         } else {
             this.poorTemp = 0;
-            this.reefDead = false;
+            this.reefDeadTemp = false;
         }
 
         this.updateStress()
-        this.updateHistory()
     }
 
     updatePollution(poll){
@@ -460,24 +469,23 @@ class TestScene extends Phaser.Scene{
 
         if(this.pollutionValue >= stressedA && this.pollutionValue < stressedB){
             this.poorPollution = 1;
-            this.reefDead = false;
+            this.reefDeadPollution = false;
         } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD){
             this.poorPollution = 1;
-            this.reefDead = false;
+            this.reefDeadPollution = false;
         } else if (this.pollutionValue <= stressedA){
-            this.reefDead = true; // Reef is Dead
+            this.reefDeadPollution = true; // Reef is Dead
         } else if (this.pollutionValue >= stressedD){
-            this.reefDead = true;
+            this.reefDeadPollution = true;
         } else {
             this.poorPollution = 0;
-            this.reefDead = false;
+            this.reefDeadPollution = false;
         }
 
         this.pipe.setFrame(0); // move this to where the pollution gets too high, set to 1 when pollution is lower (no pipe output)
 
 
         this.updateStress()
-        this.updateHistory()
     }
 
     updateLight(light){
@@ -487,37 +495,44 @@ class TestScene extends Phaser.Scene{
 
         if(this.lightLevel >= stressedA && this.lightLevel < stressedB){
             this.poorLight = 1;
-            this.reefDead = false;
+            this.reefDeadLight = false;
         } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD){
             this.poorLight = 1;
-            this.reefDead = false;
+            this.reefDeadLight = false;
         } else if (this.lightLevel <= stressedA){
-            this.reefDead = true; // Reef is Dead
+            this.reefDeadLight = true; // Reef is Dead
         } else if (this.lightLevel >= stressedD){
-            this.reefDead = true;
+            this.reefDeadLight = true;
         } else {
             this.poorLight = 0;
-            this.reefDead = false;
+            this.reefDeadLight = false;
         }
-
         this.updateStress()
-        this.updateHistory()
     }
 
     updateStress(){
-        if(this.reefDead){
+        if(this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution){
             this.stressValue = 4
+            this.updateHistory()
+            this.simEnd = true;
         } else{
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
+            this.updateHistory()
         }
         if(this.timeJump != 0){ //Avoid an index OOB error
             if(this.stressHistory[this.timeJump - 1] == 3 && this.stressValue == 3){
                 this.stressValue = 4;
-                this.reefDead = true;
+                this.updateHistory()
+                this.simEnd = true;
             }
         }
         console.log("Stress after update =",this.stressValue)
         this.timeJump++;
+        console.log(this.timeJump)
+        if (this.timeJump == 10){
+            this.updateHistory()
+            this.simEnd = true;
+        }
         updateCoralStress(this, this.stressValue);
     }
 

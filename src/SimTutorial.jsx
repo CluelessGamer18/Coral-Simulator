@@ -6,7 +6,7 @@ import "./styles/SimTutorial.css";
 function SimTutorial({ closeTutorial = null }) {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const lastPage = 5;
+  const lastPage = 7;
 
   const nextPage = () => {
     if (currentPage !== lastPage) {
