@@ -422,15 +422,6 @@ class TestScene extends Phaser.Scene{
             oval.fillEllipse(this.guide.x, 950, this.guide.scale*100, 10).setDepth(6);
     }
 
-    // startTimer(){
-    //     this.timerRunning = true;
-    //     this.simTime = 0;
-    // }
-    // startSim(){
-    //     this.simStart = true;
-    //     console.log(this.simStart)
-    // }
-
     getSimTime() { 
         const totalSeconds = Math.floor(this.simTime / 1000);
 

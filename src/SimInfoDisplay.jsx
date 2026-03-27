@@ -23,16 +23,26 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
             <div className="SimInfoTimeline">
             <span className="SimInfoText">2026</span>
 
-            {dots.map((type, index) => (
+            <div className="TimelineTrack">
+                {dots.map((type, index) => (
+                    <span
+                        key={index}
+                        className={
+                            type === "large"
+                            ? "TimelineDotLarge"
+                            : "TimelineDotSmall"
+                        }
+                    ></span>
+                ))}
+
+                {/* moving dot indicator */}
                 <span
-                key={index}
-                className={
-                    type === "large"
-                    ? `TimelineDotLarge ${index === timejump ? "active" : ""}`
-                    : `TimelineDotSmall ${index === timejump ? "active" : ""}`
-                }
-                ></span>
-            ))}
+                    className="TimelineIndicator"
+                    style={{
+                        transform: `translateX(${timejump * 8.59}px)`
+                    }}
+                />
+            </div>
 
             <span className="SimInfoText">2036</span>
             </div>
