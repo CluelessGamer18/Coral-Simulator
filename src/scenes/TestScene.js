@@ -468,10 +468,10 @@ class TestScene extends Phaser.Scene{
         const stressedC = 29; const stressedD = 31; // Second Bleaching Interval [c,d]
 
         if(this.temperature >= stressedA && this.temperature < stressedB){
-            this.poorTemp = 1;
+            this.poorTemp = 30;
             this.reefDeadTemp = false;
         } else if (this.temperature > stressedC && this.temperature <= stressedD){
-            this.poorTemp = 1;
+            this.poorTemp = 30;
             this.reefDeadTemp = false;
         } else if (this.temperature <= stressedA){
             this.reefDeadTemp = true; // Reef is Dead
@@ -491,10 +491,10 @@ class TestScene extends Phaser.Scene{
         const stressedC = 3; const stressedD = 5; 
 
         if(this.pollutionValue >= stressedA && this.pollutionValue < stressedB){
-            this.poorPollution = 1;
+            this.poorPollution = 30;
             this.reefDeadPollution = false;
         } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD){
-            this.poorPollution = 1;
+            this.poorPollution = 30;
             this.reefDeadPollution = false;
         } else if (this.pollutionValue <= stressedA){
             this.reefDeadPollution = true; // Reef is Dead
@@ -514,10 +514,10 @@ class TestScene extends Phaser.Scene{
         const stressedC = 1100; const stressedD = 1839; 
 
         if(this.lightLevel >= stressedA && this.lightLevel < stressedB){
-            this.poorLight = 1;
+            this.poorLight = 30;
             this.reefDeadLight = false;
         } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD){
-            this.poorLight = 1;
+            this.poorLight = 30;
             this.reefDeadLight = false;
         } else if (this.lightLevel <= stressedA){
             this.reefDeadLight = true; // Reef is Dead
@@ -530,29 +530,32 @@ class TestScene extends Phaser.Scene{
         this.updateStress()
     }
 
-    updateStress(){
-        if(this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution){
-            this.stressValue = 4
-            this.updateHistory()
+    updateStress() {
+        if (this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution) {
+            this.stressValue = 100;
             this.simEnd = true;
-        } else{
+        } else {
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
-            this.updateHistory()
         }
-        if(this.timeJump != 0){ //Avoid an index OOB error
-            if(this.stressHistory[this.timeJump - 1] == 3 && this.stressValue == 3){
-                this.stressValue = 4;
-                this.updateHistory()
+
+        if (this.stressHistory.length > 0) {
+            const prev = this.stressHistory[this.stressHistory.length - 1];
+
+            if (prev === 90 && this.stressValue === 90) {
+                this.stressValue = 100;
                 this.simEnd = true;
+                this.reefDeadLight = true;
             }
         }
-        console.log("Stress after update =",this.stressValue)
+
+        this.updateHistory();
+
         this.timeJump++;
-        console.log(this.timeJump)
-        if (this.timeJump == 10){
-            this.updateHistory()
+
+        if (this.timeJump === 10) {
             this.simEnd = true;
         }
+
         updateCoralStress(this, this.stressValue);
     }
 
@@ -608,9 +611,9 @@ class TestScene extends Phaser.Scene{
 
         /* adjust red outline as stress increases or decreases */
         let outlineAlpha = 0;
-        if (this.stressValue >= 2) {
+        if (this.stressValue >= 60) {
             outlineAlpha = Phaser.Math.Clamp(
-                (this.stressValue - 1) / 3,
+                (this.stressValue) / 100,
                 0,
                 1
             );

@@ -73,22 +73,18 @@ function App() {
 
   useEffect(() => {
     if (!scene) {return}
-    scene.updateTemperature(temperatureValue);
-  },[temperatureValue]);
-
-  useEffect(() => {
-    if (!scene) {return}
-    scene.updatePollution(pollutionValue);
-  },[pollutionValue]);
-
-  useEffect(() => {
-    if (!scene) {return}
-    scene.updateLight(lightValue);
-  },[lightValue]);
-
-  useEffect(() => {
-    if (!scene) {return}
     if (!bubbleCollision){
+      const type = scene.collisionType;
+      if(type === 'temp') {
+        console.log("Type == Temp, Updating Temp")
+        scene.updateTemperature(temperatureValue)
+      } else if (type === 'light'){
+        console.log("Type == Light, Updating Light")
+        scene.updateLight(lightValue);
+      } else if (type === 'poll'){
+        console.log("Type == Pollution, Updating Pollution")
+        scene.updatePollution(pollutionValue);
+      }
       scene.freeFish()
     }
   },[bubbleCollision])

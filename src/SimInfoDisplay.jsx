@@ -18,7 +18,7 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
         <div className="SimInfoDisplayContainer">
             <div className="SimInfoDial">
                 <img className="SimInfoDialIcon" src="/stress_level.svg"></img>
-                <img className="SimInfoDialPin" src="/SimInfoDialPin.svg" style={{ transform: `rotate(${stress * 45 - 90}deg)` }} ></img>
+                <img className="SimInfoDialPin" src="/SimInfoDialPin.svg" style={{ transform: `rotate(${stress * 1.8 - 90}deg)` }} ></img>
             </div>
             <div className="SimInfoTimeline">
             <span className="SimInfoText">2026</span>
