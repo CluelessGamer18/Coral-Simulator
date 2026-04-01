@@ -612,7 +612,7 @@ class TestScene extends Phaser.Scene{
             outlineAlpha = Phaser.Math.Clamp(
                 (this.stressValue - 1) / 3,
                 0,
-                0.8
+                1
             );
         }
         this.tweens.killTweensOf(this.badOutline);
@@ -633,7 +633,7 @@ class TestScene extends Phaser.Scene{
                 1
             );
         }
-        this.tweens.killTweensOf(this.badOutline);
+        this.tweens.killTweensOf(this.pipeB);
 
         this.tweens.add({
             targets: this.pipeB,

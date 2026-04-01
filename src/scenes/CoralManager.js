@@ -1,76 +1,92 @@
-const coralTypes = {
+var coralTypes = {
   acropora: {
     key: 'acropora',
     name: 'Acropora',
-    scientificName: '-Scientific Name Here-',
+    scientificName: '',
     status: 'Healthy',
-    info: '-Coral Information Here-',
-    img: 'zoomIn.png',
+    info: 'Acropora are among the fastest-growing corals, shaping diverse habitats with their antler-like branches. Although they support thousands of species, they are highly sensitive to bleaching and other impacts of climate change. ',
+    imgType: 'tabular',
+    img: 'healthy_tabular_microscope.png',
     bleachRate: 1.0
   },
   acropora1: {
     key: 'acropora1',
-    name: 'Acropora clathrata',
-    scientificName: '-Scientific Name Here-',
+    name: 'Lattice Table Coral',
+    scientificName: 'Acropora Clathrata',
     status: 'Healthy',
-    information: '-Coral Information Here-',
-    img: 'zoomIn.png',
+    info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
+    imgType: 'tabular',
+    img: 'healthy_tabular_microscope.png',
     bleachRate: 0.6
   },
   acropora2: {
     key: 'acropora2',
-    name: 'Acropora clathrata',
-    scientificName: '-Scientific Name Here-',
+    name: 'Lattice Table Coral',
+    scientificName: 'Acropora Clathrata',
     status: 'Healthy',
-    info: '-Coral Information Here-',
-    img: 'zoomIn.png',
+    info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
+    imgType: 'tabular',
+    img: 'healthy_tabular_microscope.png',
     bleachRate: 1.4
   },
   acropora3: {
     key: 'acropora3',
-    name: 'Acropora clathrata',
-    scientificName: '-Scientific Name Here-',
+    name: 'Lattice Table Coral',
+    scientificName: 'Acropora Clathrata',
     status: 'Healthy',
-    info: '-Coral Information Here-',
-    img: 'zoomIn.png',
+    info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
+    imgType: 'tabular',
+    img: 'healthy_tabular_microscope.png',
     bleachRate: 1.4
   },
   montipora: {
     key: 'montipora',
-    name: 'Montipora Digitata',
-    scientificName: '-Scientific Name Here-',
+    name: 'Finger Coral',
+    scientificName: 'Montipora Digitata',
     status: 'Healthy',
-    info: '-Coral Information Here-',
-    img: 'zoomIn.png',
+    info: 'Montipora Digitata is a resilient, fast-growing coral with velvety, textured branches. Popular in natural reefs and home aquariums, it provides essential habitat while tolerating more environmental stress than its Acropora relatives. ',
+    imgType: 'branch',
+    img: 'healthy_microscope.png',
     bleachRate: 1.4
   },
   staghorn1: {
     key: 'staghorn1',
     name: 'Staghorn',
-    scientificName: '-Scientific Name Here-',
+    scientificName: 'Acropora Cervicornis',
     status: 'Healthy',
-    info: '-Coral Information Here-',
-    img: 'zoomIn.png',
+    info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
+    imgType: 'branch',
+    img: 'healthy_microscope.png',
     bleachRate: 1.4
   },
   staghorn2: {
     key: 'staghorn2',
     name: 'Staghorn',
-    scientificName: '-Scientific Name Here-',
+    scientificName: 'Acropora Cervicornis',
     status: 'Healthy',
-    info: '-Coral Information Here-',
-    img: 'zoomIn.png',
+    info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
+    imgType: 'branch',
+    img: 'healthy_microscope.png',
     bleachRate: 1.4
   }
 };
 
-// 0 = normal, 4 = fully bleached/dark
-const tintStages = [
-  0xFFFFFF,
-  0xD8D8D8,
-  0xC0C0C0,
-  0xA8A8A8,
-  0x000000
+const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead'];
+
+const coralImgPathsTabular = [
+  'healthy_tabular_microscope.png',
+  'ok_tabular_microscope.png',
+  'stressed_tabular_microscope.png',
+  'bleached_tabular_microscope.png',
+  'dead_tabular_microscope.png'
+];
+
+const coralImgPathsBranch = [
+  'healthy_microscope.png',
+  'ok_microscope.png',
+  'stressed_microscope.png',
+  'bleached_microscope.png',
+  'dead_microscope.png'
 ];
 
 const depthLevels = [-10, 120, 180];
@@ -185,6 +201,20 @@ function coralSway(scene, coral) {
 export function updateCoralStress(scene, stressAmount) {
 
 
+  //update all coralTypes
+  Object.values(coralTypes).forEach(type => {
+
+    if (type.status !== 'Dead') {
+      // coral.bleachStage = stressAmount;
+      type.status = coralStatuses[stressAmount];
+      if (type.imgType === 'branch') {
+        type.img = coralImgPathsBranch[stressAmount];
+      } else {
+        type.img = coralImgPathsTabular[stressAmount];
+      }
+    }
+  });
+
   scene.corals.forEach(coral => {
 
     // coral.stress = stressAmount;
@@ -196,10 +226,11 @@ export function updateCoralStress(scene, stressAmount) {
     //   0,
     //   3
     // );
+    if (coralTypes[coral.type].status !== 'Dead') {
+      coral.setFrame(stressAmount);
+    }
 
-    coral.bleachStage = stressAmount;
-    coral.setFrame(stressAmount);
-  });
+});
 
 }
 

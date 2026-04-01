@@ -4,6 +4,18 @@
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 9999;
+
+    width: 600px;
+    height: 400px;
+
+    background-color: rgba(2, 146, 165, 0.9);
+    border-radius: 16px;
+    background: linear-gradient(#0292A5, #0292A5) padding-box,
+    linear-gradient(to bottom, #0292A5, #FFFFFF) border-box;
+    border: 4px solid transparent;
+    backdrop-filter: blur(4px);
+
+    padding: 40px;
 }
 
 .SimTutorialAdvanceButton{
@@ -55,3 +67,30 @@
   color: white;
   scale: 1.10;
 }
+
+.SimTutorialTitle{
+    font-size: 36px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    text-align: center;
+    margin: 0px;
+}
+
+.SimTutorialText{
+    font-size: 18px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.SimTutorialContent{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* vertically aling center */
+    justify-content: center;
+    height: auto;
+}
+
+

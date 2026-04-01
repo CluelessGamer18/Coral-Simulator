@@ -72,14 +72,15 @@
 
 .SimInfoDial{
     width: 120px; 
-    height: 60px; 
+    height: 65px; 
     background: #0292A5; 
     border-top-left-radius: 60px; 
     border-top-right-radius: 60px;
     margin: 0;
-    background: linear-gradient(to right,#0292A5,#a2f0f9);
+    /* background: linear-gradient(to right,#0292A5,#a2f0f9); */
+    background: conic-gradient(from 90deg at 47.52% 100.00%, #78A018 201deg, white 338deg, #564B35 360deg);
     border-style: solid;
-    border-width: 3px;
+    border-width: 5px;
     border-color: #0292A5;
     padding: 0;
     position: relative;
@@ -87,7 +88,7 @@
 
 .SimInfoDialIcon{
     position: absolute;
-    width: 30px; 
+    width: 40px; 
     bottom: -20%;
     left: 50%;
     padding: 0;
@@ -100,7 +101,7 @@
 .SimInfoDialPin{
     position: absolute;
     bottom: 50px;
-    left: 52px;
+    left: 54px;
     transform: translateX(-50%) rotate(var(--angle, 0deg)); 
     transform-origin: 50% 79px; 
     margin: 0;
