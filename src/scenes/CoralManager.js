@@ -7,7 +7,7 @@ var coralTypes = {
     info: 'Acropora are among the fastest-growing corals, shaping diverse habitats with their antler-like branches. Although they support thousands of species, they are highly sensitive to bleaching and other impacts of climate change. ',
     imgType: 'tabular',
     img: 'healthy_tabular_microscope.png',
-    bleachRate: 1.0
+    bleachRate: 80
   },
   acropora1: {
     key: 'acropora1',
@@ -17,7 +17,7 @@ var coralTypes = {
     info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
     imgType: 'tabular',
     img: 'healthy_tabular_microscope.png',
-    bleachRate: 0.6
+    bleachRate: 100
   },
   acropora2: {
     key: 'acropora2',
@@ -27,7 +27,7 @@ var coralTypes = {
     info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
     imgType: 'tabular',
     img: 'healthy_tabular_microscope.png',
-    bleachRate: 1.4
+    bleachRate: 100
   },
   acropora3: {
     key: 'acropora3',
@@ -37,7 +37,7 @@ var coralTypes = {
     info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
     imgType: 'tabular',
     img: 'healthy_tabular_microscope.png',
-    bleachRate: 1.4
+    bleachRate: 100
   },
   montipora: {
     key: 'montipora',
@@ -47,7 +47,7 @@ var coralTypes = {
     info: 'Montipora Digitata is a resilient, fast-growing coral with velvety, textured branches. Popular in natural reefs and home aquariums, it provides essential habitat while tolerating more environmental stress than its Acropora relatives. ',
     imgType: 'branch',
     img: 'healthy_microscope.png',
-    bleachRate: 1.4
+    bleachRate: 100
   },
   staghorn1: {
     key: 'staghorn1',
@@ -57,7 +57,7 @@ var coralTypes = {
     info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
     imgType: 'branch',
     img: 'healthy_microscope.png',
-    bleachRate: 1.4
+    bleachRate: 100
   },
   staghorn2: {
     key: 'staghorn2',
@@ -67,7 +67,7 @@ var coralTypes = {
     info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
     imgType: 'branch',
     img: 'healthy_microscope.png',
-    bleachRate: 1.4
+    bleachRate: 100
   }
 };
 
@@ -199,39 +199,41 @@ function coralSway(scene, coral) {
 }
 
 export function updateCoralStress(scene, stressAmount) {
-
-
+  const adjustedStress = Math.floor((stressAmount / 100) * 4); // map stress 0-100 to 0-4
   //update all coralTypes
   Object.values(coralTypes).forEach(type => {
-
     if (type.status !== 'Dead') {
-      // coral.bleachStage = stressAmount;
-      type.status = coralStatuses[stressAmount];
+      type.status = coralStatuses[adjustedStress];
       if (type.imgType === 'branch') {
-        type.img = coralImgPathsBranch[stressAmount];
+        type.img = coralImgPathsBranch[adjustedStress];
       } else {
-        type.img = coralImgPathsTabular[stressAmount];
+        type.img = coralImgPathsTabular[adjustedStress];
       }
     }
   });
 
   scene.corals.forEach(coral => {
-
-    // coral.stress = stressAmount;
-
-    // const bleachValue = coral.stress * coral.bleachRate;
-
-    // const stage = Phaser.Math.Clamp(
-    //   Math.floor(bleachValue / 20),
-    //   0,
-    //   3
-    // );
     if (coralTypes[coral.type].status !== 'Dead') {
-      coral.setFrame(stressAmount);
+      coral.setFrame(adjustedStress);
     }
-
-});
-
+  });
 }
 
 
+export function resetCorals(scene) {
+  scene.corals.forEach(coral => {
+    coral.stress = 0;
+    coral.bleachStage = 0;
+    coral.setFrame(0);
+  });
+
+  //reset coralTypes
+  Object.values(coralTypes).forEach(type => {
+    type.status = 'Healthy';
+    if (type.imgType === 'branch') {
+      type.img = coralImgPathsBranch[0];
+    } else {
+      type.img = coralImgPathsTabular[0];
+    }
+  });
+}   

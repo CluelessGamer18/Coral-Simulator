@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { createFishSchools, timeJumpAnimate } from "./FishSchools.js";
-import { createCorals, updateCoralStress } from "./CoralManager.js";
+import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js";
 
 let oval;
 
@@ -460,6 +460,8 @@ class TestScene extends Phaser.Scene{
 
     RestartSim(){
         this.scene.restart();
+        resetCorals(this);
+        
     }
 
     updateTemperature(temp){
