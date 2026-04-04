@@ -27,7 +27,8 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
   const [sceneRunning, setSceneRunning] = useState(false);
-  const [cancelled, setCancelled] = useState(false);
+  const [bubbleCancelled, setBubbleCancelled] = useState(false);
+
 
   let handler, initialValue;
   if (scene){
@@ -73,6 +74,11 @@ function App() {
 
   useEffect(() => {
     if (!scene) {return}
+    if(bubbleCancelled){
+      setBubbleCancelled(false);
+      scene.freeFish(bubbleCancelled) 
+      return;
+    }
     if (!bubbleCollision){
       const type = scene.collisionType;
       if(type === 'temp') {
@@ -85,7 +91,7 @@ function App() {
         console.log("Type == Pollution, Updating Pollution")
         scene.updatePollution(pollutionValue);
       }
-      scene.freeFish()
+      scene.freeFish(bubbleCancelled)
     }
   },[bubbleCollision])
 
@@ -121,7 +127,8 @@ function App() {
         {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
         onChange={handler} 
-        setCollision={setBubbleCollision} /> : null}
+        setCollision={setBubbleCollision} 
+        setCancelled={setBubbleCancelled} /> : null}
         {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue}/> : null}
         {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { createFishSchools, timeJumpAnimate } from "./FishSchools.js";
 import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js";
+import { createNodeImportMeta } from "vite/module-runner";
 
 let oval;
 
@@ -650,13 +651,16 @@ class TestScene extends Phaser.Scene{
     }
     unlockFish(){this.tutorialComplete = true;}
 
-    freeFish(){
+    freeFish(cancelled){
         this.bubbleCollision = false;
-        this.tempBubble.destroy();
-        this.lightBubble.destroy();
-        this.pollutionBubble.destroy();
-        this.spawnBubbles();
-        this.tweens.paused = false;
+        if (!cancelled){
+            this.tempBubble.destroy();
+            this.lightBubble.destroy();
+            this.pollutionBubble.destroy();
+            this.spawnBubbles();
+            this.tweens.paused = false;
+        }
+
     }
 }
 

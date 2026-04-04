@@ -36,7 +36,7 @@ const CONFIG = {
         }
 
 }
-function SimBubblePopUp({type,initialValue, onChange, setCollision}){
+function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled}){
     const { min, max, title, subtitle, icon, graph, dangerA, dangerB } = CONFIG[type]
     const [ready, setReady] = useState(false);
 
@@ -84,6 +84,7 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision}){
 
     const handleCancelClick = () => {
         setCollision(false);
+        setCancelled(true);
     }
 
 useEffect(() => {
