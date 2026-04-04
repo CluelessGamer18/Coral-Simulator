@@ -19,6 +19,7 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
             <div className="SimInfoDial">
                 <img className="SimInfoDialIcon" src="/stress_level.svg"></img>
                 <img className="SimInfoDialPin" src="/SimInfoDialPin.svg" style={{ transform: `rotate(${stress * 1.8 - 90}deg)` }} ></img>
+                <img className="hoverPreview" src="/tooltip_stress.png" />
             </div>
             <div className="SimInfoTimeline">
             <span className="SimInfoText">2026</span>
@@ -42,6 +43,7 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
                         transform: `translateX(${timejump * 8.59}px)`
                     }}
                 />
+                {/*<img className="hoverPreview" src="/tooltip_timeline.png" />*/}
             </div>
 
             <span className="SimInfoText">2036</span>
@@ -50,14 +52,17 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
                 <div className="statusGroup">
                     <img className="SimInfoIcon" src="/temperature.svg"></img>
                     <span className="SimInfoText">{temp}°C</span>
+                    <img className="hoverPreview" src="/tooltip_temperature.png" />
                 </div>
                 <div className="statusGroup">
                     <img className="SimInfoIcon" src="/light_level.svg"></img>
                     <span className="SimInfoText">{light}</span>
+                    <img className="hoverPreview" src="/tooltip_light_level.png" />
                 </div>
                 <div className="statusGroup">
                     <img className="SimInfoIcon" src="/poop.svg"></img>
                     <span className="SimInfoText">{poll}</span>
+                    <img className="hoverPreview" src="/tooltip_pollution.png" />
                 </div>
             </div>
         </div>
