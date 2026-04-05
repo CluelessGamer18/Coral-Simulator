@@ -11,6 +11,9 @@ import SimBubblePopUp from './SimBubblePopUp.jsx'
 import SimEndPopUp from './SimEndPopUp.jsx'
 import SimTutorial from './SimTutorial.jsx'
 
+import { Routes, Route } from 'react-router-dom'
+import About from './About.jsx'
+
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(27);
   const [lightValue, setLightValue] = useState(500);
@@ -24,7 +27,11 @@ function App() {
   const [simEnd, setSimEnd] = useState(false);
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
+
+  const [musicVolume, setMusicVolume] = useState(0.5);
+  const [sfxVolume, setSfxVolume] = useState(1.0);
   const [showOptions, setShowOptions] = useState(false);
+
   const [showTutorial, setShowTutorial] = useState(true);
   const [sceneRunning, setSceneRunning] = useState(false);
   const [bubbleCancelled, setBubbleCancelled] = useState(false);
@@ -50,6 +57,12 @@ function App() {
     }
   }
  
+  useEffect(() => {
+    if (!scene) return;
+
+    scene.setMusicVolume?.(musicVolume);
+    scene.setSfxVolume?.(sfxVolume);
+  }, [scene, musicVolume, sfxVolume]);
 
   useEffect(() => {
     if (!scene) return;
@@ -113,7 +126,9 @@ function App() {
   }
 
   return (
-    <>
+  <Routes>
+    <Route path="/" element={
+      <>
         {/*<RangeSlider onChange={setStressValue}/>*/}
         {scene && simEnd && Array.isArray(scene.stressHistory) ? (
           <SimEndPopUp stress={scene.stressHistory}
@@ -130,12 +145,22 @@ function App() {
         setCollision={setBubbleCollision} 
         setCancelled={setBubbleCancelled} /> : null}
         {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue}/> : null}
-        {showOptions ? <OptionsDialog setShowOptions={setShowOptions} setShowTitleScreen={setShowTitleScreen} endSim={endSim} setScene={setScene}/> : null}
+        {showOptions ? <OptionsDialog
+          setShowOptions={setShowOptions}
+          setShowTitleScreen={setShowTitleScreen}
+          endSim={endSim}
+          setScene={setScene}
+          scene={scene}
+          musicVolume={musicVolume}
+          setMusicVolume={setMusicVolume}
+          sfxVolume={sfxVolume}
+          setSfxVolume={setSfxVolume}
+        /> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
         <main className="MainContent">
         {scene ? <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}><img src="/settings.svg" alt="Description of the image" width="45" height="45"></img>
-</button> : null}
+        </button> : null}
           <div className="GameContainer">
               <TestGame onSceneReady={setScene} />
           </div>
@@ -145,7 +170,12 @@ function App() {
     )}
 
     </>
-  )
+    } />
+
+    <Route path="/about" element={<About/>} />
+  </Routes>
+)
+
 }
 
 export default App

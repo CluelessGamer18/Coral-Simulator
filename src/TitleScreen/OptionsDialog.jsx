@@ -1,18 +1,29 @@
-import { useState } from "react";
 import "./TitleScreen.css";
 
-function OptionsDialog({setShowOptions, setShowTitleScreen = null, endSim = null, setScene= null}){
+import { useNavigate } from "react-router";
 
-    const [musicVolume, setMusicVolume] = useState(0.5);
-    const [sfxVolume, setSfxVolume] = useState(1.0);
+function OptionsDialog({
+    setShowOptions,
+    setShowTitleScreen = null,
+    endSim = null,
+    setScene = null,
+    scene,
+    musicVolume,
+    setMusicVolume,
+    sfxVolume,
+    setSfxVolume
+    }) {
+
+    const navigate = useNavigate();
+
 
     const handleMusicChange = (e) => {
         const value = Number(e.target.value);
         setMusicVolume(value);
 
         // send to phaser (if available)
-        if (window.gameScene?.setMusicVolume) {
-            window.gameScene.setMusicVolume(value);
+        if (scene?.setMusicVolume) {
+            scene.setMusicVolume(value);
         }
     };
 
@@ -20,12 +31,10 @@ function OptionsDialog({setShowOptions, setShowTitleScreen = null, endSim = null
         const value = Number(e.target.value);
         setSfxVolume(value);
 
-        if (window.gameScene?.setSfxVolume) {
-            window.gameScene.setSfxVolume(value);
+        if (scene?.setSfxVolume) {
+            scene.setSfxVolume(value);
         }
     };
-
-
 
     const returnToTitle = () => {
         setShowOptions(false);
@@ -35,6 +44,16 @@ function OptionsDialog({setShowOptions, setShowTitleScreen = null, endSim = null
             endSim();
         }
     }
+    const goToResources = () => {
+        setShowOptions(false);
+        navigate("/about");
+        if(setShowTitleScreen && setScene){
+            setShowTitleScreen(true);
+            setScene(null)
+            endSim();
+        }
+    };
+
     return(
         <>
         <div className="OptionsBoxContainer">
@@ -68,7 +87,7 @@ function OptionsDialog({setShowOptions, setShowTitleScreen = null, endSim = null
         
             {/* <button className="OptionsDialogButton">Settings</button> */}
             <button className="OptionsDialogButton" onClick={returnToTitle}>Return to Title</button>
-            <button className="OptionsDialogButton">Resources</button>
+            <button className="OptionsDialogButton" onClick={goToResources}>Resources</button>
         </div>
 
         </>

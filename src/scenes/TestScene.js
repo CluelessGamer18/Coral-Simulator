@@ -313,9 +313,6 @@ class TestScene extends Phaser.Scene{
 
     handleBubbleCollect(type) {
         const bubblePop = this.sound.add('bubblePop');
-        
-
-        this.tweens.paused = true;
 
         if (type == 'temp'){
             this.bubbleCollision = true;
