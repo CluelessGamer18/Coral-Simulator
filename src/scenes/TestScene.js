@@ -533,9 +533,17 @@ class TestScene extends Phaser.Scene{
     updateStress() {
         if (this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution) {
             this.stressValue = 100;
+            this.tempBubble.destroy();
+            this.lightBubble.destroy();
+            this.pollutionBubble.destroy();
             this.simEnd = true;
         } else {
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
+            this.tempBubble.destroy();
+            this.lightBubble.destroy();
+            this.pollutionBubble.destroy();
+            this.tweens.paused = false;
+            this.spawnBubbles();
         }
 
         if (this.stressHistory.length > 0) {
@@ -651,11 +659,7 @@ class TestScene extends Phaser.Scene{
     freeFish(cancelled){
         this.bubbleCollision = false;
         if (!cancelled){
-            this.tempBubble.destroy();
-            this.lightBubble.destroy();
-            this.pollutionBubble.destroy();
-            this.spawnBubbles();
-            this.tweens.paused = false;
+
         }
 
     }
