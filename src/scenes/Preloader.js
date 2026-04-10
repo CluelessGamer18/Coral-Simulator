@@ -64,7 +64,7 @@ update() {
         //corals
         this.load.spritesheet("acropora", "/assets/corals/acropora.png", { frameWidth: 180, frameHeight: 190 });
         this.load.spritesheet("acropora1", "/assets/corals/acropora1.png", { frameWidth: 186, frameHeight: 106 });
-        this.load.spritesheet("acropora2", "/assets/corals/acropora2.png", { frameWidth: 191, frameHeight: 82 });
+        this.load.spritesheet("acropora2", "/assets/corals/acropora2.png", { frameWidth: 190.66, frameHeight: 81.52 });
         this.load.spritesheet("acropora3", "/assets/corals/acropora3.png", { frameWidth: 180, frameHeight: 190 });
         this.load.spritesheet("montipora", "/assets/corals/montipora.png", { frameWidth: 180, frameHeight: 190 });
         this.load.spritesheet("staghorn1", "/assets/corals/staghorn1.png", { frameWidth: 180, frameHeight: 190 });

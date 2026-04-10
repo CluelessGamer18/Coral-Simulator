@@ -215,6 +215,8 @@ export function updateCoralStress(scene, stressAmount) {
   scene.corals.forEach(coral => {
     if (coralTypes[coral.type].status !== 'Dead') {
       coral.setFrame(adjustedStress);
+    } else {
+      coral.setFrame(4);
     }
   });
 }

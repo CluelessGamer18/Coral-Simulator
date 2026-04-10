@@ -458,6 +458,7 @@ class TestScene extends Phaser.Scene{
 
     RestartSim(){
         this.scene.restart();
+        this.bgMusic.stop();
         resetCorals(this);
         
     }
