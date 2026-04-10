@@ -15,7 +15,7 @@ function StressChart({ data = [], title, yRange}) {
     chartRef.current = new Chart(canvasRef.current, {
       type: "line",
       data: {
-        labels: data.map((_, i) => i),
+        labels: data.map((_, i) => 2026 + i),
         datasets: [
           {
             data,
@@ -48,8 +48,17 @@ function StressChart({ data = [], title, yRange}) {
 
         scales: {
           x: {
+            title: {
+                display: true,
+                text: "Year",
+                color: "#FFFFFF",
+                font: {
+                  size: 16,
+                  weight: "bold"
+                }
+              },
             ticks: { color: "#FFFFFF" },
-            grid: { color: "rgba(255,255,255,0.2)" }
+            grid: { color: "rgba(255,255,255,0.2)" },
           },
           y: {
             ticks: { color: "#FFFFFF" },
