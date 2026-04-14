@@ -5,12 +5,9 @@ import { createNodeImportMeta } from "vite/module-runner";
 
 let oval;
 
-class TestScene extends Phaser.Scene{
-    constructor(){
+class TestScene extends Phaser.Scene {
+    constructor() {
         super("TestScene");
-
-        // Data Values
-
 
         this.deltaTimer = 0;
         this.simStart = false;
@@ -20,22 +17,21 @@ class TestScene extends Phaser.Scene{
         this.moveCameraLeft = false;
         this.moveCameraRight = false;
         this.tutorialComplete = false;
-        // If (tutorialComplete)
-        
+        // If (tutorialComplete)   
     }
-    
 
-
-    create(){
+    setupSimulationState() {
         this.lightLevel = 500; // Default
         this.temperature = 27; // Default
         this.pollutionValue = 1; // Default
-        this.stressValue = 0; // Will range from 0 - 4 
+        this.stressValue = 0; // Will range from 0 - 100
         // 0 means healthy
-        // 1 means slightly stressed
-        // 2 means more stressed
-        // 3 means bleached
-        // 4 means death
+        // 30 means slightly stressed
+        // 60 means more stressed
+        // 90 means bleached
+        // 100 means death
+
+        // saved history for end result graphs
         this.tempHistory = []
         this.lightHistory = []
         this.pollutionHistory = []
@@ -56,47 +52,62 @@ class TestScene extends Phaser.Scene{
 
         this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
+    }
 
+    setupWorld(cam) {
+        this.game.events.emit("scene-ready", this);
 
         this.cameras.main.setBackgroundColor("#8ACFC9");
 
-        const cam = this.cameras.main;
-
         const floorLayer3 = this.add.image(0, 0, "floor_layer3")
-        .setOrigin(0, 0).setDepth(1)
-        
-        // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
-        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        
+            .setOrigin(0, 0).setDepth(1)
+            // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
+            .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+
         floorLayer3.y = this.WORLD_HEIGHT - floorLayer3.height;
 
         const floorLayer2 = this.add.image(0, 0, "floor_layer2")
-        .setOrigin(0, 0).setDepth(2)
-        .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+            .setOrigin(0, 0).setDepth(2)
+            .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
         floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
 
+        createFishSchools(this); //educated fish (schools)
+        createCorals(this);
+
         this.pipeA = this.add.image(0, 0, "pipe")
-        .setOrigin(0, 0).setDepth(6)
-        .setScrollFactor(1, 1)
-        .setAngle(-15);
+            .setOrigin(0, 0).setDepth(6)
+            .setScrollFactor(1, 1)
+            .setAngle(-15);
         this.pipeA.y = this.WORLD_HEIGHT - this.pipeA.height - 60;
 
         this.pipeB = this.add.image(0, 0, "pipe")
-        .setOrigin(0, 0).setDepth(6)
-        .setScrollFactor(1, 1)
-        .setAngle(-15)
-        .setAlpha(0);
+            .setOrigin(0, 0).setDepth(6)
+            .setScrollFactor(1, 1)
+            .setAngle(-15)
+            .setAlpha(0);
         this.pipeB.y = this.WORLD_HEIGHT - this.pipeB.height - 60;
 
         this.pipeA.setFrame(1);
         this.pipeB.setFrame(0);
 
-        //educated fish (schools)
-        createFishSchools(this);
 
-        createCorals(this); 
+        const floorLayer1 = this.add.image(0, 0, "floor_layer1")
+            .setOrigin(0, 0).setDepth(5)
+            .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        floorLayer1.y = this.WORLD_HEIGHT - floorLayer1.height;
 
+        const floorLayer0 = this.add.image(0, 0, "floor_layer0")
+            .setOrigin(0, 0).setDepth(6)
+            .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        floorLayer0.y = this.WORLD_HEIGHT - floorLayer0.height;
 
+        const surface = this.add.image(0, 0, "surface")
+            .setOrigin(0, 0).setDepth(-4)
+            .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        surface.y = -10;
+    }
+
+    setupAudio() {
         this.musicVolume = 0.5;
 
         this.bgMusic = this.sound.add('background_music', {
@@ -105,59 +116,78 @@ class TestScene extends Phaser.Scene{
         });
 
         this.bgMusic.play();
+    }
 
-        window.gameScene = this;
-
-
-        
-
-        
-
-        const floorLayer1 = this.add.image(0, 0, "floor_layer1")
-        .setOrigin(0, 0).setDepth(5)
-        .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        floorLayer1.y = this.WORLD_HEIGHT - floorLayer1.height;
-
-        const floorLayer0 = this.add.image(0, 0, "floor_layer0")
-        .setOrigin(0, 0).setDepth(6)
-        .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        floorLayer0.y = this.WORLD_HEIGHT - floorLayer0.height;
-
-        const surface = this.add.image(0, 0, "surface")
-        .setOrigin(0, 0).setDepth(-4)
-        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        surface.y = -10;
-
-        this.guide = this.physics.add.image(300,300,"Guide")
+    setupUI(cam) {
+        this.guide = this.physics.add.image(300, 300, "Guide")
         this.guide.setInteractive();
         this.guide.setDepth(9999);
         this.guide.preFX.addShadow(0, -8, 0.009, 1, 0x333333, 5);
 
         this.badOutline = this.add.image(-95, -95, "badOutline")
-        .setOrigin(0, 0).setDepth(10001).setAlpha(0)
-        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+            .setOrigin(0, 0).setDepth(10001).setAlpha(0)
+            .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
 
         this.lightOverlay = this.add.rectangle(0, 0, 1440, 1024, 0xFFFFFF, 1)
-        .setOrigin(0, 0).setDepth(10000)
-        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+            .setOrigin(0, 0).setDepth(10000)
+            .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+
         this.darkOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, 1)
-        .setOrigin(0, 0).setDepth(10000)
-        .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+            .setOrigin(0, 0).setDepth(10000)
+            .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
 
-        this.updateHistory();
-        
-        this.spawnBubbles();
-        this.isDraggingGuide = false; 
-        this.input.on("pointerdown", () => { 
-            this.isDraggingGuide = true; 
-            }); 
-        this.input.on("pointerup", () => { 
-            this.isDraggingGuide = false; 
-            });
 
+
+        // move right on hover
+        this.rectRight = this.add.rectangle(
+            this.cameras.main.width - 50,
+            this.cameras.main.height / 2,
+            100,
+            this.cameras.main.height, 0xFFFFFF
+        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
+
+        this.rectRight.on("pointerover", () => {
+            this.moveCameraRight = true;
+        });
+
+        this.rectRight.on("pointerout", () => {
+            this.moveCameraRight = false;
+        });
+
+        // move left on hover
+        this.rectLeft = this.add.rectangle(
+            50,
+            this.cameras.main.height / 2,
+            100,
+            this.cameras.main.height, 0xFFFFFF
+        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
+
+        this.rectLeft.on("pointerover", () => {
+            this.moveCameraLeft = true;
+        });
+
+        this.rectLeft.on("pointerout", () => {
+            this.moveCameraLeft = false;
+        });
+
+        // guide shadow
+        oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
+    }
+
+    setupMouseInput() {
+        this.isDraggingGuide = false;
+        this.input.on("pointerdown", () => {
+            this.isDraggingGuide = true;
+        });
+        this.input.on("pointerup", () => {
+            this.isDraggingGuide = false;
+        });
+    }
+
+    setupCamera(cam) {
         const cursors = this.input.keyboard.createCursorKeys();
 
-         //camera presettings
+        //camera presettings
         const controlConfig = {
             camera: this.cameras.main,
             left: cursors.left,
@@ -173,53 +203,30 @@ class TestScene extends Phaser.Scene{
 
         this.controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig);
 
-        // move right on hover
-        this.rectRight = this.add.rectangle(
-        this.cameras.main.width - 50,
-        this.cameras.main.height / 2,
-        100,
-        this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
-
-            this.rectRight.on("pointerover", () => {
-            this.moveCameraRight = true;
-            });
-
-            this.rectRight.on("pointerout", () => {
-            this.moveCameraRight = false;
-            });
-
-                // move left on hover
-        this.rectLeft = this.add.rectangle(
-        50,
-        this.cameras.main.height / 2,
-        100,
-        this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
-
-            this.rectLeft.on("pointerover", () => {
-            this.moveCameraLeft = true;
-            });
-
-            this.rectLeft.on("pointerout", () => {
-            this.moveCameraLeft = false;
-            });
-
-        
-
         cam.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+    }
+
+
+    create() {
+        const cam = this.cameras.main;
+
+        this.setupSimulationState();
+        this.setupWorld(cam);
+        this.setupAudio();
+        this.setupUI(cam);
+        this.setupMouseInput();
+        this.setupCamera(cam);
+        this.updateHistory();
+        this.spawnBubbles();
+
         this.onSimTimeUpdate = null;
+
+        window.gameScene = this;
         this.game.events.emit("scene-ready", this);
-
-
-
-        oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
-
     }
 
     setMusicVolume(value) {
         this.musicVolume = value;
-
         if (this.bgMusic) {
             this.bgMusic.setVolume(value);
         }
@@ -230,81 +237,81 @@ class TestScene extends Phaser.Scene{
     }
 
     spawnBubbles() {
-    const x1 = Phaser.Math.Between(50, 2000);
-    const y1 = Phaser.Math.Between(50, 500);
+        const x1 = Phaser.Math.Between(50, 2000);
+        const y1 = Phaser.Math.Between(50, 500);
 
-    const x2 = Phaser.Math.Between(50, 2000);
-    const y2 = Phaser.Math.Between(50, 500);
+        const x2 = Phaser.Math.Between(50, 2000);
+        const y2 = Phaser.Math.Between(50, 500);
 
-    const x3 = Phaser.Math.Between(50, 2000);
-    const y3 = Phaser.Math.Between(50, 500);
-     
-    this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
-    this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
-    this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
+        const x3 = Phaser.Math.Between(50, 2000);
+        const y3 = Phaser.Math.Between(50, 500);
 
-    this.tempBubble.setInteractive();
-    this.tempBubble.on('pointerdown', () => {
-        this.handleBubbleCollect('temp');
-    });
-    this.tempBubble.on('pointerover', () => {
-        this.tweens.add({
-            targets: this.tempBubble,
-            scale: 1.15,     
-            duration: 200,
-            ease: 'Power1'
-        });
-    });
-    this.tempBubble.on('pointerout', () => {
-        this.tweens.add({
-            targets: this.tempBubble,
-            scale: 1,        
-            duration: 200,
-            ease: 'Power1'
-        });
-    });
+        this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
+        this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
+        this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
 
-    this.lightBubble.setInteractive();
-    this.lightBubble.on('pointerdown', () => {
-        this.handleBubbleCollect('light');
-    });
-    this.lightBubble.on('pointerover', () => {
-        this.tweens.add({
-            targets: this.lightBubble,
-            scale: 1.15,     
-            duration: 200,
-            ease: 'Sine.inOut'
+        this.tempBubble.setInteractive();
+        this.tempBubble.on('pointerdown', () => {
+            this.handleBubbleCollect('temp');
         });
-    });
-    this.lightBubble.on('pointerout', () => {
-        this.tweens.add({
-            targets: this.lightBubble,
-            scale: 1,        
-            duration: 200,
-            ease: 'Sine.inOut'
+        this.tempBubble.on('pointerover', () => {
+            this.tweens.add({
+                targets: this.tempBubble,
+                scale: 1.15,
+                duration: 200,
+                ease: 'Power1'
+            });
         });
-    });
+        this.tempBubble.on('pointerout', () => {
+            this.tweens.add({
+                targets: this.tempBubble,
+                scale: 1,
+                duration: 200,
+                ease: 'Power1'
+            });
+        });
 
-    this.pollutionBubble.setInteractive();
-    this.pollutionBubble.on('pointerdown', () => {
-        this.handleBubbleCollect('poll');
-    });
-    this.pollutionBubble.on('pointerover', () => {
-        this.tweens.add({
-            targets: this.pollutionBubble,
-            scale: 1.15,     
-            duration: 200,
-            ease: 'Sine.inOut'
+        this.lightBubble.setInteractive();
+        this.lightBubble.on('pointerdown', () => {
+            this.handleBubbleCollect('light');
         });
-    });
-    this.pollutionBubble.on('pointerout', () => {
-        this.tweens.add({
-            targets: this.pollutionBubble,
-            scale: 1,        
-            duration: 200,
-            ease: 'Sine.inOut'
+        this.lightBubble.on('pointerover', () => {
+            this.tweens.add({
+                targets: this.lightBubble,
+                scale: 1.15,
+                duration: 200,
+                ease: 'Sine.inOut'
+            });
         });
-    });
+        this.lightBubble.on('pointerout', () => {
+            this.tweens.add({
+                targets: this.lightBubble,
+                scale: 1,
+                duration: 200,
+                ease: 'Sine.inOut'
+            });
+        });
+
+        this.pollutionBubble.setInteractive();
+        this.pollutionBubble.on('pointerdown', () => {
+            this.handleBubbleCollect('poll');
+        });
+        this.pollutionBubble.on('pointerover', () => {
+            this.tweens.add({
+                targets: this.pollutionBubble,
+                scale: 1.15,
+                duration: 200,
+                ease: 'Sine.inOut'
+            });
+        });
+        this.pollutionBubble.on('pointerout', () => {
+            this.tweens.add({
+                targets: this.pollutionBubble,
+                scale: 1,
+                duration: 200,
+                ease: 'Sine.inOut'
+            });
+        });
 
         this.bubbleIdle(this.tempBubble);
         this.bubbleIdle(this.lightBubble);
@@ -314,15 +321,15 @@ class TestScene extends Phaser.Scene{
     handleBubbleCollect(type) {
         const bubblePop = this.sound.add('bubblePop');
 
-        if (type == 'temp'){
+        if (type == 'temp') {
             this.bubbleCollision = true;
             this.tempBubble.destroy();
             this.collisionType = type;
-        } else if (type == 'light'){
+        } else if (type == 'light') {
             this.bubbleCollision = true;
             this.collisionType = type;
             this.lightBubble.destroy();
-        } else if (type == 'poll'){
+        } else if (type == 'poll') {
             this.bubbleCollision = true;
             this.collisionType = type;
             this.pollutionBubble.destroy();
@@ -334,7 +341,7 @@ class TestScene extends Phaser.Scene{
     bubbleIdle(bubble) {
         this.tweens.add({
             targets: bubble,
-            y: bubble.y - 20, 
+            y: bubble.y - 20,
             duration: 1000,
             yoyo: true,
             repeat: -1,
@@ -348,8 +355,8 @@ class TestScene extends Phaser.Scene{
 
         const pointer = this.input.activePointer;
 
-        if (this.tutorialComplete && !this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x,this.guide.y,pointer.worldX,pointer.worldY) > 100) {
-            
+        if (this.tutorialComplete && !this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x, this.guide.y, pointer.worldX, pointer.worldY) > 100) {
+
             const speed = 0.05;
 
             const targetAngle = Phaser.Math.Angle.Between(
@@ -358,29 +365,29 @@ class TestScene extends Phaser.Scene{
             );
 
 
-        // Decide if sprite should flip
-        const flip = Math.cos(targetAngle) < 0;
-        this.guide.setFlipY(flip);
+            // Decide if sprite should flip
+            const flip = Math.cos(targetAngle) < 0;
+            this.guide.setFlipY(flip);
 
-        // Adjust offset depending on flip
-        const offset = Phaser.Math.DegToRad(0);
-        const desiredRotation = targetAngle + (flip ? -offset : offset);
+            // Adjust offset depending on flip
+            const offset = Phaser.Math.DegToRad(0);
+            const desiredRotation = targetAngle + (flip ? -offset : offset);
 
-        // Smooth rotation
-        this.guide.rotation = Phaser.Math.Angle.RotateTo(
-            this.guide.rotation,
-            desiredRotation,
-            0.5
-        );
+            // Smooth rotation
+            this.guide.rotation = Phaser.Math.Angle.RotateTo(
+                this.guide.rotation,
+                desiredRotation,
+                0.5
+            );
 
-        
+
 
             const minScale = 1.3;   // guide scale at the top
             const maxScale = 1.3;   // guide scale at the bottom
 
             const t = this.guide.y / this.cameras.main.height;
             const easedT = t * t;   // easing
-            this.guide.setScale((minScale + (maxScale - minScale) * easedT)/1.5);
+            this.guide.setScale((minScale + (maxScale - minScale) * easedT) / 1.5);
 
             const angleDiff = Phaser.Math.Angle.Wrap(desiredRotation - this.guide.rotation);
 
@@ -391,11 +398,11 @@ class TestScene extends Phaser.Scene{
                     this.guide.y += (pointer.worldY - this.guide.y) * speed;
                 }
 
-                
+
                 const time = this.time.now;
                 const wiggleAmount = 1;
                 const wiggleSpeed = 0.01;
-                const wiggle = Math.sin(time*wiggleSpeed)*wiggleAmount;
+                const wiggle = Math.sin(time * wiggleSpeed) * wiggleAmount;
 
                 this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
                 if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
@@ -406,43 +413,43 @@ class TestScene extends Phaser.Scene{
             // Add in a different movement if fish is close to the cursor.
         }
 
-            //mouse movement
-            const accel = 0.6;
-            const friction = 0.9;
-            const maxSpeed = 15;
+        //mouse movement
+        const accel = 0.6;
+        const friction = 0.9;
+        const maxSpeed = 15;
 
-            if (this.moveCameraRight) {
+        if (this.moveCameraRight) {
             this.camVelX += accel;
-            } else if (this.moveCameraLeft) {
+        } else if (this.moveCameraLeft) {
             this.camVelX -= accel;
-            } else {
+        } else {
             this.camVelX *= friction;
+        }
+
+        this.camVelX = Phaser.Math.Clamp(this.camVelX, -maxSpeed, maxSpeed);
+
+        this.cameras.main.scrollX += this.camVelX;
+
+
+        if (this.timerRunning) {
+            this.simTime += delta;
+
+            if (this.onSimTimeUpdate) {
+                this.onSimTimeUpdate(this.getSimTime());
             }
+        }
 
-            this.camVelX = Phaser.Math.Clamp(this.camVelX, -maxSpeed, maxSpeed);
-
-            this.cameras.main.scrollX += this.camVelX;
-
-
-            if (this.timerRunning) {
-                this.simTime += delta;
-            
-                if (this.onSimTimeUpdate) {
-                    this.onSimTimeUpdate(this.getSimTime());
-                    }
-            }
-
-            this.deltaTimer+=delta;        
-            this.controls.update(delta); 
+        this.deltaTimer += delta;
+        this.controls.update(delta);
 
 
-            oval.clear();
+        oval.clear();
 
-            // Redraw oval at new position
-            oval.fillEllipse(this.guide.x, 950, this.guide.scale*100, 10).setDepth(6);
+        // Redraw oval at new position
+        oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
     }
 
-    getSimTime() { 
+    getSimTime() {
         const totalSeconds = Math.floor(this.simTime / 1000);
 
         const hours = Math.floor(totalSeconds / 3600);
@@ -456,27 +463,26 @@ class TestScene extends Phaser.Scene{
         ].join(":");
     }
 
-    RestartSim(){
+    RestartSim() {
         this.scene.restart();
         this.bgMusic.stop();
         resetCorals(this);
-        
     }
 
-    updateTemperature(temp){
+    updateTemperature(temp) {
         this.temperature = temp;
         const stressedA = 25; const stressedB = 27; // First Bleaching Interval [a,b]
         const stressedC = 29; const stressedD = 31; // Second Bleaching Interval [c,d]
 
-        if(this.temperature >= stressedA && this.temperature < stressedB){
+        if (this.temperature >= stressedA && this.temperature < stressedB) {
             this.poorTemp = 30;
             this.reefDeadTemp = false;
-        } else if (this.temperature > stressedC && this.temperature <= stressedD){
+        } else if (this.temperature > stressedC && this.temperature <= stressedD) {
             this.poorTemp = 30;
             this.reefDeadTemp = false;
-        } else if (this.temperature <= stressedA){
+        } else if (this.temperature <= stressedA) {
             this.reefDeadTemp = true; // Reef is Dead
-        } else if (this.temperature >= stressedD){
+        } else if (this.temperature >= stressedD) {
             this.reefDeadTemp = true;
         } else {
             this.poorTemp = 0;
@@ -486,20 +492,20 @@ class TestScene extends Phaser.Scene{
         this.updateStress()
     }
 
-    updatePollution(poll){
+    updatePollution(poll) {
         this.pollutionValue = poll;
-        const stressedA = 0; const stressedB = 1; 
-        const stressedC = 3; const stressedD = 5; 
+        const stressedA = 0; const stressedB = 1;
+        const stressedC = 3; const stressedD = 5;
 
-        if(this.pollutionValue >= stressedA && this.pollutionValue < stressedB){
+        if (this.pollutionValue >= stressedA && this.pollutionValue < stressedB) {
             this.poorPollution = 30;
             this.reefDeadPollution = false;
-        } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD){
+        } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD) {
             this.poorPollution = 30;
             this.reefDeadPollution = false;
-        } else if (this.pollutionValue <= stressedA){
+        } else if (this.pollutionValue <= stressedA) {
             this.reefDeadPollution = true; // Reef is Dead
-        } else if (this.pollutionValue >= stressedD){
+        } else if (this.pollutionValue >= stressedD) {
             this.reefDeadPollution = true;
         } else {
             this.poorPollution = 0;
@@ -509,20 +515,20 @@ class TestScene extends Phaser.Scene{
         this.updateStress()
     }
 
-    updateLight(light){
+    updateLight(light) {
         this.lightLevel = light;
-        const stressedA = 141; const stressedB = 200; 
-        const stressedC = 1100; const stressedD = 1839; 
+        const stressedA = 141; const stressedB = 200;
+        const stressedC = 1100; const stressedD = 1839;
 
-        if(this.lightLevel >= stressedA && this.lightLevel < stressedB){
+        if (this.lightLevel >= stressedA && this.lightLevel < stressedB) {
             this.poorLight = 30;
             this.reefDeadLight = false;
-        } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD){
+        } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD) {
             this.poorLight = 30;
             this.reefDeadLight = false;
-        } else if (this.lightLevel <= stressedA){
+        } else if (this.lightLevel <= stressedA) {
             this.reefDeadLight = true; // Reef is Dead
-        } else if (this.lightLevel >= stressedD){
+        } else if (this.lightLevel >= stressedD) {
             this.reefDeadLight = true;
         } else {
             this.poorLight = 0;
@@ -568,7 +574,7 @@ class TestScene extends Phaser.Scene{
         updateCoralStress(this, this.stressValue);
     }
 
-    updateHistory(){
+    updateHistory() {
         this.tempHistory.push(this.temperature)
         this.lightHistory.push(this.lightLevel)
         this.pollutionHistory.push(this.pollutionValue)
@@ -591,7 +597,7 @@ class TestScene extends Phaser.Scene{
                 0,
                 0.1
             );
-        } 
+        }
         else if (this.lightLevel < midpoint) {
             // Below 500 -> darken
             darkAlpha = Phaser.Math.Clamp(
@@ -655,11 +661,11 @@ class TestScene extends Phaser.Scene{
         });
 
     }
-    unlockFish(){this.tutorialComplete = true;}
+    unlockFish() { this.tutorialComplete = true; }
 
-    freeFish(cancelled){
+    freeFish(cancelled) {
         this.bubbleCollision = false;
-        if (!cancelled){
+        if (!cancelled) {
 
         }
 
