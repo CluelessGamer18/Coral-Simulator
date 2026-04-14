@@ -1,22 +1,11 @@
-let numOfSchools = 25;
-let schoolChance = 50; // 70% chance a school will have more than 1 fish
-let maxSchoolSize = 8;
+/* Fish school generation and movement logic 
+    - Modify fish types by changing the fish spritesheet and adjusting fishTypes below (key corresponds to spritesheet frame)
+*/
 
-let maxFishScale = 0.5;
-let minFishScale = 0.3;
-
-let timeJump = 1;
-
-const depthSettings = [
-  { scale: 0.1, scroll: 1440, speed: 1.6, distance: 0.3, tint: 0x32AFAC}, // background
-  { scale: 0.3, scroll: 2072, speed: 1.3, distance: 0.6, tint: 0x143F45}, // mid
-  { scale: 0.85, scroll: 2860, speed: 1.0, distance: 1.0, tint: null}  // foreground
-];
-
-const fishTypes = { //examples **replace with actual spritesheets later**
+const fishTypes = {
   yellowTang: {
-    key: 0,
-    min: 3,
+    key: 0, // spritesheet frame
+    min: 3, // min and max number of fish randomly generated in a school of this type
     max: 5
   },
   moorishIdol: {
@@ -77,11 +66,27 @@ const fishTypes = { //examples **replace with actual spritesheets later**
 
 };
 
+let numOfSchools = 25;
+let schoolChance = 50; // 50% chance a school will have more than 1 fish
+
+let maxFishScale = 0.5; // fish size variation
+let minFishScale = 0.3;
+
+let timeJump = 1;
+
+// settings for 3 depth levels of fish, which affect their size, speed, and how far they move in the scene
+const depthSettings = [ 
+  { scale: 0.1, scroll: 1440, speed: 1.6, distance: 0.3, tint: 0x32AFAC}, // background
+  { scale: 0.3, scroll: 2072, speed: 1.3, distance: 0.6, tint: 0x143F45}, // mid
+  { scale: 0.85, scroll: 2860, speed: 1.0, distance: 1.0, tint: null}  // foreground
+];
+
+/* hypothetical settings for faster movement during time jumps (not curently implemented) */
 export function timeJumpAnimate(speed) {
   timeJump = speed;
 }
 
-
+/* main function to create fish schools in the scene. Called when game scene is created. */
 export function createFishSchools(scene) {
   for (let i = 0; i < numOfSchools; i++) {
 
@@ -89,7 +94,7 @@ export function createFishSchools(scene) {
 
     const typeName = Phaser.Utils.Array.GetRandom(types); // random fish type
     const type = fishTypes[typeName];
-    const depthWeights = [0,0,0,0,0, 1, 2,2,2];
+    const depthWeights = [0,0,0,0,0, 1, 2,2,2]; // weighted random depth (more fish in foreground and background, fewer in midground)
     let depth = Phaser.Utils.Array.GetRandom(depthWeights);
 
     let numFish = 1;
@@ -104,6 +109,7 @@ export function createFishSchools(scene) {
   }
 }
 
+/* helper function to create a school of fish as a container with multiple fish images. */
 function createSchool(scene, count, type, depth) {
 
   const container = scene.add.container(
@@ -112,7 +118,7 @@ function createSchool(scene, count, type, depth) {
   );
 
   container.depthLevel = depth;
-  container.setDepth(depth).setScrollFactor((depthSettings[depth].scroll - 1440) / (scene.WORLD_WIDTH - 1440), 1);
+  container.setDepth(depth).setScrollFactor((depthSettings[depth].scroll - 1440) / (scene.WORLD_WIDTH - 1440), 1); // parallax scrolling based on depth
 
 
   for (let i = 0; i < count; i++) {
@@ -129,15 +135,14 @@ function createSchool(scene, count, type, depth) {
   return container;
 }
 
+/* function to randomly move a school to a new position, loops. */
 function repeatMovement(scene, school) {
-
-    // min and max ms between movements
+  // min and max ms between movements
   const minInterval = 5000;
   const maxInterval = 20000;
 
   const nextCall = Phaser.Math.Between(minInterval * timeJump, maxInterval * timeJump);
 
-  // chooseNextPos(scene, school, nextCall);
   chooseNextPos(scene, school, nextCall);
 
   scene.time.delayedCall(nextCall, () => {
@@ -146,20 +151,20 @@ function repeatMovement(scene, school) {
 }
 
 
-
+/* helper function to choose a new random position for a school and tween it there. */
 function chooseNextPos(scene, school, duration) {
 
   // max distance/speed a school can move in one tween
   const maxDistance = 2000 * depthSettings[school.depthLevel].distance;
 
-const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-const distance = Phaser.Math.Between(200, maxDistance);
+  const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+  const distance = Phaser.Math.Between(200, maxDistance);
 
-let newX = school.x + Math.cos(angle) * distance;
-let newY = school.y + Math.sin(angle) * distance;
+  let newX = school.x + Math.cos(angle) * distance;
+  let newY = school.y + Math.sin(angle) * distance;
 
-newX = Phaser.Math.Clamp(newX, 0, depthSettings[school.depthLevel].scroll);
-newY = Phaser.Math.Clamp(newY, 0, scene.WORLD_HEIGHT - ((2-school.depthLevel)*100)-400);
+  newX = Phaser.Math.Clamp(newX, 0, depthSettings[school.depthLevel].scroll);
+  newY = Phaser.Math.Clamp(newY, 0, scene.WORLD_HEIGHT - ((2-school.depthLevel)*100)-400);
 
   const isRight = newX > school.x;
 

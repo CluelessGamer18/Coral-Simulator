@@ -1,11 +1,21 @@
-var coralTypes = {
+/*  
+Metadata for each coral type. 
+    Append by adding new coral objects here, 
+    and make sure to add corresponding images 
+    in the assets folder and load them in 
+    Preloader.js
+
+    Any corals added here will be randomly generated in the scene, and will be affected by stress updates.
+*/
+
+var coralTypes = { 
   acropora: {
     key: 'acropora',
     name: 'Acropora',
     scientificName: '',
     status: 'Healthy',
     info: 'Acropora are among the fastest-growing corals, shaping diverse habitats with their antler-like branches. Although they support thousands of species, they are highly sensitive to bleaching and other impacts of climate change. ',
-    imgType: 'tabular',
+    imgType: 'tabular', // determines which set of bleach stage images to use for this coral type (tabular vs branch)
     img: 'healthy_tabular_microscope.png',
     bleachRate: 80
   },
@@ -71,9 +81,9 @@ var coralTypes = {
   }
 };
 
-const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead'];
+const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead']; // forwarded to React frontend for display
 
-const coralImgPathsTabular = [
+const coralImgPathsTabular = [ // microscope images of tabular coral bleach stages (for sending to React frontend)
   'healthy_tabular_microscope.png',
   'ok_tabular_microscope.png',
   'stressed_tabular_microscope.png',
@@ -81,7 +91,7 @@ const coralImgPathsTabular = [
   'dead_tabular_microscope.png'
 ];
 
-const coralImgPathsBranch = [
+const coralImgPathsBranch = [ // microscope images of branch coral bleach stages (for sending to React frontend)
   'healthy_microscope.png',
   'ok_microscope.png',
   'stressed_microscope.png',
@@ -89,27 +99,21 @@ const coralImgPathsBranch = [
   'dead_microscope.png'
 ];
 
+// z levels for corals, which determine their y position and rendering depth in the scene
 const depthLevels = [-10, 120, 180];
 
 
+/* main function to create coral instances in the scene. Called when game scene is created. */
 export function createCorals(scene) {
-
     scene.corals = [];
-
-    const group = createCoralGroup(scene, 30);
-    
-
+    const group = createCoralGroup(scene, 30); // create 30 corals
 }
 
+/* helper function to create a group of coral instances with random types and positions. */
 function createCoralGroup(scene, count) {
-
-  // const container = scene.add.container(0, 0);
-  // container.setDepth(7);
-
   const types = Object.keys(coralTypes);
 
   for (let i = 0; i < count; i++) {
-
     const typeName = Phaser.Utils.Array.GetRandom(types);
     const type = coralTypes[typeName];
 
@@ -117,23 +121,20 @@ function createCoralGroup(scene, count) {
 
     const coral = scene.add
       .image(
-        Phaser.Math.Between(0, scene.WORLD_WIDTH),
-        scene.WORLD_HEIGHT - depthLevels[depth],
+        Phaser.Math.Between(0, scene.WORLD_WIDTH), // random x position
+        scene.WORLD_HEIGHT - depthLevels[depth], // y position based on depth level
         type.key,
       )
       .setOrigin(0.5, 1)
       .setDepth(7-depth);
 
-    coral.setInteractive();
-
-    // metadata
+    coral.setInteractive(); // corals are clickable
     coral.type = typeName;
     coral.bleachRate = type.bleachRate;
     coral.stress = 0;
     coral.bleachStage = 0;
 
-    coral.on('pointerover', () => {
-
+    coral.on('pointerover', () => { // hover effect
       coral.setTint(0xffcc88);
 
       coral.coralPulse = scene.tweens.add({
@@ -144,29 +145,25 @@ function createCoralGroup(scene, count) {
         repeat: -1,
         ease: 'sine.inOut'
       });
-
     });
 
     
-
-    coral.on('pointerout', () => {
-
+    coral.on('pointerout', () => { // end hover effect
       coral.setTint(0xFFFFFF);
 
       if (coral.coralPulse) {
         coral.coralPulse.stop();
       }
-
     });
 
-    coral.on('pointerdown', () => {
+    coral.on('pointerdown', () => { // on click: send coral info to React frontend for info popup
       if(scene.bubbleCollision || !scene.tutorialComplete){return}
-      console.log({
-        type: coral.type,
-        bleachRate: coral.bleachRate,
-        stress: coral.stress,
-        stage: coral.bleachStage
-      });
+      // console.log({
+      //   type: coral.type,
+      //   bleachRate: coral.bleachRate,
+      //   stress: coral.stress,
+      //   stage: coral.bleachStage
+      // });
 
       scene.game.events.emit('coralInfo', {
         name: type.name,
@@ -175,18 +172,14 @@ function createCoralGroup(scene, count) {
         info: type.info,
         img: type.img
       });
-
     });
 
-    // container.add(coral);
     scene.corals.push(coral);
-
     coralSway(scene, coral);
   }
-
-  // return container;
 }
 
+/* animate corals */
 function coralSway(scene, coral) {
     scene.tweens.add({
     targets: coral,
@@ -198,9 +191,10 @@ function coralSway(scene, coral) {
   });
 }
 
+/* called when stress levels are updated in the game. stressAmount: 0-100 */
 export function updateCoralStress(scene, stressAmount) {
-  const adjustedStress = Math.floor((stressAmount / 100) * 4); // map stress 0-100 to 0-4
-  //update all coralTypes
+  const adjustedStress = Math.floor((stressAmount / 100) * 4); // map stress 0-100 to 0-4 (number of spritesheet frames for corals)
+
   Object.values(coralTypes).forEach(type => {
     if (type.status !== 'Dead') {
       type.status = coralStatuses[adjustedStress];
@@ -221,7 +215,7 @@ export function updateCoralStress(scene, stressAmount) {
   });
 }
 
-
+/* helper function to reset coral states. Called when game is reset. */
 export function resetCorals(scene) {
   scene.corals.forEach(coral => {
     coral.stress = 0;
@@ -229,7 +223,6 @@ export function resetCorals(scene) {
     coral.setFrame(0);
   });
 
-  //reset coralTypes
   Object.values(coralTypes).forEach(type => {
     type.status = 'Healthy';
     if (type.imgType === 'branch') {
