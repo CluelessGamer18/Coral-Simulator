@@ -94,7 +94,7 @@ export function createFishSchools(scene) {
 
     const typeName = Phaser.Utils.Array.GetRandom(types); // random fish type
     const type = fishTypes[typeName];
-    const depthWeights = [0,0,0,0,0, 1, 2,2,2]; // weighted random depth (more fish in foreground and background, fewer in midground)
+    const depthWeights = [0,0,0,0,1, 1, 2,2,2]; // weighted random depth (more fish in foreground and background, fewer in midground)
     let depth = Phaser.Utils.Array.GetRandom(depthWeights);
 
     let numFish = 1;

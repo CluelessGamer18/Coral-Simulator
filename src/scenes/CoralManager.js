@@ -16,7 +16,7 @@ var coralTypes = {
     status: 'Healthy',
     info: 'Acropora are among the fastest-growing corals, shaping diverse habitats with their antler-like branches. Although they support thousands of species, they are highly sensitive to bleaching and other impacts of climate change. ',
     imgType: 'tabular', // determines which set of bleach stage images to use for this coral type (tabular vs branch)
-    img: 'healthy_tabular_microscope.png',
+    img: '/microscopes/healthy_tabular_microscope.png',
     bleachRate: 80
   },
   acropora1: {
@@ -26,7 +26,7 @@ var coralTypes = {
     status: 'Healthy',
     info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
     imgType: 'tabular',
-    img: 'healthy_tabular_microscope.png',
+    img: '/microscopes/healthy_tabular_microscope.png',
     bleachRate: 100
   },
   acropora2: {
@@ -36,7 +36,7 @@ var coralTypes = {
     status: 'Healthy',
     info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
     imgType: 'tabular',
-    img: 'healthy_tabular_microscope.png',
+    img: '/microscopes/healthy_tabular_microscope.png',
     bleachRate: 100
   },
   acropora3: {
@@ -46,7 +46,7 @@ var coralTypes = {
     status: 'Healthy',
     info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
     imgType: 'tabular',
-    img: 'healthy_tabular_microscope.png',
+    img: '/microscopes/healthy_tabular_microscope.png',
     bleachRate: 100
   },
   montipora: {
@@ -56,7 +56,7 @@ var coralTypes = {
     status: 'Healthy',
     info: 'Montipora Digitata is a resilient, fast-growing coral with velvety, textured branches. Popular in natural reefs and home aquariums, it provides essential habitat while tolerating more environmental stress than its Acropora relatives. ',
     imgType: 'branch',
-    img: 'healthy_microscope.png',
+    img: '/microscopes/healthy_microscope.png',
     bleachRate: 100
   },
   staghorn1: {
@@ -66,7 +66,7 @@ var coralTypes = {
     status: 'Healthy',
     info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
     imgType: 'branch',
-    img: 'healthy_microscope.png',
+    img: '/microscopes/healthy_microscope.png',
     bleachRate: 100
   },
   staghorn2: {
@@ -76,7 +76,7 @@ var coralTypes = {
     status: 'Healthy',
     info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
     imgType: 'branch',
-    img: 'healthy_microscope.png',
+    img: '/microscopes/healthy_microscope.png',
     bleachRate: 100
   }
 };
@@ -84,19 +84,19 @@ var coralTypes = {
 const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead']; // forwarded to React frontend for display
 
 const coralImgPathsTabular = [ // microscope images of tabular coral bleach stages (for sending to React frontend)
-  'healthy_tabular_microscope.png',
-  'ok_tabular_microscope.png',
-  'stressed_tabular_microscope.png',
-  'bleached_tabular_microscope.png',
-  'dead_tabular_microscope.png'
+  '/microscopes/healthy_tabular_microscope.png',
+  '/microscopes/ok_tabular_microscope.png',
+  '/microscopes/stressed_tabular_microscope.png',
+  '/microscopes/bleached_tabular_microscope.png',
+  '/microscopes/dead_tabular_microscope.png'
 ];
 
 const coralImgPathsBranch = [ // microscope images of branch coral bleach stages (for sending to React frontend)
-  'healthy_microscope.png',
-  'ok_microscope.png',
-  'stressed_microscope.png',
-  'bleached_microscope.png',
-  'dead_microscope.png'
+  '/microscopes/healthy_microscope.png',
+  '/microscopes/ok_microscope.png',
+  '/microscopes/stressed_microscope.png',
+  '/microscopes/bleached_microscope.png',
+  '/microscopes/dead_microscope.png'
 ];
 
 // z levels for corals, which determine their y position and rendering depth in the scene

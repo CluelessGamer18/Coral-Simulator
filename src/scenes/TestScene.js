@@ -63,7 +63,6 @@ class TestScene extends Phaser.Scene {
             .setOrigin(0, 0).setDepth(1)
             // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-
         floorLayer3.y = this.WORLD_HEIGHT - floorLayer3.height;
 
         const floorLayer2 = this.add.image(0, 0, "floor_layer2")
@@ -254,6 +253,7 @@ class TestScene extends Phaser.Scene {
         this.tempBubble.on('pointerdown', () => {
             this.handleBubbleCollect('temp');
         });
+
         this.tempBubble.on('pointerover', () => {
             this.tweens.add({
                 targets: this.tempBubble,
@@ -262,6 +262,7 @@ class TestScene extends Phaser.Scene {
                 ease: 'Power1'
             });
         });
+
         this.tempBubble.on('pointerout', () => {
             this.tweens.add({
                 targets: this.tempBubble,

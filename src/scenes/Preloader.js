@@ -53,7 +53,7 @@ The loading progress is displayed with progress bar. See above.
 */
 preload() {
         // cursor-following fish
-        this.load.image("Guide","./fish.png")
+        this.load.image("Guide","./assets/fish/fish.png")
 
         // bubbles
         this.load.image("PollutionBubble","/assets/bubbles/pollutionBubble.png")
@@ -85,8 +85,8 @@ preload() {
         this.load.spritesheet("pipe", "/assets/background/sewage_spritesheet.png", { frameWidth: 577.93, frameHeight: 267.17 })
 
         // audio
-        this.load.audio('bubblePop', ['assets/BubblePOP.mp3']);
-        this.load.audio('background_music', ['assets/Background.mp3']);
+        this.load.audio('bubblePop', ['assets/audio/BubblePOP.mp3']);
+        this.load.audio('background_music', ['assets/audio/Background.mp3']);
     }
 
     create() {
