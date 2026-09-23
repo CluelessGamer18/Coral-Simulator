@@ -250,9 +250,12 @@ class TestScene extends Phaser.Scene {
         this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
 
         this.tempBubble.setInteractive();
-        this.tempBubble.on('pointerdown', () => {
-            this.handleBubbleCollect('temp');
-        });
+        
+        this.physics.add.overlap(
+            this.guide,
+            this.tempBubble,
+            () => {this.handleBubbleCollect('temp');},
+        )
 
         this.tempBubble.on('pointerover', () => {
             this.tweens.add({
@@ -273,9 +276,12 @@ class TestScene extends Phaser.Scene {
         });
 
         this.lightBubble.setInteractive();
-        this.lightBubble.on('pointerdown', () => {
-            this.handleBubbleCollect('light');
-        });
+        
+        this.physics.add.overlap(
+            this.guide,
+            this.lightBubble,
+            () => {this.handleBubbleCollect('light');},
+        )
         this.lightBubble.on('pointerover', () => {
             this.tweens.add({
                 targets: this.lightBubble,
@@ -294,9 +300,12 @@ class TestScene extends Phaser.Scene {
         });
 
         this.pollutionBubble.setInteractive();
-        this.pollutionBubble.on('pointerdown', () => {
-            this.handleBubbleCollect('poll');
-        });
+        
+        this.physics.add.overlap(
+            this.guide,
+            this.pollutionBubble,
+            () => {this.handleBubbleCollect('poll');},
+        )
         this.pollutionBubble.on('pointerover', () => {
             this.tweens.add({
                 targets: this.pollutionBubble,
