@@ -1,3 +1,5 @@
+import Phaser from "phaser";
+
 /*  
 Metadata for each coral type. 
     Append by adding new coral objects here, 
@@ -106,7 +108,7 @@ const depthLevels = [-10, 120, 180];
 /* main function to create coral instances in the scene. Called when game scene is created. */
 export function createCorals(scene) {
     scene.corals = [];
-    const group = createCoralGroup(scene, 30); // create 30 corals
+  createCoralGroup(scene, 30); // create 30 corals
 }
 
 /* helper function to create a group of coral instances with random types and positions. */

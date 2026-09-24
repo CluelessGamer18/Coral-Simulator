@@ -1,3 +1,5 @@
+import Phaser from "phaser";
+
 /* Fish school generation and movement logic 
     - Modify fish types by changing the fish spritesheet and adjusting fishTypes below (key corresponds to spritesheet frame)
 */

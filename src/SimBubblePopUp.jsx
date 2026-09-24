@@ -40,17 +40,11 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled
     const { min, max, title, subtitle, icon, graph, dangerA, dangerB } = CONFIG[type]
     const [ready, setReady] = useState(false);
 
-    const [danger, setDanger] = useState(false);
+    const [danger, setDanger] = useState(() => initialValue >= dangerB || initialValue <= dangerA);
     const [value, setValue] = useState(initialValue);
     const [displayLeft, setdisplayLeft] = useState(0);
     const sliderRef = useRef(null);
     
-    useEffect(() => {
-        if (initialValue >= dangerB || initialValue <= dangerA){
-            setDanger(true);
-        } 
-    },[])
-
     useEffect(() => {
         const slider = sliderRef.current;
         if (!slider) return;

@@ -10,9 +10,6 @@ import CoralPopup from './CoralPopup.jsx';
 
 function TestGame({onSceneReady}){
     const sceneRef = useRef(null);
-    const [loaded, setLoaded] = useState(false);
-    //console.log(window.innerWidth);
-    const widthSize = window.innerWidth;
     const [selectedCoral, setSelectedCoral] = useState(null);
 
     useEffect(() => {
@@ -37,7 +34,6 @@ function TestGame({onSceneReady}){
 
     sim.events.on("scene-ready", (sceneInstance) => {
       onSceneReady(sceneInstance);
-      setLoaded(true);
     });
 
     return () => {

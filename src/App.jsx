@@ -33,7 +33,6 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
 
   const [showTutorial, setShowTutorial] = useState(true);
-  const [sceneRunning, setSceneRunning] = useState(false);
   const [bubbleCancelled, setBubbleCancelled] = useState(false);
 
 
@@ -115,7 +114,6 @@ function App() {
 
   const endSim = () => {
     scene.RestartSim();
-    setSceneRunning(false);
     setTemperatureValue(27);
     setLightValue(500);
     setPollutionValue(1);

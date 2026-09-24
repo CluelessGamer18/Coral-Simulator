@@ -1,7 +1,6 @@
 import Phaser from "phaser";
-import { createFishSchools, timeJumpAnimate } from "./FishSchools.js";
+import { createFishSchools } from "./FishSchools.js";
 import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js";
-import { createNodeImportMeta } from "vite/module-runner";
 
 let oval;
 
@@ -145,29 +144,15 @@ class TestScene extends Phaser.Scene {
             this.cameras.main.height, 0xFFFFFF
         ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
 
-        this.rectRight.on("pointerover", () => {
-            this.moveCameraRight = true;
-        });
+        // move right on hover (disabled)
 
-        this.rectRight.on("pointerout", () => {
-            this.moveCameraRight = false;
-        });
-
-        // move left on hover
+        // move left on hover (disabled)
         this.rectLeft = this.add.rectangle(
             50,
             this.cameras.main.height / 2,
             100,
             this.cameras.main.height, 0xFFFFFF
         ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
-
-        this.rectLeft.on("pointerover", () => {
-            this.moveCameraLeft = true;
-        });
-
-        this.rectLeft.on("pointerout", () => {
-            this.moveCameraLeft = false;
-        });
 
         // guide shadow
         oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
@@ -185,6 +170,12 @@ class TestScene extends Phaser.Scene {
 
     setupCamera(cam) {
         const cursors = this.input.keyboard.createCursorKeys();
+        this.moveKeys = this.input.keyboard.addKeys({
+            W: Phaser.Input.Keyboard.KeyCodes.W,
+            A: Phaser.Input.Keyboard.KeyCodes.A,
+            S: Phaser.Input.Keyboard.KeyCodes.S,
+            D: Phaser.Input.Keyboard.KeyCodes.D
+        });
 
         //camera presettings
         const controlConfig = {
@@ -329,8 +320,6 @@ class TestScene extends Phaser.Scene {
     }
 
     handleBubbleCollect(type) {
-        const bubblePop = this.sound.add('bubblePop');
-
         if (type == 'temp') {
             this.bubbleCollision = true;
             this.tempBubble.destroy();
@@ -361,85 +350,75 @@ class TestScene extends Phaser.Scene {
 
 
     update(time, delta) {
+        let horizontal = 0;
 
+        if (this.tutorialComplete && !this.bubbleCollision) {
+            horizontal = (this.moveKeys.D.isDown ? 1 : 0) - (this.moveKeys.A.isDown ? 1 : 0);
+            const vertical = (this.moveKeys.S.isDown ? 1 : 0) - (this.moveKeys.W.isDown ? 1 : 0);
+            const movementLength = Math.hypot(horizontal, vertical);
 
-        const pointer = this.input.activePointer;
+            if (movementLength > 0) {
+                const speed = 6; //This adjust the constant speed of the fish movement, regardless of direction.
+                const moveX = (horizontal / movementLength) * speed;
+                const moveY = (vertical / movementLength) * speed;
 
-        if (this.tutorialComplete && !this.bubbleCollision && Phaser.Math.Distance.Between(this.guide.x, this.guide.y, pointer.worldX, pointer.worldY) > 100) {
-
-            const speed = 0.05;
-
-            const targetAngle = Phaser.Math.Angle.Between(
-                this.guide.x, this.guide.y,
-                pointer.worldX, pointer.worldY
-            );
-
-
-            // Decide if sprite should flip
-            const flip = Math.cos(targetAngle) < 0;
-            this.guide.setFlipY(flip);
-
-            // Adjust offset depending on flip
-            const offset = Phaser.Math.DegToRad(0);
-            const desiredRotation = targetAngle + (flip ? -offset : offset);
-
-            // Smooth rotation
-            this.guide.rotation = Phaser.Math.Angle.RotateTo(
-                this.guide.rotation,
-                desiredRotation,
-                0.5
-            );
-
-
-
-            const minScale = 1.3;   // guide scale at the top
-            const maxScale = 1.3;   // guide scale at the bottom
-
-            const t = this.guide.y / this.cameras.main.height;
-            const easedT = t * t;   // easing
-            this.guide.setScale((minScale + (maxScale - minScale) * easedT) / 1.5);
-
-            const angleDiff = Phaser.Math.Angle.Wrap(desiredRotation - this.guide.rotation);
-
-            if (Math.abs(angleDiff) < 0.15) {
-                this.guide.x += (pointer.worldX - this.guide.x) * speed;
-
-                if (this.guide.y + ((pointer.worldY - this.guide.y) * speed) < 850) { // stay above shadow
-                    this.guide.y += (pointer.worldY - this.guide.y) * speed;
+                // Keeps the fish with the boundaries of the world
+                this.guide.x = Phaser.Math.Clamp(this.guide.x + moveX, 100, this.WORLD_WIDTH - 100);
+                if (this.guide.y + moveY < 850) {
+                    this.guide.y = Phaser.Math.Clamp(this.guide.y + moveY, 120, 850);
                 }
 
+                const targetAngle = Math.atan2(vertical, horizontal);
+                const flip = horizontal < 0;
+                this.guide.setFlipY(flip);
 
-                const time = this.time.now;
-                const wiggleAmount = 1;
+                const offset = Phaser.Math.DegToRad(0);
+                const desiredRotation = targetAngle + (flip ? -offset : offset);
+
+                this.guide.rotation = Phaser.Math.Angle.RotateTo(
+                    this.guide.rotation,
+                    desiredRotation,
+                    0.5
+                );
+
+                const minScale = 1.3;
+                const maxScale = 1.3;
+                const t = this.guide.y / this.cameras.main.height;
+                const easedT = t * t;
+                this.guide.setScale((minScale + (maxScale - minScale) * easedT) / 1.5);
+
+                const wiggleAmount = 1; // Adjust the wiggle amount and speed as needed
                 const wiggleSpeed = 0.01;
-                const wiggle = Math.sin(time * wiggleSpeed) * wiggleAmount;
+                const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount;
 
                 this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
                 if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
                     this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
                 }
             }
-
-            // Add in a different movement if fish is close to the cursor.
         }
 
-        //mouse movement
-        const accel = 0.6;
-        const friction = 0.9;
-        const maxSpeed = 15;
+        const maxSpeed = 15; // Adjust the maximum speed of the camera movement as needed
+        const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
+        const edgeScrollSpeed = 6;
+        const cameraSmoothing = 0.15;
+        const fishScreenX = this.guide.x - this.cameras.main.scrollX;
+        const fishAtRightSide = horizontal > 0 && fishScreenX >= this.cameras.main.width - sideWidth;
+        const fishAtLeftSide = horizontal < 0 && fishScreenX <= sideWidth;
+        let targetCameraSpeed = 0;
 
-        if (this.moveCameraRight) {
-            this.camVelX += accel;
-        } else if (this.moveCameraLeft) {
-            this.camVelX -= accel;
-        } else {
-            this.camVelX *= friction;
+        if (fishAtRightSide) {
+            targetCameraSpeed = edgeScrollSpeed;
+        } else if (fishAtLeftSide) {
+            targetCameraSpeed = -edgeScrollSpeed;
         }
 
-        this.camVelX = Phaser.Math.Clamp(this.camVelX, -maxSpeed, maxSpeed);
-
-        this.cameras.main.scrollX += this.camVelX;
-
+        this.camVelX = Phaser.Math.Linear(this.camVelX, targetCameraSpeed, cameraSmoothing);
+        this.cameras.main.scrollX = Phaser.Math.Clamp(
+            this.cameras.main.scrollX + this.camVelX,
+            0,
+            this.WORLD_WIDTH - this.cameras.main.width
+        );
 
         if (this.timerRunning) {
             this.simTime += delta;
@@ -452,13 +431,9 @@ class TestScene extends Phaser.Scene {
         this.deltaTimer += delta;
         this.controls.update(delta);
 
-
         oval.clear();
-
-        // Redraw oval at new position
         oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
     }
-
     getSimTime() {
         const totalSeconds = Math.floor(this.simTime / 1000);
 
@@ -675,9 +650,7 @@ class TestScene extends Phaser.Scene {
 
     freeFish(cancelled) {
         this.bubbleCollision = false;
-        if (!cancelled) {
-
-        }
+        void cancelled;
 
     }
 }
