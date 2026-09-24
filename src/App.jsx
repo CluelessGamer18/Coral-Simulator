@@ -22,6 +22,7 @@ function App() {
   const [timeAdvanced, setTimeAdvanced] = useState(0);
 
   const [bubbleCollision, setBubbleCollision] = useState(false);
+  const [score, setScore] = useState(0);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
   const [simEnd, setSimEnd] = useState(false);
@@ -76,6 +77,7 @@ function App() {
       setTimeAdvanced(scene.timeJump)
       setBubbleCollision(scene.bubbleCollision)
       setSimEnd(scene.simEnd)
+      setScore(scene.score)
       frameId = requestAnimationFrame(loop);
     };
 
@@ -121,6 +123,7 @@ function App() {
     setTimeAdvanced(0);
     setBubbleCollision(false);
     setSimEnd(false);
+    setScore(0);
   }
 
   return (
@@ -142,7 +145,7 @@ function App() {
         onChange={handler} 
         setCollision={setBubbleCollision} 
         setCancelled={setBubbleCancelled} /> : null}
-        {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue}/> : null}
+        {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           setShowTitleScreen={setShowTitleScreen}

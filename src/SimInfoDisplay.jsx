@@ -1,6 +1,6 @@
 import "./styles/SimInfoDisplay.css";
 
-function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
+function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
     timejump = 2*timejump
     const dots = [ 
         "large", "small", 
@@ -63,6 +63,10 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll}){
                     <img className="SimInfoIcon" src="/poop.svg"></img>
                     <span className="SimInfoText">{poll}</span>
                     <img className="hoverPreview" src="/tooltips/tooltip_pollution.png" />
+                </div>
+                <div className="statusGroup scoreGroup">
+                    <span className="SimInfoText scoreLabel">Score</span>
+                    <span className="SimInfoText scoreValue">{score}</span>
                 </div>
             </div>
         </div>

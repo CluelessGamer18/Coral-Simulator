@@ -160,12 +160,26 @@ function createCoralGroup(scene, count) {
 
     coral.on('pointerdown', () => { // on click: send coral info to React frontend for info popup
       if(scene.bubbleCollision || !scene.tutorialComplete){return}
-      // console.log({
-      //   type: coral.type,
-      //   bleachRate: coral.bleachRate,
-      //   stress: coral.stress,
-      //   stage: coral.bleachStage
-      // });
+
+      scene.score += 10;
+
+      const plusText = scene.add.text(coral.x, coral.y - coral.height * 0.5, '+10', {
+        fontSize: '28px',
+        fontFamily: 'Poppins, sans-serif',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        stroke: '#005566',
+        strokeThickness: 4
+      }).setOrigin(0.5, 1).setDepth(20);
+
+      scene.tweens.add({
+        targets: plusText,
+        y: plusText.y - 60,
+        alpha: 0,
+        duration: 900,
+        ease: 'Cubic.out',
+        onComplete: () => plusText.destroy()
+      });
 
       scene.game.events.emit('coralInfo', {
         name: type.name,
