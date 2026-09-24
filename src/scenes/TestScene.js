@@ -144,29 +144,15 @@ class TestScene extends Phaser.Scene {
             this.cameras.main.height, 0xFFFFFF
         ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
 
-        this.rectRight.on("pointerover", () => {
-            this.moveCameraRight = true;
-        });
+        // move right on hover (disabled)
 
-        this.rectRight.on("pointerout", () => {
-            this.moveCameraRight = false;
-        });
-
-        // move left on hover
+        // move left on hover (disabled)
         this.rectLeft = this.add.rectangle(
             50,
             this.cameras.main.height / 2,
             100,
             this.cameras.main.height, 0xFFFFFF
         ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
-
-        this.rectLeft.on("pointerover", () => {
-            this.moveCameraLeft = true;
-        });
-
-        this.rectLeft.on("pointerout", () => {
-            this.moveCameraLeft = false;
-        });
 
         // guide shadow
         oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
@@ -363,10 +349,11 @@ class TestScene extends Phaser.Scene {
             const movementLength = Math.hypot(horizontal, vertical);
 
             if (movementLength > 0) {
-                const speed = 6;
+                const speed = 6; //This adjust the constant speed of the fish movement, regardless of direction.
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
+                // Keeps the fish with the boundaries of the world
                 this.guide.x = Phaser.Math.Clamp(this.guide.x + moveX, 100, this.WORLD_WIDTH - 100);
                 if (this.guide.y + moveY < 850) {
                     this.guide.y = Phaser.Math.Clamp(this.guide.y + moveY, 120, 850);
@@ -391,7 +378,7 @@ class TestScene extends Phaser.Scene {
                 const easedT = t * t;
                 this.guide.setScale((minScale + (maxScale - minScale) * easedT) / 1.5);
 
-                const wiggleAmount = 1;
+                const wiggleAmount = 1; // Adjust the wiggle amount and speed as needed
                 const wiggleSpeed = 0.01;
                 const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount;
 
@@ -402,8 +389,8 @@ class TestScene extends Phaser.Scene {
             }
         }
 
-        const maxSpeed = 15;
-        const sideWidth = 300;
+        const maxSpeed = 15; // Adjust the maximum speed of the camera movement as needed
+        const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
         const edgeScrollSpeed = 6;
         const cameraSmoothing = 0.15;
         const fishScreenX = this.guide.x - this.cameras.main.scrollX;
@@ -411,10 +398,10 @@ class TestScene extends Phaser.Scene {
         const fishAtLeftSide = horizontal < 0 && fishScreenX <= sideWidth;
         let targetCameraSpeed = 0;
 
-        if (this.moveCameraRight || fishAtRightSide) {
-            targetCameraSpeed = this.moveCameraRight ? maxSpeed : edgeScrollSpeed;
-        } else if (this.moveCameraLeft || fishAtLeftSide) {
-            targetCameraSpeed = this.moveCameraLeft ? -maxSpeed : -edgeScrollSpeed;
+        if (fishAtRightSide) {
+            targetCameraSpeed = edgeScrollSpeed;
+        } else if (fishAtLeftSide) {
+            targetCameraSpeed = -edgeScrollSpeed;
         }
 
         this.camVelX = Phaser.Math.Linear(this.camVelX, targetCameraSpeed, cameraSmoothing);
