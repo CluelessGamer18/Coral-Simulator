@@ -48,6 +48,7 @@ class TestScene extends Phaser.Scene {
         this.simEnd = false;
         this.timeJump = 0;
         this.bubbleCollision = false;
+        this.score = 0;
 
         this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
