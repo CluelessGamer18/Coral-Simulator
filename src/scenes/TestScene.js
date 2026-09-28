@@ -321,18 +321,19 @@ class TestScene extends Phaser.Scene {
     }
 
     handleBubbleCollect(type) {
+        // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
         if (type == 'temp') {
             this.bubbleCollision = true;
-            this.tempBubble.destroy();
+            this.tempBubble.disableBody(true, true);
             this.collisionType = type;
         } else if (type == 'light') {
             this.bubbleCollision = true;
             this.collisionType = type;
-            this.lightBubble.destroy();
+            this.lightBubble.disableBody(true, true);
         } else if (type == 'poll') {
             this.bubbleCollision = true;
             this.collisionType = type;
-            this.pollutionBubble.destroy();
+            this.pollutionBubble.disableBody(true, true);
         }
         this.sound.play('bubblePop', { volume: this.sfxVolume });
     }
@@ -651,8 +652,26 @@ class TestScene extends Phaser.Scene {
 
     freeFish(cancelled) {
         this.bubbleCollision = false;
-        void cancelled;
+        if (cancelled) {
+            this.returnBubble(this.collisionType);
+        }
+    }
 
+    // Brings a cancelled bubble back at a new random spot, away from the fish so it isn't popped again straight away
+    returnBubble(type) {
+        const bubble = { temp: this.tempBubble, light: this.lightBubble, poll: this.pollutionBubble }[type];
+        if (!bubble) return;
+
+        let x, y;
+        do {
+            x = Phaser.Math.Between(50, 2000);
+            y = Phaser.Math.Between(50, 500);
+        } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
+
+        this.tweens.killTweensOf(bubble);
+        bubble.setScale(1);
+        bubble.enableBody(true, x, y, true, true);
+        this.bubbleIdle(bubble);
     }
 }
 
