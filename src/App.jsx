@@ -35,6 +35,7 @@ function App() {
 
   const [showTutorial, setShowTutorial] = useState(true);
   const [bubbleCancelled, setBubbleCancelled] = useState(false);
+  const [eventNotice, setEventNotice] = useState(null);
 
 
   let handler, initialValue;
@@ -56,6 +57,26 @@ function App() {
         break;
     }
   }
+
+  useEffect(() => {
+    if (!scene || !bubbleCollision || scene.collisionType !== 'tempEvent') return;
+
+    const previousTemperature = scene.temperature;
+    const newTemperature = Math.min(previousTemperature + 2, 35);
+    scene.updateTemperature(newTemperature);
+    setTemperatureValue(newTemperature);
+    setEventNotice({
+      title: 'Temperature Event',
+      message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.`
+    });
+  }, [scene, bubbleCollision]);
+
+  const dismissEventNotice = () => {
+    scene?.freeFish(false);
+    setEventNotice(null);
+    setBubbleCollision(false);
+  };
+
  
   useEffect(() => {
     if (!scene) return;
@@ -140,7 +161,16 @@ function App() {
             dead={scene.reefDeadTemp || scene.reefDeadLight || scene.reefDeadPollution}
           ></SimEndPopUp>) : null}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
-        {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
+        {scene && bubbleCollision && scene.collisionType === 'tempEvent' && eventNotice ? (
+          <div className="EventNoticeBackdrop">
+            <section className="EventNotice" role="alertdialog" aria-modal="true" aria-labelledby="event-notice-title">
+              <h2 id="event-notice-title">{eventNotice.title}</h2>
+              <p>{eventNotice.message}</p>
+              <button type="button" onClick={dismissEventNotice}>Continue</button>
+            </section>
+          </div>
+        ) : null}
+        {scene && bubbleCollision && scene.collisionType !== 'tempEvent' ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
         onChange={handler} 
         setCollision={setBubbleCollision} 

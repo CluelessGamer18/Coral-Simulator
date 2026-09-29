@@ -234,7 +234,7 @@ class TestScene extends Phaser.Scene {
             do{
                 x = Phaser.Math.Between(50, this.WORLD_WIDTH - 50);
                 y = Phaser.Math.Between(50, this.WORLD_HEIGHT - 150);
-            } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 150);
+            } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
 
             return { x, y };
         }
@@ -242,10 +242,16 @@ class TestScene extends Phaser.Scene {
         const{x: x1, y: y1} = getSpawnLocation();
         const{x: x2, y: y2} = getSpawnLocation();
         const{x: x3, y: y3} = getSpawnLocation();
+        const{x: x4, y: y4} = getSpawnLocation();
 
         this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
         this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
         this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
+        this.tempEvent = this.physics.add.image(x4, y4, 'TempBubble').setDepth(7);
+
+        // Change the colour of the tempEvent bubble so I don't need more assets.
+        const invertEffect = this.tempEvent.preFX.addColorMatrix();
+        invertEffect.negative();
 
         this.tempBubble.setInteractive();
         
@@ -321,9 +327,36 @@ class TestScene extends Phaser.Scene {
             });
         });
 
+        this.tempEvent.setInteractive();
+        
+        this.physics.add.overlap(
+            this.guide,
+            this.tempEvent,
+            () => {this.handleBubbleCollect('tempEvent');},
+        )
+
+        this.tempEvent.on('pointerover', () => {
+            this.tweens.add({
+                targets: this.tempEvent,
+                scale: 1.15,
+                duration: 200,
+                ease: 'Power1'
+            });
+        });
+
+        this.tempEvent.on('pointerout', () => {
+            this.tweens.add({
+                targets: this.tempEvent,
+                scale: 1,
+                duration: 200,
+                ease: 'Power1'
+            });
+        });
+
         this.bubbleIdle(this.tempBubble);
         this.bubbleIdle(this.lightBubble);
         this.bubbleIdle(this.pollutionBubble);
+        this.bubbleIdle(this.tempEvent);
     }
 
     handleBubbleCollect(type) {
@@ -340,6 +373,10 @@ class TestScene extends Phaser.Scene {
             this.bubbleCollision = true;
             this.collisionType = type;
             this.pollutionBubble.disableBody(true, true);
+        } else if (type == 'tempEvent') {
+            this.bubbleCollision = true;
+            this.collisionType = type;
+            this.tempEvent.disableBody(true, true);
         }
         this.sound.play('bubblePop', { volume: this.sfxVolume });
     }
@@ -536,12 +573,14 @@ class TestScene extends Phaser.Scene {
             this.tempBubble.destroy();
             this.lightBubble.destroy();
             this.pollutionBubble.destroy();
+            this.tempEvent?.destroy();
             this.simEnd = true;
         } else {
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
             this.tempBubble.destroy();
             this.lightBubble.destroy();
             this.pollutionBubble.destroy();
+            this.tempEvent?.destroy();
             this.tweens.paused = false;
             this.spawnBubbles();
         }
