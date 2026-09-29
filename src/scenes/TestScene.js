@@ -360,6 +360,8 @@ class TestScene extends Phaser.Scene {
     }
 
     handleBubbleCollect(type) {
+        if (this.simEnd) return;
+
         // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
         if (type == 'temp') {
             this.bubbleCollision = true;
@@ -395,6 +397,9 @@ class TestScene extends Phaser.Scene {
 
 
     update(time, delta) {
+        // Freeze the fish, camera and timer once the end screen is showing
+        if (this.simEnd) return;
+
         let horizontal = 0;
 
         if (this.tutorialComplete && !this.bubbleCollision) {
@@ -568,21 +573,14 @@ class TestScene extends Phaser.Scene {
     }
 
     updateStress() {
+        // Once the sim is over, no more years can pass
+        if (this.simEnd) return;
+
         if (this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution) {
             this.stressValue = 100;
-            this.tempBubble.destroy();
-            this.lightBubble.destroy();
-            this.pollutionBubble.destroy();
-            this.tempEvent?.destroy();
             this.simEnd = true;
         } else {
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
-            this.tempBubble.destroy();
-            this.lightBubble.destroy();
-            this.pollutionBubble.destroy();
-            this.tempEvent?.destroy();
-            this.tweens.paused = false;
-            this.spawnBubbles();
         }
 
         if (this.stressHistory.length > 0) {
@@ -599,8 +597,18 @@ class TestScene extends Phaser.Scene {
 
         this.timeJump++;
 
-        if (this.timeJump === 10) {
+        if (this.timeJump >= 10) {
             this.simEnd = true;
+        }
+
+        // Only spawn new bubbles after every end condition has been checked
+        this.tempBubble.destroy();
+        this.lightBubble.destroy();
+        this.pollutionBubble.destroy();
+        this.tempEvent?.destroy();
+        if (!this.simEnd) {
+            this.tweens.paused = false;
+            this.spawnBubbles();
         }
 
         updateCoralStress(this, this.stressValue);

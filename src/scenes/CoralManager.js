@@ -159,7 +159,7 @@ function createCoralGroup(scene, count) {
     });
 
     coral.on('pointerdown', () => { // on click: send coral info to React frontend for info popup
-      if(scene.bubbleCollision || !scene.tutorialComplete){return}
+      if(scene.bubbleCollision || !scene.tutorialComplete || scene.simEnd){return}
 
       scene.score += 10;
 
