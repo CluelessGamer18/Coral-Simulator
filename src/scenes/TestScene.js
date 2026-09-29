@@ -228,14 +228,20 @@ class TestScene extends Phaser.Scene {
     }
 
     spawnBubbles() {
-        const x1 = Phaser.Math.Between(50, 2000);
-        const y1 = Phaser.Math.Between(50, 500);
+        const getSpawnLocation = () => {
+            let x;
+            let y;
+            do{
+                x = Phaser.Math.Between(50, this.WORLD_WIDTH - 50);
+                y = Phaser.Math.Between(50, this.WORLD_HEIGHT - 150);
+            } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 150);
 
-        const x2 = Phaser.Math.Between(50, 2000);
-        const y2 = Phaser.Math.Between(50, 500);
-
-        const x3 = Phaser.Math.Between(50, 2000);
-        const y3 = Phaser.Math.Between(50, 500);
+            return { x, y };
+        }
+        
+        const{x: x1, y: y1} = getSpawnLocation();
+        const{x: x2, y: y2} = getSpawnLocation();
+        const{x: x3, y: y3} = getSpawnLocation();
 
         this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
         this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
