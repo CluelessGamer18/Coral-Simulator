@@ -170,50 +170,52 @@
   background-color: rgba(251, 105, 0, 0.864);
 }
 
-.EventNoticeBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 11000;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(7, 34, 38, 0.58);
-  animation: eventNoticeFadeIn 180ms ease-out;
-}
-
 .EventNotice {
-  width: min(100%, 480px);
-  padding: 28px;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  position: fixed;
+  z-index: 11000;
+  top: 20px;
+  right: 20px;
+  width: min(360px, calc(100vw - 40px));
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-left: 5px solid #f86a1c;
   border-radius: 8px;
   background: #087e8b;
   color: #fff;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
   font-family: 'Poppins', sans-serif;
+  animation: eventNoticeFadeIn 180ms ease-out;
+}
+
+.EventNoticeHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .EventNotice h2 {
-  margin: 0 0 12px;
-  font-size: 24px;
+  margin: 0;
+  font-size: 17px;
   font-weight: 600;
 }
 
 .EventNotice p {
-  margin: 0;
-  line-height: 1.6;
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-line;
 }
 
 .EventNotice button {
-  display: block;
-  min-width: 120px;
-  margin: 24px 0 0 auto;
-  padding: 10px 16px;
-  border: 2px solid #fff;
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid #fff;
   border-radius: 4px;
-  background: #fff;
-  color: #075d68;
+  background: transparent;
+  color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-size: 12px;
   cursor: pointer;
 }
 

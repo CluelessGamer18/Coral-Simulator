@@ -67,8 +67,11 @@ function App() {
     setTemperatureValue(newTemperature);
     setEventNotice({
       title: 'Temperature Event',
-      message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.`
+      message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
+      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
     });
+    scene.freeFish(false);
+    setBubbleCollision(false);
   }, [scene, bubbleCollision]);
 
   const dismissEventNotice = () => {
@@ -76,6 +79,16 @@ function App() {
     setEventNotice(null);
     setBubbleCollision(false);
   };
+
+  useEffect(() => {
+    if (!eventNotice) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setEventNotice(null);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [eventNotice]);
 
  
   useEffect(() => {
@@ -161,14 +174,14 @@ function App() {
             dead={scene.reefDeadTemp || scene.reefDeadLight || scene.reefDeadPollution}
           ></SimEndPopUp>) : null}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
-        {scene && bubbleCollision && scene.collisionType === 'tempEvent' && eventNotice ? (
-          <div className="EventNoticeBackdrop">
-            <section className="EventNotice" role="alertdialog" aria-modal="true" aria-labelledby="event-notice-title">
+        {eventNotice ? (
+          <aside className="EventNotice" role="status" aria-live="polite" aria-labelledby="event-notice-title">
+              <div className="EventNoticeHeading">
               <h2 id="event-notice-title">{eventNotice.title}</h2>
+              <button type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
+              </div>
               <p>{eventNotice.message}</p>
-              <button type="button" onClick={dismissEventNotice}>Continue</button>
-            </section>
-          </div>
+          </aside>
         ) : null}
         {scene && bubbleCollision && scene.collisionType !== 'tempEvent' ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
