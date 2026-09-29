@@ -35,6 +35,7 @@ function App() {
 
   const [showTutorial, setShowTutorial] = useState(true);
   const [bubbleCancelled, setBubbleCancelled] = useState(false);
+  const [eventNotice, setEventNotice] = useState(null);
 
 
   let handler, initialValue;
@@ -56,6 +57,39 @@ function App() {
         break;
     }
   }
+
+  useEffect(() => {
+    if (!scene || !bubbleCollision || scene.collisionType !== 'tempEvent') return;
+
+    const previousTemperature = scene.temperature;
+    const newTemperature = Math.min(previousTemperature + 2, 35);
+    scene.updateTemperature(newTemperature);
+    setTemperatureValue(newTemperature);
+    setEventNotice({
+      title: 'Temperature Event',
+      message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
+      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
+    });
+    scene.freeFish(false);
+    setBubbleCollision(false);
+  }, [scene, bubbleCollision]);
+
+  const dismissEventNotice = () => {
+    scene?.freeFish(false);
+    setEventNotice(null);
+    setBubbleCollision(false);
+  };
+
+  useEffect(() => {
+    if (!eventNotice) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setEventNotice(null);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [eventNotice]);
+
  
   useEffect(() => {
     if (!scene) return;
@@ -140,7 +174,16 @@ function App() {
             dead={scene.reefDeadTemp || scene.reefDeadLight || scene.reefDeadPollution}
           ></SimEndPopUp>) : null}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
-        {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
+        {eventNotice ? (
+          <aside className="EventNotice" role="status" aria-live="polite" aria-labelledby="event-notice-title">
+              <div className="EventNoticeHeading">
+              <h2 id="event-notice-title">{eventNotice.title}</h2>
+              <button type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
+              </div>
+              <p>{eventNotice.message}</p>
+          </aside>
+        ) : null}
+        {scene && bubbleCollision && scene.collisionType !== 'tempEvent' ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
         onChange={handler} 
         setCollision={setBubbleCollision} 
