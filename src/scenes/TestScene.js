@@ -121,7 +121,8 @@ class TestScene extends Phaser.Scene {
         this.guide = this.physics.add.image(300, 300, "Guide")
         this.guide.setInteractive();
         this.guide.setDepth(9999);
-        this.guide.preFX.addShadow(0, -8, 0.009, 1, 0x333333, 5);
+        // preFX only exists under WebGL; on the Canvas fallback renderer it's null, so skip the shadow there
+        this.guide.preFX?.addShadow(0, -8, 0.009, 1, 0x333333, 5);
 
         this.badOutline = this.add.image(-95, -95, "badOutline")
             .setOrigin(0, 0).setDepth(10001).setAlpha(0)
@@ -244,22 +245,25 @@ class TestScene extends Phaser.Scene {
         const{x: x3, y: y3} = getSpawnLocation();
         const{x: x4, y: y4} = getSpawnLocation();
 
+        // Kept so the overlaps can be removed along with the bubbles in destroyBubbles()
+        this.bubbleColliders = [];
+
         this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
         this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
         this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
         this.tempEvent = this.physics.add.image(x4, y4, 'TempBubble').setDepth(7);
 
         // Change the colour of the tempEvent bubble so I don't need more assets.
-        const invertEffect = this.tempEvent.preFX.addColorMatrix();
-        invertEffect.negative();
+        // preFX is WebGL-only, so on the Canvas renderer the bubble keeps its normal colour.
+        this.tempEvent.preFX?.addColorMatrix().negative();
 
         this.tempBubble.setInteractive();
         
-        this.physics.add.overlap(
+        this.bubbleColliders.push(this.physics.add.overlap(
             this.guide,
             this.tempBubble,
             () => {this.handleBubbleCollect('temp');},
-        )
+        ));
 
         this.tempBubble.on('pointerover', () => {
             this.tweens.add({
@@ -281,11 +285,11 @@ class TestScene extends Phaser.Scene {
 
         this.lightBubble.setInteractive();
         
-        this.physics.add.overlap(
+        this.bubbleColliders.push(this.physics.add.overlap(
             this.guide,
             this.lightBubble,
             () => {this.handleBubbleCollect('light');},
-        )
+        ));
         this.lightBubble.on('pointerover', () => {
             this.tweens.add({
                 targets: this.lightBubble,
@@ -305,11 +309,11 @@ class TestScene extends Phaser.Scene {
 
         this.pollutionBubble.setInteractive();
         
-        this.physics.add.overlap(
+        this.bubbleColliders.push(this.physics.add.overlap(
             this.guide,
             this.pollutionBubble,
             () => {this.handleBubbleCollect('poll');},
-        )
+        ));
         this.pollutionBubble.on('pointerover', () => {
             this.tweens.add({
                 targets: this.pollutionBubble,
@@ -329,11 +333,11 @@ class TestScene extends Phaser.Scene {
 
         this.tempEvent.setInteractive();
         
-        this.physics.add.overlap(
+        this.bubbleColliders.push(this.physics.add.overlap(
             this.guide,
             this.tempEvent,
             () => {this.handleBubbleCollect('tempEvent');},
-        )
+        ));
 
         this.tempEvent.on('pointerover', () => {
             this.tweens.add({
@@ -357,6 +361,17 @@ class TestScene extends Phaser.Scene {
         this.bubbleIdle(this.lightBubble);
         this.bubbleIdle(this.pollutionBubble);
         this.bubbleIdle(this.tempEvent);
+    }
+
+    destroyBubbles() {
+        // Remove the fish-vs-bubble overlaps too, otherwise the physics world keeps checking them every frame
+        this.bubbleColliders.forEach(collider => collider.destroy());
+        this.bubbleColliders = [];
+
+        this.tempBubble.destroy();
+        this.lightBubble.destroy();
+        this.pollutionBubble.destroy();
+        this.tempEvent.destroy();
     }
 
     handleBubbleCollect(type) {
@@ -606,10 +621,7 @@ class TestScene extends Phaser.Scene {
         }
 
         // Only spawn new bubbles after every end condition has been checked
-        this.tempBubble.destroy();
-        this.lightBubble.destroy();
-        this.pollutionBubble.destroy();
-        this.tempEvent?.destroy();
+        this.destroyBubbles();
         if (!this.simEnd) {
             this.tweens.paused = false;
             this.spawnBubbles();
