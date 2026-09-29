@@ -400,6 +400,10 @@ class TestScene extends Phaser.Scene {
         // Freeze the fish, camera and timer once the end screen is showing
         if (this.simEnd) return;
 
+        // Movement values below were tuned at 60fps, so scale them by how long this frame actually took.
+        // Capped so a lag spike or returning to the tab doesn't teleport the fish.
+        const frameScale = Math.min(delta, 50) / (1000 / 60);
+
         let horizontal = 0;
 
         if (this.tutorialComplete && !this.bubbleCollision) {
@@ -408,7 +412,7 @@ class TestScene extends Phaser.Scene {
             const movementLength = Math.hypot(horizontal, vertical);
 
             if (movementLength > 0) {
-                const speed = 6; //This adjust the constant speed of the fish movement, regardless of direction.
+                const speed = 6 * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
@@ -428,7 +432,7 @@ class TestScene extends Phaser.Scene {
                 this.guide.rotation = Phaser.Math.Angle.RotateTo(
                     this.guide.rotation,
                     desiredRotation,
-                    0.5
+                    0.5 * frameScale
                 );
 
                 const minScale = 1.3;
@@ -439,7 +443,7 @@ class TestScene extends Phaser.Scene {
 
                 const wiggleAmount = 1; // Adjust the wiggle amount and speed as needed
                 const wiggleSpeed = 0.01;
-                const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount;
+                const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount * frameScale;
 
                 this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
                 if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
@@ -463,9 +467,9 @@ class TestScene extends Phaser.Scene {
             targetCameraSpeed = -edgeScrollSpeed;
         }
 
-        this.camVelX = Phaser.Math.Linear(this.camVelX, targetCameraSpeed, cameraSmoothing);
+        this.camVelX = Phaser.Math.Linear(this.camVelX, targetCameraSpeed, 1 - Math.pow(1 - cameraSmoothing, frameScale));
         this.cameras.main.scrollX = Phaser.Math.Clamp(
-            this.cameras.main.scrollX + this.camVelX,
+            this.cameras.main.scrollX + this.camVelX * frameScale,
             0,
             this.WORLD_WIDTH - this.cameras.main.width
         );
