@@ -113,6 +113,13 @@ class TestScene extends Phaser.Scene {
         });
 
         this.bgMusic.play();
+
+        // The sound manager belongs to the whole game, not this scene, so sounds added here outlive a restart.
+        // Destroy the music whenever the scene shuts down (restart or stop) so a new copy isn't left behind each time.
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.bgMusic.destroy();
+            this.bgMusic = null;
+        });
     }
 
     setupUI(cam) {
@@ -518,7 +525,7 @@ class TestScene extends Phaser.Scene {
 
     RestartSim() {
         this.scene.restart();
-        this.bgMusic.stop();
+        this.bgMusic.stop(); // silence it straight away; the shutdown handler in setupAudio() destroys it
         resetCorals(this);
     }
 
