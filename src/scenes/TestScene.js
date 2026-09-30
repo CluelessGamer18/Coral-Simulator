@@ -242,6 +242,27 @@ class TestScene extends Phaser.Scene {
         window.gameScene = this;
         // Only tell React about the scene once everything above has been set up
         this.game.events.emit("scene-ready", this);
+        // After a restart React is already listening, so send it the reset values
+        this.emitStats();
+    }
+
+    // The values React shows in the UI. Sent with emitStats() whenever one of them changes,
+    // so React doesn't have to copy them from the scene every frame.
+    getStats() {
+        return {
+            stress: this.stressValue,
+            light: this.lightLevel,
+            temperature: this.temperature,
+            pollution: this.pollutionValue,
+            timeJump: this.timeJump,
+            bubbleCollision: this.bubbleCollision,
+            simEnd: this.simEnd,
+            score: this.score,
+        };
+    }
+
+    emitStats() {
+        this.game.events.emit("stats-changed", this.getStats());
     }
 
     setMusicVolume(value) {
@@ -316,6 +337,7 @@ class TestScene extends Phaser.Scene {
         this.collisionType = type;
         bubble.disableBody(true, true);
         this.sound.play('bubblePop', { volume: this.sfxVolume });
+        this.emitStats();
     }
 
 
@@ -449,6 +471,7 @@ class TestScene extends Phaser.Scene {
         this.poorTemp = poor;
         this.reefDeadTemp = dead;
         this.updateStress();
+        this.emitStats();
     }
 
     updatePollution(poll) {
@@ -457,6 +480,7 @@ class TestScene extends Phaser.Scene {
         this.poorPollution = poor;
         this.reefDeadPollution = dead;
         this.updateStress();
+        this.emitStats();
     }
 
     updateLight(light) {
@@ -465,6 +489,7 @@ class TestScene extends Phaser.Scene {
         this.poorLight = poor;
         this.reefDeadLight = dead;
         this.updateStress();
+        this.emitStats();
     }
 
     updateStress() {
@@ -600,6 +625,7 @@ class TestScene extends Phaser.Scene {
         if (cancelled) {
             this.returnBubble(this.collisionType);
         }
+        this.emitStats();
     }
 
     // Brings a cancelled bubble back at a new random spot, away from the fish so it isn't popped again straight away

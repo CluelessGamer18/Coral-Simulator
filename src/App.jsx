@@ -98,26 +98,24 @@ function App() {
     scene.setSfxVolume?.(sfxVolume);
   }, [scene, musicVolume, sfxVolume]);
 
+  // The scene sends "stats-changed" whenever one of these values changes, so React only updates when something happens
   useEffect(() => {
     if (!scene) return;
 
-    let frameId;
-
-    const loop = () => {
-      setStressValue(scene.stressValue)
-      setLightValue(scene.lightLevel)
-      setTemperatureValue(scene.temperature)
-      setPollutionValue(scene.pollutionValue)
-      setTimeAdvanced(scene.timeJump)
-      setBubbleCollision(scene.bubbleCollision)
-      setSimEnd(scene.simEnd)
-      setScore(scene.score)
-      frameId = requestAnimationFrame(loop);
+    const events = scene.game.events; // kept so cleanup still works after the game is destroyed
+    const onStats = (stats) => {
+      setStressValue(stats.stress)
+      setLightValue(stats.light)
+      setTemperatureValue(stats.temperature)
+      setPollutionValue(stats.pollution)
+      setTimeAdvanced(stats.timeJump)
+      setBubbleCollision(stats.bubbleCollision)
+      setSimEnd(stats.simEnd)
+      setScore(stats.score)
     };
 
-    frameId = requestAnimationFrame(loop);
-
-    return () => cancelAnimationFrame(frameId);
+    events.on("stats-changed", onStats);
+    return () => events.off("stats-changed", onStats);
   }, [scene]);
 
   useEffect(() => {

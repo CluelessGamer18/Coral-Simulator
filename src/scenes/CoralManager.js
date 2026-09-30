@@ -165,6 +165,7 @@ function createCoralGroup(scene, count) {
       if(scene.bubbleCollision || !scene.tutorialComplete || scene.simEnd){return}
 
       scene.score += 10;
+      scene.emitStats();
 
       const plusText = scene.add.text(coral.x, coral.y - coral.height * 0.5, '+10', {
         fontSize: '28px',
