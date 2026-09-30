@@ -4,6 +4,27 @@ import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js"
 
 let oval;
 
+// One entry per bubble. `type` is the collisionType React reads to decide which popup to show.
+const BUBBLE_TYPES = [
+    { type: 'temp', texture: 'TempBubble', ease: 'Power1' },
+    { type: 'light', texture: 'LightBubble', ease: 'Sine.inOut' },
+    { type: 'poll', texture: 'PollutionBubble', ease: 'Sine.inOut' },
+    { type: 'tempEvent', texture: 'TempBubble', ease: 'Power1', inverted: true },
+];
+
+// [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
+const THRESHOLDS = {
+    temperature: { a: 25, b: 27, c: 29, d: 31 },
+    pollution: { a: 0, b: 1, c: 3, d: 5 },
+    light: { a: 141, b: 200, c: 1100, d: 1839 },
+};
+
+function evaluateThreshold(value, { a, b, c, d }) {
+    const stressed = (value >= a && value < b) || (value > c && value <= d);
+    const dead = !stressed && (value <= a || value >= d);
+    return { poor: stressed ? 30 : 0, dead };
+}
+
 class TestScene extends Phaser.Scene {
     constructor() {
         super("TestScene");
@@ -246,127 +267,36 @@ class TestScene extends Phaser.Scene {
             return { x, y };
         }
         
-        const{x: x1, y: y1} = getSpawnLocation();
-        const{x: x2, y: y2} = getSpawnLocation();
-        const{x: x3, y: y3} = getSpawnLocation();
-        const{x: x4, y: y4} = getSpawnLocation();
-
         // Kept so the overlaps can be removed along with the bubbles in destroyBubbles()
         this.bubbleColliders = [];
+        this.bubbles = {};
 
-        this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
-        this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
-        this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
-        this.tempEvent = this.physics.add.image(x4, y4, 'TempBubble').setDepth(7);
+        for (const { type, texture, ease, inverted } of BUBBLE_TYPES) {
+            const { x, y } = getSpawnLocation();
+            const bubble = this.physics.add.image(x, y, texture).setDepth(7).setInteractive();
 
-        // Change the colour of the tempEvent bubble so I don't need more assets.
-        // preFX is WebGL-only, so on the Canvas renderer the bubble keeps its normal colour.
-        this.tempEvent.preFX?.addColorMatrix().negative();
+            // Change the colour of the tempEvent bubble so I don't need more assets.
+            // preFX is WebGL-only, so on the Canvas renderer the bubble keeps its normal colour.
+            if (inverted) {
+                bubble.preFX?.addColorMatrix().negative();
+            }
 
-        this.tempBubble.setInteractive();
-        
-        this.bubbleColliders.push(this.physics.add.overlap(
-            this.guide,
-            this.tempBubble,
-            () => {this.handleBubbleCollect('temp');},
-        ));
+            this.bubbleColliders.push(this.physics.add.overlap(
+                this.guide,
+                bubble,
+                () => {this.handleBubbleCollect(type);},
+            ));
 
-        this.tempBubble.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.tempBubble,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Power1'
+            bubble.on('pointerover', () => {
+                this.tweens.add({ targets: bubble, scale: 1.15, duration: 200, ease });
             });
-        });
-
-        this.tempBubble.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.tempBubble,
-                scale: 1,
-                duration: 200,
-                ease: 'Power1'
+            bubble.on('pointerout', () => {
+                this.tweens.add({ targets: bubble, scale: 1, duration: 200, ease });
             });
-        });
 
-        this.lightBubble.setInteractive();
-        
-        this.bubbleColliders.push(this.physics.add.overlap(
-            this.guide,
-            this.lightBubble,
-            () => {this.handleBubbleCollect('light');},
-        ));
-        this.lightBubble.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.lightBubble,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
-        this.lightBubble.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.lightBubble,
-                scale: 1,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
-
-        this.pollutionBubble.setInteractive();
-        
-        this.bubbleColliders.push(this.physics.add.overlap(
-            this.guide,
-            this.pollutionBubble,
-            () => {this.handleBubbleCollect('poll');},
-        ));
-        this.pollutionBubble.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.pollutionBubble,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
-        this.pollutionBubble.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.pollutionBubble,
-                scale: 1,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
-
-        this.tempEvent.setInteractive();
-        
-        this.bubbleColliders.push(this.physics.add.overlap(
-            this.guide,
-            this.tempEvent,
-            () => {this.handleBubbleCollect('tempEvent');},
-        ));
-
-        this.tempEvent.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.tempEvent,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Power1'
-            });
-        });
-
-        this.tempEvent.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.tempEvent,
-                scale: 1,
-                duration: 200,
-                ease: 'Power1'
-            });
-        });
-
-        this.bubbleIdle(this.tempBubble);
-        this.bubbleIdle(this.lightBubble);
-        this.bubbleIdle(this.pollutionBubble);
-        this.bubbleIdle(this.tempEvent);
+            this.bubbleIdle(bubble);
+            this.bubbles[type] = bubble;
+        }
     }
 
     destroyBubbles() {
@@ -374,33 +304,17 @@ class TestScene extends Phaser.Scene {
         this.bubbleColliders.forEach(collider => collider.destroy());
         this.bubbleColliders = [];
 
-        this.tempBubble.destroy();
-        this.lightBubble.destroy();
-        this.pollutionBubble.destroy();
-        this.tempEvent.destroy();
+        Object.values(this.bubbles).forEach(bubble => bubble.destroy());
     }
 
     handleBubbleCollect(type) {
-        if (this.simEnd) return;
+        const bubble = this.bubbles[type];
+        if (this.simEnd || !bubble) return;
 
         // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
-        if (type == 'temp') {
-            this.bubbleCollision = true;
-            this.tempBubble.disableBody(true, true);
-            this.collisionType = type;
-        } else if (type == 'light') {
-            this.bubbleCollision = true;
-            this.collisionType = type;
-            this.lightBubble.disableBody(true, true);
-        } else if (type == 'poll') {
-            this.bubbleCollision = true;
-            this.collisionType = type;
-            this.pollutionBubble.disableBody(true, true);
-        } else if (type == 'tempEvent') {
-            this.bubbleCollision = true;
-            this.collisionType = type;
-            this.tempEvent.disableBody(true, true);
-        }
+        this.bubbleCollision = true;
+        this.collisionType = type;
+        bubble.disableBody(true, true);
         this.sound.play('bubblePop', { volume: this.sfxVolume });
     }
 
@@ -531,70 +445,26 @@ class TestScene extends Phaser.Scene {
 
     updateTemperature(temp) {
         this.temperature = temp;
-        const stressedA = 25; const stressedB = 27; // First Bleaching Interval [a,b]
-        const stressedC = 29; const stressedD = 31; // Second Bleaching Interval [c,d]
-
-        if (this.temperature >= stressedA && this.temperature < stressedB) {
-            this.poorTemp = 30;
-            this.reefDeadTemp = false;
-        } else if (this.temperature > stressedC && this.temperature <= stressedD) {
-            this.poorTemp = 30;
-            this.reefDeadTemp = false;
-        } else if (this.temperature <= stressedA) {
-            this.reefDeadTemp = true; // Reef is Dead
-        } else if (this.temperature >= stressedD) {
-            this.reefDeadTemp = true;
-        } else {
-            this.poorTemp = 0;
-            this.reefDeadTemp = false;
-        }
-
-        this.updateStress()
+        const { poor, dead } = evaluateThreshold(temp, THRESHOLDS.temperature);
+        this.poorTemp = poor;
+        this.reefDeadTemp = dead;
+        this.updateStress();
     }
 
     updatePollution(poll) {
         this.pollutionValue = poll;
-        const stressedA = 0; const stressedB = 1;
-        const stressedC = 3; const stressedD = 5;
-
-        if (this.pollutionValue >= stressedA && this.pollutionValue < stressedB) {
-            this.poorPollution = 30;
-            this.reefDeadPollution = false;
-        } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD) {
-            this.poorPollution = 30;
-            this.reefDeadPollution = false;
-        } else if (this.pollutionValue <= stressedA) {
-            this.reefDeadPollution = true; // Reef is Dead
-        } else if (this.pollutionValue >= stressedD) {
-            this.reefDeadPollution = true;
-        } else {
-            this.poorPollution = 0;
-            this.reefDeadPollution = false;
-        }
-
-        this.updateStress()
+        const { poor, dead } = evaluateThreshold(poll, THRESHOLDS.pollution);
+        this.poorPollution = poor;
+        this.reefDeadPollution = dead;
+        this.updateStress();
     }
 
     updateLight(light) {
         this.lightLevel = light;
-        const stressedA = 141; const stressedB = 200;
-        const stressedC = 1100; const stressedD = 1839;
-
-        if (this.lightLevel >= stressedA && this.lightLevel < stressedB) {
-            this.poorLight = 30;
-            this.reefDeadLight = false;
-        } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD) {
-            this.poorLight = 30;
-            this.reefDeadLight = false;
-        } else if (this.lightLevel <= stressedA) {
-            this.reefDeadLight = true; // Reef is Dead
-        } else if (this.lightLevel >= stressedD) {
-            this.reefDeadLight = true;
-        } else {
-            this.poorLight = 0;
-            this.reefDeadLight = false;
-        }
-        this.updateStress()
+        const { poor, dead } = evaluateThreshold(light, THRESHOLDS.light);
+        this.poorLight = poor;
+        this.reefDeadLight = dead;
+        this.updateStress();
     }
 
     updateStress() {
@@ -734,7 +604,7 @@ class TestScene extends Phaser.Scene {
 
     // Brings a cancelled bubble back at a new random spot, away from the fish so it isn't popped again straight away
     returnBubble(type) {
-        const bubble = { temp: this.tempBubble, light: this.lightBubble, poll: this.pollutionBubble }[type];
+        const bubble = this.bubbles[type];
         if (!bubble) return;
 
         let x, y;
