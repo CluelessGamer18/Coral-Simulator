@@ -55,8 +55,6 @@ class TestScene extends Phaser.Scene {
     }
 
     setupWorld(cam) {
-        this.game.events.emit("scene-ready", this);
-
         this.cameras.main.setBackgroundColor("#8ACFC9");
 
         const floorLayer3 = this.add.image(0, 0, "floor_layer3")
@@ -214,6 +212,7 @@ class TestScene extends Phaser.Scene {
         this.onSimTimeUpdate = null;
 
         window.gameScene = this;
+        // Only tell React about the scene once everything above has been set up
         this.game.events.emit("scene-ready", this);
     }
 
