@@ -139,6 +139,7 @@ function createCoralGroup(scene, count) {
     coral.on('pointerover', () => { // hover effect
       coral.setTint(0xffcc88);
 
+      coral.coralPulse?.stop(); // never run two pulses on the same coral
       coral.coralPulse = scene.tweens.add({
         targets: coral,
         scale: { from: 1, to: 1.05 },
@@ -151,11 +152,13 @@ function createCoralGroup(scene, count) {
 
     
     coral.on('pointerout', () => { // end hover effect
-      coral.setTint(0xFFFFFF);
+      coral.clearTint();
 
       if (coral.coralPulse) {
         coral.coralPulse.stop();
+        coral.coralPulse = null;
       }
+      coral.setScale(1); // stopping the pulse mid-way leaves the coral at whatever size it had reached
     });
 
     coral.on('pointerdown', () => { // on click: send coral info to React frontend for info popup
