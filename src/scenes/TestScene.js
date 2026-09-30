@@ -427,7 +427,7 @@ class TestScene extends Phaser.Scene {
             const movementLength = Math.hypot(horizontal, vertical);
 
             if (movementLength > 0) {
-                const speed = 6 * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
+                const speed = 6.75 * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
@@ -469,7 +469,7 @@ class TestScene extends Phaser.Scene {
 
         const maxSpeed = 15; // Adjust the maximum speed of the camera movement as needed
         const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
-        const edgeScrollSpeed = 6;
+        const edgeScrollSpeed = 6.75; // Keep equal to the fish speed so the camera keeps up with the fish at the screen edges
         const cameraSmoothing = 0.15;
         const fishScreenX = this.guide.x - this.cameras.main.scrollX;
         const fishAtRightSide = horizontal > 0 && fishScreenX >= this.cameras.main.width - sideWidth;
