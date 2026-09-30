@@ -11,7 +11,7 @@ import SimBubblePopUp from './SimBubblePopUp.jsx'
 import SimEndPopUp from './SimEndPopUp.jsx'
 import SimTutorial from './SimTutorial.jsx'
 
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router'
 import About from './About.jsx'
 
 function App() {

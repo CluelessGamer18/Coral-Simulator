@@ -1,5 +1,5 @@
 import "./styles/About.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 function About() {
     const navigate = useNavigate();
