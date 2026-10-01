@@ -1,7 +1,18 @@
 import "./styles/SimInfoDisplay.css";
 import { asset } from "./assetUrl";
 
+const MAX_HEARTS = 3;
+
+// Each time step costs half a heart, emptying the hearts from right to left
+function heartState(index, halvesLeft) {
+    if (halvesLeft >= 2 * (index + 1)) return "full";
+    if (halvesLeft === 2 * index + 1) return "half";
+    return "dead";
+}
+
 function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
+    const halvesLeft = Math.max(0, 2 * MAX_HEARTS - timejump);
+    const hearts = Array.from({ length: MAX_HEARTS }, (_, i) => heartState(i, halvesLeft));
     timejump = 2*timejump
     const dots = [ 
         "large", "small", 
@@ -68,6 +79,11 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
                 <div className="statusGroup scoreGroup">
                     <span className="SimInfoText scoreLabel">Score</span>
                     <span className="SimInfoText scoreValue">{score}</span>
+                </div>
+                <div className="statusGroup livesGroup">
+                    {hearts.map((state, i) => (
+                        <img key={i} className="heartIcon" src={asset(`heart_${state}.svg`)} alt={i === 0 ? `${halvesLeft / 2} of ${MAX_HEARTS} hearts left` : ""} />
+                    ))}
                 </div>
             </div>
         </div>

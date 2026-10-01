@@ -186,6 +186,18 @@
     text-align: right;
 }
 
+.livesGroup {
+    border-left: 2px solid #fff;
+    padding-left: 16px;
+    gap: 4px;
+}
+
+.heartIcon {
+    width: 22px;
+    height: 20px;
+    image-rendering: pixelated;
+}
+
 .TimelineIndicator {
     position: absolute;
     left: -1px; 
