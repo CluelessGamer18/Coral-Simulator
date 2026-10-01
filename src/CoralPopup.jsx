@@ -12,11 +12,11 @@ export default function CoralPopup({ coral, onClose }) {
         <div className="CoralTitle">{coral.name}</div>
         <div className="ScienceName">{coral.scientificName}</div>
         <div className="statusContainer">
-          <img className="statusIcon"src={asset("coralStatus.svg")}></img>
+          <img className="statusIcon" src={asset("coralStatus.svg")} alt="" />
           <p className="CoralStatus">{coral.status}</p>
         </div> 
         <p className="CoralInfo">{coral.info}</p>
-        <img className="microCoralView" src={coral.img}></img>
+        <img className="microCoralView" src={coral.img} alt={`Microscope view of ${coral.name}`} />
         {/* <button onClick={onClose}>Close</button> */}
       </div>
     </div>

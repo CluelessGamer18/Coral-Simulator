@@ -20,7 +20,7 @@ function SimEndPopUp({stress,temp,light,poll,onClose, dead = null}){
                 <div className="SimEndPopUp">
                 <span className="SimEndPopUpTitle">Your Reef {dead ? "Died..." : "Lived!"}</span> 
                 <button className="SimEndPopUpRestartButton" onClick={onClose}>Restart Sim</button>
-                <button className="SimEndPopUpMinimizeButton" onClick={() => setMinimized(!minimized)}>-</button>
+                <button className="SimEndPopUpMinimizeButton" aria-label="Minimize results" onClick={() => setMinimized(!minimized)}>-</button>
                 {currentChart === 0 ? <Chart data={stress} title={"Stress"} yRange={[0, 100]}/> : null}
                 {currentChart === 1 ? <Chart data={temp} title={"Temperature"} yRange={[18, 35]}/> : null}
                 {currentChart === 2 ? <Chart data={light} title={"Light Level"} yRange={[0, 2000]}/> : null}
@@ -32,8 +32,8 @@ function SimEndPopUp({stress,temp,light,poll,onClose, dead = null}){
                         <button className="SimEndPopUpChartButton" onClick={() => changeChart(2)}>Light</button>
                         <button className="SimEndPopUpChartButton" onClick={() => changeChart(3)}>Pollution</button>
                 </div>
-            </div></> : <button className="SimEndPopUpExpandButton" onClick={() => setMinimized(!minimized)}>
-                <img src={asset("dialogarrow.png")}></img></button>}
+            </div></> : <button className="SimEndPopUpExpandButton" aria-label="Show results" onClick={() => setMinimized(!minimized)}>
+                <img src={asset("dialogarrow.png")} alt="" /></button>}
 
         </>
     )

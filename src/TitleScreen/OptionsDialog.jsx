@@ -57,7 +57,7 @@ function OptionsDialog({
     return(
         <>
         <div className="OptionsBoxContainer">
-            <button className="OptionsXButton" onClick={()=>setShowOptions(false)}>X</button>
+            <button className="OptionsXButton" aria-label="Close options" onClick={()=>setShowOptions(false)}>X</button>
             <h1 className="OptionsTitle">Options</h1>
             <div className="OptionsSliderGroup">
                 <label>Music Volume</label>
