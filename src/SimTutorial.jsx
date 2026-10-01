@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import "./styles/SimTutorial.css";
+import { asset } from './assetUrl';
 
 
 
@@ -26,7 +27,7 @@ function SimTutorial({ closeTutorial = null }) {
         return (<div className="SimTutorialContent">
           <h2 className="SimTutorialTitle">Controls</h2>
           <p className="SimTutorialText">You are a fish living on a coral reef.  Move your cursor to explore your environment.</p>
-          <img src={`./tutorial/tutorial_1.png`} />
+          <img src={asset("tutorial/tutorial_1.png")} />
 
         </div>
         );
@@ -35,7 +36,7 @@ function SimTutorial({ closeTutorial = null }) {
           <div className="SimTutorialContent">
             <h2 className="SimTutorialTitle">Changing the Environement</h2>
             <p className="SimTutorialText">Change the light, temperature, and pollution by popping bubbles, and determine if your coral on the reef will survive.</p>
-            <img src={`./tutorial/tutorial_2.png`} />
+            <img src={asset("tutorial/tutorial_2.png")} />
           </div>
         );
       case 3:
@@ -43,7 +44,7 @@ function SimTutorial({ closeTutorial = null }) {
           <div className="SimTutorialContent">
             <h2 className="SimTutorialTitle">Advancing Time</h2>
             <p className="SimTutorialText">Popping bubbles advances your reef one year, revealing its impact on the coral.</p>
-            <img src={`./tutorial/tutorial_3.png`} />
+            <img src={asset("tutorial/tutorial_3.png")} />
           </div>
         );
       default:
@@ -51,7 +52,7 @@ function SimTutorial({ closeTutorial = null }) {
           <div className="SimTutorialContent">
             <h2 className="SimTutorialTitle">Let's Get Started!</h2>
             <p className="SimTutorialText">Explore the environment and have fun!</p>
-            <img src={`./tutorial/tutorial_4.png`} />
+            <img src={asset("tutorial/tutorial_4.png")} />
           </div>
         );
     }
@@ -59,7 +60,7 @@ function SimTutorial({ closeTutorial = null }) {
 
   return (
     <div className="SimTutorialPage">
-      {/* <img src={`./tutorial/tutorialpage${currentPage}.png`} /> */}
+      {/* <img src={asset(`tutorial/tutorialpage${currentPage}.png`)} /> */}
       <div className="tutorialContainer">
         <div>
         {simulateSwitch(currentPage)}

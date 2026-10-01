@@ -1,5 +1,6 @@
 import './styles/SimBubblePopUp.css'
 import { useState, useEffect, useRef } from 'react';
+import { asset } from './assetUrl';
 
 //Change Initial value to current value w/some sort of logic
 
@@ -9,8 +10,8 @@ const CONFIG = {
         max: 35,
         title: "Set Bubble Value",
         subtitle: "Temperature (°C)",
-        icon: "/temp_bubble.svg",
-        graph: "/graphs/temperatureGraph.svg",
+        icon: asset("temp_bubble.svg"),
+        graph: asset("graphs/temperatureGraph.svg"),
         dangerA: 24,
         dangerB: 32,
         },
@@ -19,8 +20,8 @@ const CONFIG = {
         max: 2000,
         title: "Set Bubble Value",
         subtitle: "Light Level (µMol/m\u00B2/s)",
-        icon: "/light_level_bubble.svg",
-        graph: "/graphs/light_levelGraph.svg",
+        icon: asset("light_level_bubble.svg"),
+        graph: asset("graphs/light_levelGraph.svg"),
         dangerA: 140,
         dangerB: 1840,
         },
@@ -29,8 +30,8 @@ const CONFIG = {
         max: 13,
         title: "Set Bubble Value",
         subtitle: "Nutrient Level (µMolar)",
-        icon: "/pollution_bubble.svg",
-        graph: "/graphs/pollutionGraph.svg",
+        icon: asset("pollution_bubble.svg"),
+        graph: asset("graphs/pollutionGraph.svg"),
         dangerA: 0,
         dangerB: 6,
         }
@@ -126,7 +127,7 @@ useEffect(() => {
             <p className="SimBubblePopUpTutorial">Move the slider to the desired value under a custom duration over time.</p>
             {danger ? 
             <div className="bubbleAlert">
-                <img className="warningIcon"src="/warning.svg"></img>
+                <img className="warningIcon"src={asset("warning.svg")}></img>
                 <div className="alertText">Setting to this value will cause irreversible coral bleaching and death within a year.</div>
             </div> : null}
             <div className="submitButtonWrapper">

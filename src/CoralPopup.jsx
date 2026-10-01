@@ -1,6 +1,7 @@
 
 
 import "./styles/CoralPopup.css";
+import { asset } from "./assetUrl";
 
 export default function CoralPopup({ coral, onClose }) {
   if (!coral) return null;
@@ -11,7 +12,7 @@ export default function CoralPopup({ coral, onClose }) {
         <div className="CoralTitle">{coral.name}</div>
         <div className="ScienceName">{coral.scientificName}</div>
         <div className="statusContainer">
-          <img className="statusIcon"src="/coralStatus.svg"></img>
+          <img className="statusIcon"src={asset("coralStatus.svg")}></img>
           <p className="CoralStatus">{coral.status}</p>
         </div> 
         <p className="CoralInfo">{coral.info}</p>

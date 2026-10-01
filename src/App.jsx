@@ -13,6 +13,7 @@ import SimTutorial from './SimTutorial.jsx'
 
 import { Routes, Route } from 'react-router'
 import About from './About.jsx'
+import { asset } from './assetUrl';
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(27);
@@ -201,7 +202,7 @@ function App() {
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
         <main className="MainContent">
-        {scene ? <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}><img src="/settings.svg" alt="Description of the image" width="45" height="45"></img>
+        {scene ? <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}><img src={asset("settings.svg")} alt="Description of the image" width="45" height="45"></img>
         </button> : null}
           <div className="GameContainer">
               <TestGame onSceneReady={setScene} />

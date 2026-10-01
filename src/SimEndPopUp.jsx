@@ -1,6 +1,7 @@
 import './styles/SimEndPopUp.css'
 import Chart from './StressChart.jsx'
 import { useState } from 'react';
+import { asset } from './assetUrl';
 
 
 function SimEndPopUp({stress,temp,light,poll,onClose, dead = null}){
@@ -32,7 +33,7 @@ function SimEndPopUp({stress,temp,light,poll,onClose, dead = null}){
                         <button className="SimEndPopUpChartButton" onClick={() => changeChart(3)}>Pollution</button>
                 </div>
             </div></> : <button className="SimEndPopUpExpandButton" onClick={() => setMinimized(!minimized)}>
-                <img src="/dialogarrow.png"></img></button>}
+                <img src={asset("dialogarrow.png")}></img></button>}
 
         </>
     )
