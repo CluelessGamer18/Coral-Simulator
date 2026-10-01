@@ -34,8 +34,6 @@ class TestScene extends Phaser.Scene {
 
         this.collisionType = "None";
         this.camVelX = 0;
-        this.moveCameraLeft = false;
-        this.moveCameraRight = false;
         this.tutorialComplete = false;
         // If (tutorialComplete)   
     }
@@ -161,26 +159,6 @@ class TestScene extends Phaser.Scene {
         this.darkOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, 1)
             .setOrigin(0, 0).setDepth(10000)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-
-
-
-        // move right on hover
-        this.rectRight = this.add.rectangle(
-            this.cameras.main.width - 50,
-            this.cameras.main.height / 2,
-            100,
-            this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
-
-        // move right on hover (disabled)
-
-        // move left on hover (disabled)
-        this.rectLeft = this.add.rectangle(
-            50,
-            this.cameras.main.height / 2,
-            100,
-            this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
 
         // guide shadow
         oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
