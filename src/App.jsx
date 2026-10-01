@@ -142,6 +142,22 @@ function App() {
     if(!showTutorial){scene.unlockFish()}
   }, [scene, showTutorial])
 
+  // Pause the game behind the Options dialog: movement, tweens, timers and clicks all stop until it closes.
+  // Phaser also stops blocking the arrow keys and Space, so the dialog's sliders and buttons work from the keyboard.
+  useEffect(() => {
+    if (!scene || !showOptions) return;
+
+    scene.scene.pause();
+    scene.input.keyboard.disableGlobalCapture();
+
+    return () => {
+      // "Return to Title" closes the dialog while the game is being torn down, so only resume a scene that is still paused
+      if (!scene.sys?.isPaused()) return;
+      scene.input.keyboard.enableGlobalCapture();
+      scene.scene.resume();
+    };
+  }, [scene, showOptions]);
+
   const endSim = () => {
     scene.RestartSim();
     setTemperatureValue(27);
