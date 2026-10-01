@@ -333,10 +333,21 @@ class TestScene extends Phaser.Scene {
         if (this.simEnd || !bubble) return;
 
         // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
-        this.bubbleCollision = true;
-        this.collisionType = type;
         bubble.disableBody(true, true);
         this.sound.play('bubblePop', { volume: this.sfxVolume });
+
+        // The temperature event applies straight away: no popup, and the fish keeps moving.
+        // React listens for "temp-event" to show the notice.
+        if (type === 'tempEvent') {
+            const previousTemperature = this.temperature;
+            const newTemperature = Math.min(previousTemperature + 2, 35);
+            this.updateTemperature(newTemperature);
+            this.game.events.emit("temp-event", { previousTemperature, newTemperature });
+            return;
+        }
+
+        this.bubbleCollision = true;
+        this.collisionType = type;
         this.emitStats();
     }
 
@@ -409,7 +420,6 @@ class TestScene extends Phaser.Scene {
             }
         }
 
-        const maxSpeed = 15; // Adjust the maximum speed of the camera movement as needed
         const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
         const edgeScrollSpeed = 6.75; // Keep equal to the fish speed so the camera keeps up with the fish at the screen edges
         const cameraSmoothing = 0.15;

@@ -35,50 +35,47 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
 
   const [showTutorial, setShowTutorial] = useState(true);
-  const [bubbleCancelled, setBubbleCancelled] = useState(false);
   const [eventNotice, setEventNotice] = useState(null);
 
 
-  let handler, initialValue;
+  let initialValue;
   if (scene){
     switch (scene.collisionType) {
       case "temp":
-        handler = setTemperatureValue;
         initialValue = temperatureValue;
         break;
 
       case "light":
-        handler = setLightValue;
         initialValue = lightValue;
         break;
 
       case "poll":
-        handler = setPollutionValue;
         initialValue = pollutionValue;
         break;
     }
   }
 
-  useEffect(() => {
-    if (!scene || !bubbleCollision || scene.collisionType !== 'tempEvent') return;
-
-    const previousTemperature = scene.temperature;
-    const newTemperature = Math.min(previousTemperature + 2, 35);
-    scene.updateTemperature(newTemperature);
-    setTemperatureValue(newTemperature);
-    setEventNotice({
-      title: 'Temperature Event',
-      message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
-      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
-    });
+  // Called by the bubble popup's Apply button. The scene emits "stats-changed" afterwards,
+  // which updates the values and closes the popup.
+  const applyBubble = (value) => {
+    const type = scene.collisionType;
+    if (type === 'temp') {
+      scene.updateTemperature(value);
+    } else if (type === 'light') {
+      scene.updateLight(value);
+    } else if (type === 'poll') {
+      scene.updatePollution(value);
+    }
     scene.freeFish(false);
-    setBubbleCollision(false);
-  }, [scene, bubbleCollision]);
+  };
+
+  // Called by the bubble popup's Cancel button: frees the fish and puts the bubble back
+  const cancelBubble = () => {
+    scene.freeFish(true);
+  };
 
   const dismissEventNotice = () => {
-    scene?.freeFish(false);
     setEventNotice(null);
-    setBubbleCollision(false);
   };
 
   useEffect(() => {
@@ -115,32 +112,22 @@ function App() {
       setScore(stats.score)
     };
 
-    events.on("stats-changed", onStats);
-    return () => events.off("stats-changed", onStats);
-  }, [scene]);
+    // The scene sends "temp-event" when the fish pops the temperature event bubble
+    const onTempEvent = ({ previousTemperature, newTemperature }) => {
+      setEventNotice({
+        title: 'Temperature Event',
+        message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
+      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
+      });
+    };
 
-  useEffect(() => {
-    if (!scene) {return}
-    if(bubbleCancelled){
-      setBubbleCancelled(false);
-      scene.freeFish(bubbleCancelled) 
-      return;
-    }
-    if (!bubbleCollision){
-      const type = scene.collisionType;
-      if(type === 'temp') {
-        console.log("Type == Temp, Updating Temp")
-        scene.updateTemperature(temperatureValue)
-      } else if (type === 'light'){
-        console.log("Type == Light, Updating Light")
-        scene.updateLight(lightValue);
-      } else if (type === 'poll'){
-        console.log("Type == Pollution, Updating Pollution")
-        scene.updatePollution(pollutionValue);
-      }
-      scene.freeFish(bubbleCancelled)
-    }
-  },[bubbleCollision])
+    events.on("stats-changed", onStats);
+    events.on("temp-event", onTempEvent);
+    return () => {
+      events.off("stats-changed", onStats);
+      events.off("temp-event", onTempEvent);
+    };
+  }, [scene]);
 
   useEffect(() => {
     if (!scene) {return}
@@ -182,11 +169,10 @@ function App() {
               <p>{eventNotice.message}</p>
           </aside>
         ) : null}
-        {scene && bubbleCollision && scene.collisionType !== 'tempEvent' ? <SimBubblePopUp type={scene.collisionType} 
+        {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
         initialValue={initialValue}
-        onChange={handler} 
-        setCollision={setBubbleCollision} 
-        setCancelled={setBubbleCancelled} /> : null}
+        onApply={applyBubble}
+        onCancel={cancelBubble} /> : null}
         {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
