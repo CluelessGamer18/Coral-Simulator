@@ -1,5 +1,6 @@
 import "./styles/About.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
+import { asset } from "./assetUrl";
 
 function About() {
     const navigate = useNavigate();
@@ -8,7 +9,7 @@ function About() {
         <div className="AboutPage AboutContainer">
             {/* background image */}
             <div className="AboutBackground">
-                <img src="aboutPageCoral.png" alt="Coral Reef Background" className="AboutBackgroundImage" />
+                <img src={asset("aboutPageCoral.png")} alt="Coral Reef Background" className="AboutBackgroundImage" />
             </div>
 
             {/* Back Button */}

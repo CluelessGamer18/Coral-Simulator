@@ -12,6 +12,12 @@ function TestGame({onSceneReady}){
     const sceneRef = useRef(null);
     const [selectedCoral, setSelectedCoral] = useState(null);
 
+    // keep the latest onSceneReady without re-running the effect below, which would destroy and recreate the game
+    const onSceneReadyRef = useRef(onSceneReady);
+    useEffect(() => {
+        onSceneReadyRef.current = onSceneReady;
+    });
+
     useEffect(() => {
         if (sceneRef.current) return
 
@@ -33,7 +39,7 @@ function TestGame({onSceneReady}){
         sceneRef.current = sim;
 
     sim.events.on("scene-ready", (sceneInstance) => {
-      onSceneReady(sceneInstance);
+      onSceneReadyRef.current(sceneInstance);
     });
 
     return () => {

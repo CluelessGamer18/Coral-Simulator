@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import './styles/SliderStyle.css'
 
-function RangeSlider({ min = 0, max = 100, middle = false, onChange }) {
+function RangeSlider({ min = 0, max = 100, onChange }) {
     const initialValue = 0 //? Math.floor((min + max) / 2) : min;
 
     const [value, setValue] = useState(initialValue);

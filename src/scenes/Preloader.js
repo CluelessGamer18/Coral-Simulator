@@ -54,41 +54,44 @@ All assets for Phaser are preloaded here. This includes images, spritesheets, an
 The loading progress is displayed with progress bar. See above.
 */
 preload() {
+        // every path below is relative to public/assets/ (respects Vite's base path)
+        this.load.setPath(import.meta.env.BASE_URL + 'assets/');
+
         // cursor-following fish
-        this.load.image("Guide","./assets/fish/fish.png")
+        this.load.image("Guide","fish/fish.png")
 
         // bubbles
-        this.load.image("PollutionBubble","/assets/bubbles/pollutionBubble.png")
-        this.load.image("TempBubble","/assets/bubbles/tempBubble.png")
-        this.load.image("LightBubble","/assets/bubbles/light_levelBubble.png")
+        this.load.image("PollutionBubble","bubbles/pollutionBubble.png")
+        this.load.image("TempBubble","bubbles/tempBubble.png")
+        this.load.image("LightBubble","bubbles/light_levelBubble.png")
 
         // spritesheets for fishes and shells
-        this.load.spritesheet('fishTypes', '/assets/fish/fishSpriteSheet.png', { frameWidth: 239, frameHeight: 239 });
-        this.load.spritesheet('shellTypes', '/assets/shells/shellSpriteSheet.png', { frameWidth: 55, frameHeight: 55 });
+        this.load.spritesheet('fishTypes', 'fish/fishSpriteSheet.png', { frameWidth: 239, frameHeight: 239 });
+        this.load.spritesheet('shellTypes', 'shells/shellSpriteSheet.png', { frameWidth: 55, frameHeight: 55 });
 
         // corals
-        this.load.spritesheet("acropora", "/assets/corals/acropora.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("acropora1", "/assets/corals/acropora1.png", { frameWidth: 186, frameHeight: 106 });
-        this.load.spritesheet("acropora2", "/assets/corals/acropora2.png", { frameWidth: 190.66, frameHeight: 81.52 });
-        this.load.spritesheet("acropora3", "/assets/corals/acropora3.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("montipora", "/assets/corals/montipora.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("staghorn1", "/assets/corals/staghorn1.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("staghorn2", "/assets/corals/staghorn2.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("acropora", "corals/acropora.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("acropora1", "corals/acropora1.png", { frameWidth: 186, frameHeight: 106 });
+        this.load.spritesheet("acropora2", "corals/acropora2.png", { frameWidth: 190.66, frameHeight: 81.52 });
+        this.load.spritesheet("acropora3", "corals/acropora3.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("montipora", "corals/montipora.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("staghorn1", "corals/staghorn1.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.spritesheet("staghorn2", "corals/staghorn2.png", { frameWidth: 180, frameHeight: 190 });
 
         // background layers
-        this.load.image("floor_layer0", "/assets/background/foreforeground_2860x161.png")
-        this.load.image("floor_layer1", "/assets/background/foreground_2860x467.png")
-        this.load.image("floor_layer2", "/assets/background/middleground_2072x691.png")
-        this.load.image("floor_layer3", "/assets/background/farground_1440x804.png")
-        this.load.image("surface", "/assets/background/surface_1440x155.png")
+        this.load.image("floor_layer0", "background/foreforeground_2860x161.png")
+        this.load.image("floor_layer1", "background/foreground_2860x467.png")
+        this.load.image("floor_layer2", "background/middleground_2072x691.png")
+        this.load.image("floor_layer3", "background/farground_1440x804.png")
+        this.load.image("surface", "background/surface_1440x155.png")
 
-        this.load.image("badOutline", "/assets/background/endangeredCoralOutline.png")
+        this.load.image("badOutline", "background/endangeredCoralOutline.png")
 
-        this.load.spritesheet("pipe", "/assets/background/sewage_spritesheet.png", { frameWidth: 577.93, frameHeight: 267.17 })
+        this.load.spritesheet("pipe", "background/sewage_spritesheet.png", { frameWidth: 577.93, frameHeight: 267.17 })
 
         // audio
-        this.load.audio('bubblePop', ['assets/audio/BubblePOP.mp3']);
-        this.load.audio('background_music', ['assets/audio/Background.mp3']);
+        this.load.audio('bubblePop', ['audio/BubblePOP.mp3']);
+        this.load.audio('background_music', ['audio/Background.mp3']);
     }
 
     create() {

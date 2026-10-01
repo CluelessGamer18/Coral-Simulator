@@ -4,13 +4,12 @@ import { Chart } from "chart.js/auto";
 function StressChart({ data = [], title, yRange}) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
+  // Use the numbers, not the array, as dependencies: callers pass a new [min, max] array on every render,
+  // which would otherwise rebuild the chart each time the parent re-renders
+  const [yMin, yMax] = yRange ?? [];
 
   useEffect(() => {
     if (!canvasRef.current) return;
-
-    if (chartRef.current) {
-      chartRef.current.destroy();
-    }
 
     chartRef.current = new Chart(canvasRef.current, {
       type: "line",
@@ -63,13 +62,19 @@ function StressChart({ data = [], title, yRange}) {
           y: {
             ticks: { color: "#FFFFFF" },
             grid: { color: "rgba(255,255,255,0.2)" },
-            min: yRange ? yRange[0] : undefined,
-            max: yRange ? yRange[1] : undefined
+            min: yMin,
+            max: yMax
           }
         }
       }
     });
-  }, [data, title, yRange]);
+
+    // Runs before the next rebuild and when the chart is removed, so Chart.js releases the canvas and its listeners
+    return () => {
+      chartRef.current.destroy();
+      chartRef.current = null;
+    };
+  }, [data, title, yMin, yMax]);
 
   return (
     <div style={{ width: "650px", height: "300px" }}>

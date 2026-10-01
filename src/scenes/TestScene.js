@@ -4,6 +4,27 @@ import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js"
 
 let oval;
 
+// One entry per bubble. `type` is the collisionType React reads to decide which popup to show.
+const BUBBLE_TYPES = [
+    { type: 'temp', texture: 'TempBubble', ease: 'Power1' },
+    { type: 'light', texture: 'LightBubble', ease: 'Sine.inOut' },
+    { type: 'poll', texture: 'PollutionBubble', ease: 'Sine.inOut' },
+    { type: 'tempEvent', texture: 'TempBubble', ease: 'Power1', inverted: true },
+];
+
+// [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
+const THRESHOLDS = {
+    temperature: { a: 25, b: 27, c: 29, d: 31 },
+    pollution: { a: 0, b: 1, c: 3, d: 5 },
+    light: { a: 141, b: 200, c: 1100, d: 1839 },
+};
+
+function evaluateThreshold(value, { a, b, c, d }) {
+    const stressed = (value >= a && value < b) || (value > c && value <= d);
+    const dead = !stressed && (value <= a || value >= d);
+    return { poor: stressed ? 30 : 0, dead };
+}
+
 class TestScene extends Phaser.Scene {
     constructor() {
         super("TestScene");
@@ -13,8 +34,6 @@ class TestScene extends Phaser.Scene {
 
         this.collisionType = "None";
         this.camVelX = 0;
-        this.moveCameraLeft = false;
-        this.moveCameraRight = false;
         this.tutorialComplete = false;
         // If (tutorialComplete)   
     }
@@ -55,8 +74,6 @@ class TestScene extends Phaser.Scene {
     }
 
     setupWorld(cam) {
-        this.game.events.emit("scene-ready", this);
-
         this.cameras.main.setBackgroundColor("#8ACFC9");
 
         const floorLayer3 = this.add.image(0, 0, "floor_layer3")
@@ -115,13 +132,21 @@ class TestScene extends Phaser.Scene {
         });
 
         this.bgMusic.play();
+
+        // The sound manager belongs to the whole game, not this scene, so sounds added here outlive a restart.
+        // Destroy the music whenever the scene shuts down (restart or stop) so a new copy isn't left behind each time.
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.bgMusic.destroy();
+            this.bgMusic = null;
+        });
     }
 
     setupUI(cam) {
         this.guide = this.physics.add.image(300, 300, "Guide")
         this.guide.setInteractive();
         this.guide.setDepth(9999);
-        this.guide.preFX.addShadow(0, -8, 0.009, 1, 0x333333, 5);
+        // preFX only exists under WebGL; on the Canvas fallback renderer it's null, so skip the shadow there
+        this.guide.preFX?.addShadow(0, -8, 0.009, 1, 0x333333, 5);
 
         this.badOutline = this.add.image(-95, -95, "badOutline")
             .setOrigin(0, 0).setDepth(10001).setAlpha(0)
@@ -134,26 +159,6 @@ class TestScene extends Phaser.Scene {
         this.darkOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, 1)
             .setOrigin(0, 0).setDepth(10000)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-
-
-
-        // move right on hover
-        this.rectRight = this.add.rectangle(
-            this.cameras.main.width - 50,
-            this.cameras.main.height / 2,
-            100,
-            this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
-
-        // move right on hover (disabled)
-
-        // move left on hover (disabled)
-        this.rectLeft = this.add.rectangle(
-            50,
-            this.cameras.main.height / 2,
-            100,
-            this.cameras.main.height, 0xFFFFFF
-        ).setScrollFactor(0).setInteractive().setAlpha(0.05).setDepth(10);
 
         // guide shadow
         oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
@@ -213,7 +218,38 @@ class TestScene extends Phaser.Scene {
         this.onSimTimeUpdate = null;
 
         window.gameScene = this;
+        // Only tell React about the scene once everything above has been set up
         this.game.events.emit("scene-ready", this);
+        // After a restart React is already listening, so send it the reset values
+        this.emitStats();
+    }
+
+    // The values React shows in the UI. Sent with emitStats() whenever one of them changes,
+    // so React doesn't have to copy them from the scene every frame.
+    getStats() {
+        return {
+            stress: this.stressValue,
+            light: this.lightLevel,
+            temperature: this.temperature,
+            pollution: this.pollutionValue,
+            timeJump: this.timeJump,
+            bubbleCollision: this.bubbleCollision,
+            collisionType: this.collisionType,
+            simEnd: this.simEnd,
+            reefDead: this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution,
+            score: this.score,
+            // copies, because the scene keeps pushing to its own arrays and React needs a new array to notice a change
+            history: {
+                stress: [...this.stressHistory],
+                temp: [...this.tempHistory],
+                light: [...this.lightHistory],
+                poll: [...this.pollutionHistory],
+            },
+        };
+    }
+
+    emitStats() {
+        this.game.events.emit("stats-changed", this.getStats());
     }
 
     setMusicVolume(value) {
@@ -239,146 +275,67 @@ class TestScene extends Phaser.Scene {
             return { x, y };
         }
         
-        const{x: x1, y: y1} = getSpawnLocation();
-        const{x: x2, y: y2} = getSpawnLocation();
-        const{x: x3, y: y3} = getSpawnLocation();
-        const{x: x4, y: y4} = getSpawnLocation();
+        // Kept so the overlaps can be removed along with the bubbles in destroyBubbles()
+        this.bubbleColliders = [];
+        this.bubbles = {};
 
-        this.tempBubble = this.physics.add.image(x1, y1, 'TempBubble').setDepth(7);
-        this.lightBubble = this.physics.add.image(x2, y2, 'LightBubble').setDepth(7);
-        this.pollutionBubble = this.physics.add.image(x3, y3, 'PollutionBubble').setDepth(7);
-        this.tempEvent = this.physics.add.image(x4, y4, 'TempBubble').setDepth(7);
+        for (const { type, texture, ease, inverted } of BUBBLE_TYPES) {
+            const { x, y } = getSpawnLocation();
+            const bubble = this.physics.add.image(x, y, texture).setDepth(7).setInteractive();
 
-        // Change the colour of the tempEvent bubble so I don't need more assets.
-        const invertEffect = this.tempEvent.preFX.addColorMatrix();
-        invertEffect.negative();
+            // Change the colour of the tempEvent bubble so I don't need more assets.
+            // preFX is WebGL-only, so on the Canvas renderer the bubble keeps its normal colour.
+            if (inverted) {
+                bubble.preFX?.addColorMatrix().negative();
+            }
 
-        this.tempBubble.setInteractive();
-        
-        this.physics.add.overlap(
-            this.guide,
-            this.tempBubble,
-            () => {this.handleBubbleCollect('temp');},
-        )
+            this.bubbleColliders.push(this.physics.add.overlap(
+                this.guide,
+                bubble,
+                () => {this.handleBubbleCollect(type);},
+            ));
 
-        this.tempBubble.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.tempBubble,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Power1'
+            bubble.on('pointerover', () => {
+                this.tweens.add({ targets: bubble, scale: 1.15, duration: 200, ease });
             });
-        });
-
-        this.tempBubble.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.tempBubble,
-                scale: 1,
-                duration: 200,
-                ease: 'Power1'
+            bubble.on('pointerout', () => {
+                this.tweens.add({ targets: bubble, scale: 1, duration: 200, ease });
             });
-        });
 
-        this.lightBubble.setInteractive();
-        
-        this.physics.add.overlap(
-            this.guide,
-            this.lightBubble,
-            () => {this.handleBubbleCollect('light');},
-        )
-        this.lightBubble.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.lightBubble,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
-        this.lightBubble.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.lightBubble,
-                scale: 1,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
+            this.bubbleIdle(bubble);
+            this.bubbles[type] = bubble;
+        }
+    }
 
-        this.pollutionBubble.setInteractive();
-        
-        this.physics.add.overlap(
-            this.guide,
-            this.pollutionBubble,
-            () => {this.handleBubbleCollect('poll');},
-        )
-        this.pollutionBubble.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.pollutionBubble,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
-        this.pollutionBubble.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.pollutionBubble,
-                scale: 1,
-                duration: 200,
-                ease: 'Sine.inOut'
-            });
-        });
+    destroyBubbles() {
+        // Remove the fish-vs-bubble overlaps too, otherwise the physics world keeps checking them every frame
+        this.bubbleColliders.forEach(collider => collider.destroy());
+        this.bubbleColliders = [];
 
-        this.tempEvent.setInteractive();
-        
-        this.physics.add.overlap(
-            this.guide,
-            this.tempEvent,
-            () => {this.handleBubbleCollect('tempEvent');},
-        )
-
-        this.tempEvent.on('pointerover', () => {
-            this.tweens.add({
-                targets: this.tempEvent,
-                scale: 1.15,
-                duration: 200,
-                ease: 'Power1'
-            });
-        });
-
-        this.tempEvent.on('pointerout', () => {
-            this.tweens.add({
-                targets: this.tempEvent,
-                scale: 1,
-                duration: 200,
-                ease: 'Power1'
-            });
-        });
-
-        this.bubbleIdle(this.tempBubble);
-        this.bubbleIdle(this.lightBubble);
-        this.bubbleIdle(this.pollutionBubble);
-        this.bubbleIdle(this.tempEvent);
+        Object.values(this.bubbles).forEach(bubble => bubble.destroy());
     }
 
     handleBubbleCollect(type) {
+        const bubble = this.bubbles[type];
+        if (this.simEnd || !bubble) return;
+
         // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
-        if (type == 'temp') {
-            this.bubbleCollision = true;
-            this.tempBubble.disableBody(true, true);
-            this.collisionType = type;
-        } else if (type == 'light') {
-            this.bubbleCollision = true;
-            this.collisionType = type;
-            this.lightBubble.disableBody(true, true);
-        } else if (type == 'poll') {
-            this.bubbleCollision = true;
-            this.collisionType = type;
-            this.pollutionBubble.disableBody(true, true);
-        } else if (type == 'tempEvent') {
-            this.bubbleCollision = true;
-            this.collisionType = type;
-            this.tempEvent.disableBody(true, true);
-        }
+        bubble.disableBody(true, true);
         this.sound.play('bubblePop', { volume: this.sfxVolume });
+
+        // The temperature event applies straight away: no popup, and the fish keeps moving.
+        // React listens for "temp-event" to show the notice.
+        if (type === 'tempEvent') {
+            const previousTemperature = this.temperature;
+            const newTemperature = Math.min(previousTemperature + 2, 35);
+            this.updateTemperature(newTemperature);
+            this.game.events.emit("temp-event", { previousTemperature, newTemperature });
+            return;
+        }
+
+        this.bubbleCollision = true;
+        this.collisionType = type;
+        this.emitStats();
     }
 
 
@@ -395,6 +352,13 @@ class TestScene extends Phaser.Scene {
 
 
     update(time, delta) {
+        // Freeze the fish, camera and timer once the end screen is showing
+        if (this.simEnd) return;
+
+        // Movement values below were tuned at 60fps, so scale them by how long this frame actually took.
+        // Capped so a lag spike or returning to the tab doesn't teleport the fish.
+        const frameScale = Math.min(delta, 50) / (1000 / 60);
+
         let horizontal = 0;
 
         if (this.tutorialComplete && !this.bubbleCollision) {
@@ -403,7 +367,7 @@ class TestScene extends Phaser.Scene {
             const movementLength = Math.hypot(horizontal, vertical);
 
             if (movementLength > 0) {
-                const speed = 6; //This adjust the constant speed of the fish movement, regardless of direction.
+                const speed = 6.75 * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
@@ -423,7 +387,7 @@ class TestScene extends Phaser.Scene {
                 this.guide.rotation = Phaser.Math.Angle.RotateTo(
                     this.guide.rotation,
                     desiredRotation,
-                    0.5
+                    0.5 * frameScale
                 );
 
                 const minScale = 1.3;
@@ -434,7 +398,7 @@ class TestScene extends Phaser.Scene {
 
                 const wiggleAmount = 1; // Adjust the wiggle amount and speed as needed
                 const wiggleSpeed = 0.01;
-                const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount;
+                const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount * frameScale;
 
                 this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
                 if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
@@ -443,9 +407,8 @@ class TestScene extends Phaser.Scene {
             }
         }
 
-        const maxSpeed = 15; // Adjust the maximum speed of the camera movement as needed
         const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
-        const edgeScrollSpeed = 6;
+        const edgeScrollSpeed = 6.75; // Keep equal to the fish speed so the camera keeps up with the fish at the screen edges
         const cameraSmoothing = 0.15;
         const fishScreenX = this.guide.x - this.cameras.main.scrollX;
         const fishAtRightSide = horizontal > 0 && fishScreenX >= this.cameras.main.width - sideWidth;
@@ -458,9 +421,9 @@ class TestScene extends Phaser.Scene {
             targetCameraSpeed = -edgeScrollSpeed;
         }
 
-        this.camVelX = Phaser.Math.Linear(this.camVelX, targetCameraSpeed, cameraSmoothing);
+        this.camVelX = Phaser.Math.Linear(this.camVelX, targetCameraSpeed, 1 - Math.pow(1 - cameraSmoothing, frameScale));
         this.cameras.main.scrollX = Phaser.Math.Clamp(
-            this.cameras.main.scrollX + this.camVelX,
+            this.cameras.main.scrollX + this.camVelX * frameScale,
             0,
             this.WORLD_WIDTH - this.cameras.main.width
         );
@@ -495,94 +458,46 @@ class TestScene extends Phaser.Scene {
 
     RestartSim() {
         this.scene.restart();
-        this.bgMusic.stop();
+        this.bgMusic.stop(); // silence it straight away; the shutdown handler in setupAudio() destroys it
         resetCorals(this);
     }
 
     updateTemperature(temp) {
         this.temperature = temp;
-        const stressedA = 25; const stressedB = 27; // First Bleaching Interval [a,b]
-        const stressedC = 29; const stressedD = 31; // Second Bleaching Interval [c,d]
-
-        if (this.temperature >= stressedA && this.temperature < stressedB) {
-            this.poorTemp = 30;
-            this.reefDeadTemp = false;
-        } else if (this.temperature > stressedC && this.temperature <= stressedD) {
-            this.poorTemp = 30;
-            this.reefDeadTemp = false;
-        } else if (this.temperature <= stressedA) {
-            this.reefDeadTemp = true; // Reef is Dead
-        } else if (this.temperature >= stressedD) {
-            this.reefDeadTemp = true;
-        } else {
-            this.poorTemp = 0;
-            this.reefDeadTemp = false;
-        }
-
-        this.updateStress()
+        const { poor, dead } = evaluateThreshold(temp, THRESHOLDS.temperature);
+        this.poorTemp = poor;
+        this.reefDeadTemp = dead;
+        this.updateStress();
+        this.emitStats();
     }
 
     updatePollution(poll) {
         this.pollutionValue = poll;
-        const stressedA = 0; const stressedB = 1;
-        const stressedC = 3; const stressedD = 5;
-
-        if (this.pollutionValue >= stressedA && this.pollutionValue < stressedB) {
-            this.poorPollution = 30;
-            this.reefDeadPollution = false;
-        } else if (this.pollutionValue > stressedC && this.pollutionValue <= stressedD) {
-            this.poorPollution = 30;
-            this.reefDeadPollution = false;
-        } else if (this.pollutionValue <= stressedA) {
-            this.reefDeadPollution = true; // Reef is Dead
-        } else if (this.pollutionValue >= stressedD) {
-            this.reefDeadPollution = true;
-        } else {
-            this.poorPollution = 0;
-            this.reefDeadPollution = false;
-        }
-
-        this.updateStress()
+        const { poor, dead } = evaluateThreshold(poll, THRESHOLDS.pollution);
+        this.poorPollution = poor;
+        this.reefDeadPollution = dead;
+        this.updateStress();
+        this.emitStats();
     }
 
     updateLight(light) {
         this.lightLevel = light;
-        const stressedA = 141; const stressedB = 200;
-        const stressedC = 1100; const stressedD = 1839;
-
-        if (this.lightLevel >= stressedA && this.lightLevel < stressedB) {
-            this.poorLight = 30;
-            this.reefDeadLight = false;
-        } else if (this.lightLevel > stressedC && this.lightLevel <= stressedD) {
-            this.poorLight = 30;
-            this.reefDeadLight = false;
-        } else if (this.lightLevel <= stressedA) {
-            this.reefDeadLight = true; // Reef is Dead
-        } else if (this.lightLevel >= stressedD) {
-            this.reefDeadLight = true;
-        } else {
-            this.poorLight = 0;
-            this.reefDeadLight = false;
-        }
-        this.updateStress()
+        const { poor, dead } = evaluateThreshold(light, THRESHOLDS.light);
+        this.poorLight = poor;
+        this.reefDeadLight = dead;
+        this.updateStress();
+        this.emitStats();
     }
 
     updateStress() {
+        // Once the sim is over, no more years can pass
+        if (this.simEnd) return;
+
         if (this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution) {
             this.stressValue = 100;
-            this.tempBubble.destroy();
-            this.lightBubble.destroy();
-            this.pollutionBubble.destroy();
-            this.tempEvent?.destroy();
             this.simEnd = true;
         } else {
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
-            this.tempBubble.destroy();
-            this.lightBubble.destroy();
-            this.pollutionBubble.destroy();
-            this.tempEvent?.destroy();
-            this.tweens.paused = false;
-            this.spawnBubbles();
         }
 
         if (this.stressHistory.length > 0) {
@@ -599,8 +514,15 @@ class TestScene extends Phaser.Scene {
 
         this.timeJump++;
 
-        if (this.timeJump === 10) {
+        if (this.timeJump >= 10) {
             this.simEnd = true;
+        }
+
+        // Only spawn new bubbles after every end condition has been checked
+        this.destroyBubbles();
+        if (!this.simEnd) {
+            this.tweens.paused = false;
+            this.spawnBubbles();
         }
 
         updateCoralStress(this, this.stressValue);
@@ -700,11 +622,12 @@ class TestScene extends Phaser.Scene {
         if (cancelled) {
             this.returnBubble(this.collisionType);
         }
+        this.emitStats();
     }
 
     // Brings a cancelled bubble back at a new random spot, away from the fish so it isn't popped again straight away
     returnBubble(type) {
-        const bubble = { temp: this.tempBubble, light: this.lightBubble, poll: this.pollutionBubble }[type];
+        const bubble = this.bubbles[type];
         if (!bubble) return;
 
         let x, y;

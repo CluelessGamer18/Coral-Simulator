@@ -1,7 +1,7 @@
 // import titleCard from "/TitleCard.jpg";
 // import {useState} from 'react';
 import "./TitleScreen.css";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 // import OptionsDialog from "./OptionsDialog.jsx";
 
 function TitleScreen({setShowTitleScreen}){

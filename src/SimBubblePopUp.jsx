@@ -1,5 +1,6 @@
 import './styles/SimBubblePopUp.css'
 import { useState, useEffect, useRef } from 'react';
+import { asset } from './assetUrl';
 
 //Change Initial value to current value w/some sort of logic
 
@@ -9,8 +10,9 @@ const CONFIG = {
         max: 35,
         title: "Set Bubble Value",
         subtitle: "Temperature (°C)",
-        icon: "/temp_bubble.svg",
-        graph: "/graphs/temperatureGraph.svg",
+        icon: asset("temp_bubble.svg"),
+        graph: asset("graphs/temperatureGraph.svg"),
+        graphAlt: "Graph of coral health against temperature: corals are only safe between 24 and 32 °C.",
         dangerA: 24,
         dangerB: 32,
         },
@@ -19,8 +21,9 @@ const CONFIG = {
         max: 2000,
         title: "Set Bubble Value",
         subtitle: "Light Level (µMol/m\u00B2/s)",
-        icon: "/light_level_bubble.svg",
-        graph: "/graphs/light_levelGraph.svg",
+        icon: asset("light_level_bubble.svg"),
+        graph: asset("graphs/light_levelGraph.svg"),
+        graphAlt: "Graph of coral health against light level: corals are only safe between 140 and 1840 µMol/m²/s.",
         dangerA: 140,
         dangerB: 1840,
         },
@@ -29,15 +32,16 @@ const CONFIG = {
         max: 13,
         title: "Set Bubble Value",
         subtitle: "Nutrient Level (µMolar)",
-        icon: "/pollution_bubble.svg",
-        graph: "/graphs/pollutionGraph.svg",
+        icon: asset("pollution_bubble.svg"),
+        graph: asset("graphs/pollutionGraph.svg"),
+        graphAlt: "Graph of coral health against nutrient level: corals are only safe between 0 and 6 µMolar.",
         dangerA: 0,
         dangerB: 6,
         }
 
 }
-function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled}){
-    const { min, max, title, subtitle, icon, graph, dangerA, dangerB } = CONFIG[type]
+function SimBubblePopUp({type, initialValue, onApply, onCancel}){
+    const { min, max, title, subtitle, icon, graph, graphAlt, dangerA, dangerB } = CONFIG[type]
     const [ready, setReady] = useState(false);
 
     const [danger, setDanger] = useState(() => initialValue >= dangerB || initialValue <= dangerA);
@@ -72,13 +76,11 @@ function SimBubblePopUp({type,initialValue, onChange, setCollision, setCancelled
     };
 
     const handleSubmitClick = () => {
-        onChange(value);
-        setCollision(false);
+        onApply(value);
     }
 
     const handleCancelClick = () => {
-        setCollision(false);
-        setCancelled(true);
+        onCancel();
     }
 
 useEffect(() => {
@@ -101,13 +103,13 @@ useEffect(() => {
     return(
         <div className={`SimBubblePopUp ${ready ? "show" : ""}`}>
             <div className="SimBubblePopUpHeader">
-                <img className="SimBubblePopUpHeaderIcon" src={icon} />
+                <img className="SimBubblePopUpHeaderIcon" src={icon} alt="" />
                 <div className="SimBubblePopUpHeaderText">
                     <div className="SimBubblePopUpHeaderTitle">{title}</div>
                     <div className="SimBubblePopUpHeaderSubtitle">{subtitle}</div>
                 </div>
             </div>
-            <img className="SimBubblePopUpGraph" src={graph}></img>
+            <img className="SimBubblePopUpGraph" src={graph} alt={graphAlt} />
             <div className="SimBubblePopUpSlider">
                 <input
                     ref={sliderRef}
@@ -126,7 +128,7 @@ useEffect(() => {
             <p className="SimBubblePopUpTutorial">Move the slider to the desired value under a custom duration over time.</p>
             {danger ? 
             <div className="bubbleAlert">
-                <img className="warningIcon"src="/warning.svg"></img>
+                <img className="warningIcon" src={asset("warning.svg")} alt="Warning" />
                 <div className="alertText">Setting to this value will cause irreversible coral bleaching and death within a year.</div>
             </div> : null}
             <div className="submitButtonWrapper">

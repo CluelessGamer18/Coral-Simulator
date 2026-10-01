@@ -11,8 +11,11 @@ import SimBubblePopUp from './SimBubblePopUp.jsx'
 import SimEndPopUp from './SimEndPopUp.jsx'
 import SimTutorial from './SimTutorial.jsx'
 
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router'
 import About from './About.jsx'
+import { asset } from './assetUrl';
+
+const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
 
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(27);
@@ -22,10 +25,13 @@ function App() {
   const [timeAdvanced, setTimeAdvanced] = useState(0);
 
   const [bubbleCollision, setBubbleCollision] = useState(false);
+  const [collisionType, setCollisionType] = useState("None");
   const [score, setScore] = useState(0);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
   const [simEnd, setSimEnd] = useState(false);
+  const [reefDead, setReefDead] = useState(false);
+  const [history, setHistory] = useState(EMPTY_HISTORY);
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
 
@@ -34,50 +40,47 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
 
   const [showTutorial, setShowTutorial] = useState(true);
-  const [bubbleCancelled, setBubbleCancelled] = useState(false);
   const [eventNotice, setEventNotice] = useState(null);
 
 
-  let handler, initialValue;
+  let initialValue;
   if (scene){
-    switch (scene.collisionType) {
+    switch (collisionType) {
       case "temp":
-        handler = setTemperatureValue;
         initialValue = temperatureValue;
         break;
 
       case "light":
-        handler = setLightValue;
         initialValue = lightValue;
         break;
 
       case "poll":
-        handler = setPollutionValue;
         initialValue = pollutionValue;
         break;
     }
   }
 
-  useEffect(() => {
-    if (!scene || !bubbleCollision || scene.collisionType !== 'tempEvent') return;
-
-    const previousTemperature = scene.temperature;
-    const newTemperature = Math.min(previousTemperature + 2, 35);
-    scene.updateTemperature(newTemperature);
-    setTemperatureValue(newTemperature);
-    setEventNotice({
-      title: 'Temperature Event',
-      message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
-      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
-    });
+  // Called by the bubble popup's Apply button. The scene emits "stats-changed" afterwards,
+  // which updates the values and closes the popup.
+  const applyBubble = (value) => {
+    const type = scene.collisionType;
+    if (type === 'temp') {
+      scene.updateTemperature(value);
+    } else if (type === 'light') {
+      scene.updateLight(value);
+    } else if (type === 'poll') {
+      scene.updatePollution(value);
+    }
     scene.freeFish(false);
-    setBubbleCollision(false);
-  }, [scene, bubbleCollision]);
+  };
+
+  // Called by the bubble popup's Cancel button: frees the fish and puts the bubble back
+  const cancelBubble = () => {
+    scene.freeFish(true);
+  };
 
   const dismissEventNotice = () => {
-    scene?.freeFish(false);
     setEventNotice(null);
-    setBubbleCollision(false);
   };
 
   useEffect(() => {
@@ -98,55 +101,62 @@ function App() {
     scene.setSfxVolume?.(sfxVolume);
   }, [scene, musicVolume, sfxVolume]);
 
+  // The scene sends "stats-changed" whenever one of these values changes, so React only updates when something happens
   useEffect(() => {
     if (!scene) return;
 
-    let frameId;
-
-    const loop = () => {
-      setStressValue(scene.stressValue)
-      setLightValue(scene.lightLevel)
-      setTemperatureValue(scene.temperature)
-      setPollutionValue(scene.pollutionValue)
-      setTimeAdvanced(scene.timeJump)
-      setBubbleCollision(scene.bubbleCollision)
-      setSimEnd(scene.simEnd)
-      setScore(scene.score)
-      frameId = requestAnimationFrame(loop);
+    const events = scene.game.events; // kept so cleanup still works after the game is destroyed
+    const onStats = (stats) => {
+      setStressValue(stats.stress)
+      setLightValue(stats.light)
+      setTemperatureValue(stats.temperature)
+      setPollutionValue(stats.pollution)
+      setTimeAdvanced(stats.timeJump)
+      setBubbleCollision(stats.bubbleCollision)
+      setCollisionType(stats.collisionType)
+      setSimEnd(stats.simEnd)
+      setReefDead(stats.reefDead)
+      setScore(stats.score)
+      setHistory(stats.history)
     };
 
-    frameId = requestAnimationFrame(loop);
+    // The scene sends "temp-event" when the fish pops the temperature event bubble
+    const onTempEvent = ({ previousTemperature, newTemperature }) => {
+      setEventNotice({
+        title: 'Temperature Event',
+        message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
+      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
+      });
+    };
 
-    return () => cancelAnimationFrame(frameId);
+    events.on("stats-changed", onStats);
+    events.on("temp-event", onTempEvent);
+    return () => {
+      events.off("stats-changed", onStats);
+      events.off("temp-event", onTempEvent);
+    };
   }, [scene]);
 
   useEffect(() => {
     if (!scene) {return}
-    if(bubbleCancelled){
-      setBubbleCancelled(false);
-      scene.freeFish(bubbleCancelled) 
-      return;
-    }
-    if (!bubbleCollision){
-      const type = scene.collisionType;
-      if(type === 'temp') {
-        console.log("Type == Temp, Updating Temp")
-        scene.updateTemperature(temperatureValue)
-      } else if (type === 'light'){
-        console.log("Type == Light, Updating Light")
-        scene.updateLight(lightValue);
-      } else if (type === 'poll'){
-        console.log("Type == Pollution, Updating Pollution")
-        scene.updatePollution(pollutionValue);
-      }
-      scene.freeFish(bubbleCancelled)
-    }
-  },[bubbleCollision])
-
-  useEffect(() => {
-    if (!scene) {return}
     if(!showTutorial){scene.unlockFish()}
-  })
+  }, [scene, showTutorial])
+
+  // Pause the game behind the Options dialog: movement, tweens, timers and clicks all stop until it closes.
+  // Phaser also stops blocking the arrow keys and Space, so the dialog's sliders and buttons work from the keyboard.
+  useEffect(() => {
+    if (!scene || !showOptions) return;
+
+    scene.scene.pause();
+    scene.input.keyboard.disableGlobalCapture();
+
+    return () => {
+      // "Return to Title" closes the dialog while the game is being torn down, so only resume a scene that is still paused
+      if (!scene.sys?.isPaused()) return;
+      scene.input.keyboard.enableGlobalCapture();
+      scene.scene.resume();
+    };
+  }, [scene, showOptions]);
 
   const endSim = () => {
     scene.RestartSim();
@@ -157,7 +167,9 @@ function App() {
     setTimeAdvanced(0);
     setBubbleCollision(false);
     setSimEnd(false);
+    setReefDead(false);
     setScore(0);
+    setHistory(EMPTY_HISTORY);
   }
 
   return (
@@ -165,13 +177,13 @@ function App() {
     <Route path="/" element={
       <>
         {/*<RangeSlider onChange={setStressValue}/>*/}
-        {scene && simEnd && Array.isArray(scene.stressHistory) ? (
-          <SimEndPopUp stress={scene.stressHistory}
-            temp={scene.tempHistory}
-            light={scene.lightHistory}
-            poll={scene.pollutionHistory}
+        {scene && simEnd ? (
+          <SimEndPopUp stress={history.stress}
+            temp={history.temp}
+            light={history.light}
+            poll={history.poll}
             onClose={endSim}
-            dead={scene.reefDeadTemp || scene.reefDeadLight || scene.reefDeadPollution}
+            dead={reefDead}
           ></SimEndPopUp>) : null}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
         {eventNotice ? (
@@ -183,11 +195,10 @@ function App() {
               <p>{eventNotice.message}</p>
           </aside>
         ) : null}
-        {scene && bubbleCollision && scene.collisionType !== 'tempEvent' ? <SimBubblePopUp type={scene.collisionType} 
+        {scene && bubbleCollision ? <SimBubblePopUp type={collisionType} 
         initialValue={initialValue}
-        onChange={handler} 
-        setCollision={setBubbleCollision} 
-        setCancelled={setBubbleCancelled} /> : null}
+        onApply={applyBubble}
+        onCancel={cancelBubble} /> : null}
         {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
@@ -203,7 +214,7 @@ function App() {
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>
         <main className="MainContent">
-        {scene ? <button className="OptionsButtonIcon" onClick={(()=>setShowOptions(true))}><img src="/settings.svg" alt="Description of the image" width="45" height="45"></img>
+        {scene ? <button className="OptionsButtonIcon" aria-label="Open settings" onClick={(()=>setShowOptions(true))}><img src={asset("settings.svg")} alt="" width="45" height="45"></img>
         </button> : null}
           <div className="GameContainer">
               <TestGame onSceneReady={setScene} />
