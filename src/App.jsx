@@ -15,6 +15,8 @@ import { Routes, Route } from 'react-router'
 import About from './About.jsx'
 import { asset } from './assetUrl';
 
+const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
+
 function App() {
   const [temperatureValue, setTemperatureValue] = useState(27);
   const [lightValue, setLightValue] = useState(500);
@@ -23,10 +25,13 @@ function App() {
   const [timeAdvanced, setTimeAdvanced] = useState(0);
 
   const [bubbleCollision, setBubbleCollision] = useState(false);
+  const [collisionType, setCollisionType] = useState("None");
   const [score, setScore] = useState(0);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
   const [simEnd, setSimEnd] = useState(false);
+  const [reefDead, setReefDead] = useState(false);
+  const [history, setHistory] = useState(EMPTY_HISTORY);
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
 
@@ -40,7 +45,7 @@ function App() {
 
   let initialValue;
   if (scene){
-    switch (scene.collisionType) {
+    switch (collisionType) {
       case "temp":
         initialValue = temperatureValue;
         break;
@@ -108,8 +113,11 @@ function App() {
       setPollutionValue(stats.pollution)
       setTimeAdvanced(stats.timeJump)
       setBubbleCollision(stats.bubbleCollision)
+      setCollisionType(stats.collisionType)
       setSimEnd(stats.simEnd)
+      setReefDead(stats.reefDead)
       setScore(stats.score)
+      setHistory(stats.history)
     };
 
     // The scene sends "temp-event" when the fish pops the temperature event bubble
@@ -132,7 +140,7 @@ function App() {
   useEffect(() => {
     if (!scene) {return}
     if(!showTutorial){scene.unlockFish()}
-  })
+  }, [scene, showTutorial])
 
   const endSim = () => {
     scene.RestartSim();
@@ -143,7 +151,9 @@ function App() {
     setTimeAdvanced(0);
     setBubbleCollision(false);
     setSimEnd(false);
+    setReefDead(false);
     setScore(0);
+    setHistory(EMPTY_HISTORY);
   }
 
   return (
@@ -151,13 +161,13 @@ function App() {
     <Route path="/" element={
       <>
         {/*<RangeSlider onChange={setStressValue}/>*/}
-        {scene && simEnd && Array.isArray(scene.stressHistory) ? (
-          <SimEndPopUp stress={scene.stressHistory}
-            temp={scene.tempHistory}
-            light={scene.lightHistory}
-            poll={scene.pollutionHistory}
+        {scene && simEnd ? (
+          <SimEndPopUp stress={history.stress}
+            temp={history.temp}
+            light={history.light}
+            poll={history.poll}
             onClose={endSim}
-            dead={scene.reefDeadTemp || scene.reefDeadLight || scene.reefDeadPollution}
+            dead={reefDead}
           ></SimEndPopUp>) : null}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
         {eventNotice ? (
@@ -169,7 +179,7 @@ function App() {
               <p>{eventNotice.message}</p>
           </aside>
         ) : null}
-        {scene && bubbleCollision ? <SimBubblePopUp type={scene.collisionType} 
+        {scene && bubbleCollision ? <SimBubblePopUp type={collisionType} 
         initialValue={initialValue}
         onApply={applyBubble}
         onCancel={cancelBubble} /> : null}

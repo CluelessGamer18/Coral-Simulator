@@ -256,8 +256,17 @@ class TestScene extends Phaser.Scene {
             pollution: this.pollutionValue,
             timeJump: this.timeJump,
             bubbleCollision: this.bubbleCollision,
+            collisionType: this.collisionType,
             simEnd: this.simEnd,
+            reefDead: this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution,
             score: this.score,
+            // copies, because the scene keeps pushing to its own arrays and React needs a new array to notice a change
+            history: {
+                stress: [...this.stressHistory],
+                temp: [...this.tempHistory],
+                light: [...this.lightHistory],
+                poll: [...this.pollutionHistory],
+            },
         };
     }
 
