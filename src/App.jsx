@@ -192,7 +192,10 @@ function App() {
               <h2 id="event-notice-title">{eventNotice.title}</h2>
               <button type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
               </div>
-              <p>{eventNotice.message}</p>
+              <div className="EventNoticeBody">
+                <img className="EventNoticeArt" src={asset("popups/seahorses.svg")} alt="" />
+                <p>{eventNotice.message}</p>
+              </div>
           </aside>
         ) : null}
         {scene && bubbleCollision ? <SimBubblePopUp type={collisionType} 
