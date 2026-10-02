@@ -81,6 +81,94 @@ var coralTypes = {
     imgType: 'branch',
     img: asset('microscopes/healthy_microscope.png'),
     bleachRate: 100
+  },
+  columnarColourful: {
+    key: 'columnarColourful',
+    name: 'Columnar',
+    scientificName: 'Dendrogyra cylindrus',
+    status: 'Healthy',
+    info: 'Pillar coral grows from an encrusting base into blunt, upright columns. Its polyps often extend during the day, giving the colony a soft, fuzzy appearance; the species is native to the western Atlantic and Caribbean.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  columnarBlue: {
+    key: 'columnarBlue',
+    name: 'Columnar',
+    scientificName: 'Dendrogyra cylindrus',
+    status: 'Healthy',
+    info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  digitateBlue: {
+    key: 'digitateBlue',
+    name: 'Digitate',
+    scientificName: "Acropora digitifera",
+    status: 'Healthy',
+    info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  digitatePurple: {
+    key: 'digitatePurple',
+    name: 'Digitate',
+    scientificName: "Acropora digitifera",
+    status: 'Healthy',
+    info: 'Colonies of Acropora digitifera can spread to about a metre across. Its small corallites line the branches, and the tip corallite may be white or blue; colony colour varies across reefs.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  foliosBrown: {
+    key: 'foliosBrown',
+    name: 'Folios',
+    scientificName: "Montipora foliosa",
+    status: 'Healthy',
+    info: 'Montipora foliosa grows in broad, thin plates that spread outward and can overlap in tiers. This flattened, leaf-like growth form sets it apart from corals that build upright branches.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  foliosOrange: {
+    key: 'foliosOrange',
+    name: 'Folios',
+    scientificName: "Montipora foliosa",
+    status: 'Healthy',
+    info: 'Tiny coral polyps cover each Montipora foliosa plate and build its shared skeleton. As the plates expand, they form layered shelves across the reef.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  tabularBlue: {
+    key: 'tabularBlue',
+    name: 'Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  tabularGreen: {
+    key: 'tabularGreen',
+    name: 'Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Acropora clathrata is found on fringing, sheltered, and back reefs, at reported depths of about 5 to 40 metres. Colony size and spread vary with depth, with larger surface areas recorded deeper on the reef.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   }
 };
 
@@ -133,6 +221,11 @@ function createCoralGroup(scene, count) {
 
     coral.setInteractive(); // corals are clickable
     coral.type = typeName;
+
+    if (type.generatedStages === null) {
+      type.generatedStages = createBleachStages(scene, type.key);
+    }
+
     coral.bleachRate = type.bleachRate;
     coral.stress = 0;
     coral.bleachStage = 0;
@@ -213,6 +306,48 @@ function coralSway(scene, coral) {
   });
 }
 
+function createBleachStages(scene, coralType) {
+  const source = scene.textures.get(coralType).getSourceImage();
+  const strengths = [0.2, 0.4, 0.65, 0.85];
+  const keys = [coralType];
+
+  strengths.forEach((strength, index) => {
+    const key = `${coralType}-bleach-${index + 1}`;
+
+    if (!scene.textures.exists(key)) {
+      const texture = scene.textures.createCanvas(key, source.width, source.height);
+      const context = texture.getContext();
+      context.drawImage(source, 0, 0);
+
+      const image = context.getImageData(0, 0, source.width, source.height);
+      const pixels = image.data;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        const red = pixels[i];
+        const green = pixels[i + 1];
+        const blue = pixels[i + 2];
+        const gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+
+        for (let channel = 0; channel < 3; channel++) {
+          const original = pixels[i + channel];
+          const desaturated = gray + (original - gray) * (1 - strength);
+          pixels[i + channel] = Math.round(
+            desaturated + (255 - desaturated) * strength * 0.45
+          );
+        }
+      }
+
+      context.putImageData(image, 0, 0);
+      texture.refresh();
+    }
+
+    keys.push(key);
+  });
+
+  return keys;
+}
+  
+
 /* called when stress levels are updated in the game. stressAmount: 0-100 */
 export function updateCoralStress(scene, stressAmount) {
   const adjustedStress = Math.floor((stressAmount / 100) * 4); // map stress 0-100 to 0-4 (number of spritesheet frames for corals)
@@ -229,12 +364,14 @@ export function updateCoralStress(scene, stressAmount) {
   });
 
   scene.corals.forEach(coral => {
-    if (coralTypes[coral.type].status !== 'Dead') {
-      coral.setFrame(adjustedStress);
-    } else {
-      coral.setFrame(4);
-    }
-  });
+  const type = coralTypes[coral.type];
+
+  if (type.generatedStages) {
+    coral.setTexture(type.generatedStages[adjustedStress]);
+  } else {
+    coral.setFrame(type.status === "Dead" ? 4 : adjustedStress);
+  }
+});
 }
 
 /* helper function to reset coral states. Called when game is reset. */
@@ -242,7 +379,13 @@ export function resetCorals(scene) {
   scene.corals.forEach(coral => {
     coral.stress = 0;
     coral.bleachStage = 0;
-    coral.setFrame(0);
+    const type = coralTypes[coral.type];
+
+    if (type.generatedStages) {
+      coral.setTexture(type.generatedStages[0]);
+    } else {
+      coral.setFrame(0);
+    }
   });
 
   Object.values(coralTypes).forEach(type => {

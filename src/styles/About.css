@@ -19,7 +19,7 @@ html {
 
 .AboutPage {
     padding: 0px;
-    max-width: 900px;
+    max-width: 1100px;
     margin: auto;
 }
 
@@ -57,4 +57,78 @@ html {
 .AboutSection {
     min-height: 100vh;
     padding: 60px 0 ;
+}
+
+.ContentGrid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 28px 20px;
+    text-align: center;
+}
+
+.ContentItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+}
+
+.ContentItem p {
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+
+}
+
+.ContentItemImage {
+    display: block;
+    width: 100%;
+    max-width: 160px;
+    height: 100px;
+    object-fit: contain;
+}
+
+@media(max-width: 700px) {
+    .ContentGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media(max-width: 450px) {
+    .ContentGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.TeamLayout {
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr;
+    align-items: center;
+    gap: 16px;
+}
+
+.TeamImage, .TeamTextImage {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.ResourceGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 320px));
+    grid-auto-rows: 260px;
+    gap: 20px;
+}
+
+.ResourceCard {
+    aspect-ratio: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #153f42;
+    color: white;
+    text-align: center;
+    border-radius: 12px;
 }
