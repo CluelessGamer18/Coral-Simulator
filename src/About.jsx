@@ -4,6 +4,29 @@ import { asset } from "./assetUrl";
 
 function About() {
     const navigate = useNavigate();
+
+    const contentItems = [
+        {name: "French Angelfish", image: "assets/fish/angelfish.png"},
+        {name: "Baracuda", image: "assets/fish/baracuda.png"},
+        {name: "Yellow Boxfish", image: "assets/fish/boxfish.png"},
+        {name: "Yellow Longnose Butterfly Fish", image: "assets/fish/butterflyfish.png"},
+        {name: "Clown Fish", image: "assets/fish/clownfish.png"},
+        {name: "Jellyfish", image: "assets/fish/jellyfish.png"},
+        {name: "Lion Fish", image: "assets/fish/lionfish.png"},
+        {name: "Moorish Idol", image: "assets/fish/moorishidol.png"},
+        {name: "Regal Tang", image: "assets/fish/regaltang.png"},
+        {name: "School", image: "assets/fish/school.png"},
+        {name: "Seahorse", image: "assets/fish/seahorse.png"},
+        {name: "Stingray", image: "assets/fish/stingray.png"},
+        {name: "Picasso Triggerfish", image: "assets/fish/triggerfish.png"},
+        {name: "Sea Turtle", image: "assets/fish/turtle.png"},
+        {name: "Yellow Tang", image: "assets/fish/yellowtang.png"},
+    ]
+
+    const teamItems = [
+        {name: "The Team", image: "assets/background/TheTeam.png"},
+        {name: "Team Text", image: "assets/background/TeamText.png"},
+    ]
     
     return (
         <div className="AboutPage AboutContainer">
@@ -40,9 +63,19 @@ function About() {
             {/* Content Section */}
             <section id="content" className="AboutSection">
                 <h1>Content</h1>
+                <p></p>
                 <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    To create a realistic simulation, our design team researched the marine life found in coral reef ecosystems.
                 </p>
+
+                <div className="ContentGrid">
+                    {contentItems.map((item) => (
+                        <div className="ContentItem" key={item.name}>
+                            <img src={asset(item.image)} alt={item.name} className="ContentItemImage" />
+                            <p>{item.name}</p>
+                        </div>
+                    ))}
+                </div>
             </section>
 
             {/* Resources Section */}
