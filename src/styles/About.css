@@ -19,7 +19,7 @@ html {
 
 .AboutPage {
     padding: 0px;
-    max-width: 900px;
+    max-width: 1100px;
     margin: auto;
 }
 
@@ -73,6 +73,13 @@ html {
     min-width: 0;
 }
 
+.ContentItem p {
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+
+}
+
 .ContentItemImage {
     display: block;
     width: 100%;
@@ -91,4 +98,17 @@ html {
     .ContentGrid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+}
+
+.TeamLayout {
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr;
+    align-items: center;
+    gap: 16px;
+}
+
+.TeamImage, .TeamTextImage {
+    display: block;
+    width: 100%;
+    height: auto;
 }

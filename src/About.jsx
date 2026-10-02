@@ -9,7 +9,7 @@ function About() {
         {name: "French Angelfish", image: "assets/fish/angelfish.png"},
         {name: "Baracuda", image: "assets/fish/baracuda.png"},
         {name: "Yellow Boxfish", image: "assets/fish/boxfish.png"},
-        {name: "Yellow Longnose Butterfly Fish", image: "assets/fish/butterflyfish.png"},
+        {name: "Yellow Longnose Butterflyfish", image: "assets/fish/butterflyfish.png"},
         {name: "Clown Fish", image: "assets/fish/clownfish.png"},
         {name: "Jellyfish", image: "assets/fish/jellyfish.png"},
         {name: "Lion Fish", image: "assets/fish/lionfish.png"},
@@ -21,11 +21,6 @@ function About() {
         {name: "Picasso Triggerfish", image: "assets/fish/triggerfish.png"},
         {name: "Sea Turtle", image: "assets/fish/turtle.png"},
         {name: "Yellow Tang", image: "assets/fish/yellowtang.png"},
-    ]
-
-    const teamItems = [
-        {name: "The Team", image: "assets/background/TheTeam.png"},
-        {name: "Team Text", image: "assets/background/TeamText.png"},
     ]
     
     return (
@@ -88,10 +83,11 @@ function About() {
 
             {/* The Team Section */}
             <section id="the-team" className="AboutSection">
-                <h1>The Team</h1>
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                </p>
+                <h1>Meet the Team!</h1>
+                <div className = "TeamLayout">
+                    <img className = "TeamImage" src={asset("assets/background/TheTeam.png")} alt="The Team" />
+                    <img className = "TeamTextImage" src={asset("assets/background/TeamText.png")} alt="Team Text" />
+                </div>
             </section>
         </div>
     );
