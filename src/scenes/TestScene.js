@@ -19,6 +19,9 @@ const THRESHOLDS = {
     light: { a: 141, b: 200, c: 1100, d: 1839 },
 };
 
+const PREDATOR_SPEED = 3.375;
+const PREDATOR_SPAWN_DELAY = 10000;
+
 function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
     const dead = !stressed && (value <= a || value >= d);
@@ -67,6 +70,7 @@ class TestScene extends Phaser.Scene {
         this.simEnd = false;
         this.timeJump = 0;
         this.bubbleCollision = false;
+        this.coralInfoOpen = false;
         this.score = 0;
 
         this.WORLD_WIDTH = 2860;
@@ -148,6 +152,12 @@ class TestScene extends Phaser.Scene {
         // preFX only exists under WebGL; on the Canvas fallback renderer it's null, so skip the shadow there
         this.guide.preFX?.addShadow(0, -8, 0.009, 1, 0x333333, 5);
 
+        // Predator is hidden until the timer runs out, then it appears and starts chasing the fish.
+        this.predator = this.add.rectangle(this.WORLD_WIDTH - 100, 300, 40, 40, 0x9b2c2c)
+            .setDepth(9998)
+            .setVisible(false);
+        this.predatorSpawned = false;
+
         this.badOutline = this.add.image(-95, -95, "badOutline")
             .setOrigin(0, 0).setDepth(10001).setAlpha(0)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
@@ -214,6 +224,15 @@ class TestScene extends Phaser.Scene {
         this.setupCamera(cam);
         this.updateHistory();
         this.spawnBubbles();
+
+        // Start the timer after everything else is set up, so the first frame of the simulation doesn't get skipped
+        this.time.delayedCall(PREDATOR_SPAWN_DELAY, () => {
+            if (this.simEnd) return;
+
+            this.predatorSpawned = true;
+            this.predator.setVisible(true);
+            this.game.events.emit("predator-appeared");
+        });
 
         this.onSimTimeUpdate = null;
 
@@ -404,6 +423,21 @@ class TestScene extends Phaser.Scene {
                 if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
                     this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
                 }
+            }
+        }
+
+        // Predator chases the fish once it has spawned, unless the fish is in a bubble or the coral info popup is open.
+        if (this.predatorSpawned && !this.bubbleCollision && !this.coralInfoOpen) {
+            const predatorDistance = Phaser.Math.Distance.Between(
+                this.predator.x,
+                this.predator.y,
+                this.guide.x,
+                this.guide.y
+            );
+            if (predatorDistance > 0) {
+                const predatorStep = Math.min(PREDATOR_SPEED * frameScale, predatorDistance);
+                this.predator.x += ((this.guide.x - this.predator.x) / predatorDistance) * predatorStep;
+                this.predator.y += ((this.guide.y - this.predator.y) / predatorDistance) * predatorStep;
             }
         }
 
@@ -616,6 +650,10 @@ class TestScene extends Phaser.Scene {
 
     }
     unlockFish() { this.tutorialComplete = true; }
+
+    closeCoralPopup() {
+        this.coralInfoOpen = false;
+    }
 
     freeFish(cancelled) {
         this.bubbleCollision = false;

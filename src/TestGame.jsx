@@ -73,7 +73,10 @@ function TestGame({onSceneReady}){
                 {/* add overlays here */}
                 <CoralPopup className="coralPopup"
                     coral={selectedCoral} 
-                    onClose={() => setSelectedCoral(null)} 
+                    onClose={() => {
+                        setSelectedCoral(null);
+                        sceneRef.current?.scene.getScene("TestScene").closeCoralPopup();
+                    }}
                 />
             </div>
         </>

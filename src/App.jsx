@@ -129,11 +129,20 @@ function App() {
       });
     };
 
+    const onPredatorAppeared = () => {
+      setEventNotice({
+        title: 'Predator Alert',
+        message: 'A predator has appeared in the reef!',
+      });
+    };
+
     events.on("stats-changed", onStats);
     events.on("temp-event", onTempEvent);
+    events.on("predator-appeared", onPredatorAppeared);
     return () => {
       events.off("stats-changed", onStats);
       events.off("temp-event", onTempEvent);
+      events.off("predator-appeared", onPredatorAppeared);
     };
   }, [scene]);
 
