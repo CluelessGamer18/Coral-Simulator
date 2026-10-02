@@ -112,3 +112,23 @@ html {
     width: 100%;
     height: auto;
 }
+
+.ResourceGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 320px));
+    grid-auto-rows: 260px;
+    gap: 20px;
+}
+
+.ResourceCard {
+    aspect-ratio: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #153f42;
+    color: white;
+    text-align: center;
+    border-radius: 12px;
+}

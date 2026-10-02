@@ -22,6 +22,15 @@ function About() {
         {name: "Sea Turtle", image: "assets/fish/turtle.png"},
         {name: "Yellow Tang", image: "assets/fish/yellowtang.png"},
     ]
+
+    const resources = [
+        {title: "Kāne'ohe Bay Coral Reef Resilience Study", url: "https://peerj.com/articles/950/"},
+        {title: "NOAA Coral Reef Conservation Program", url: "https://coralreef.noaa.gov/"},
+        {title: "Coral Reef Species Diversity Shuffles But Does Not Decline Under Climate Change", url: "https://www.pnas.org/doi/full/10.1073/pnas.2103275118"},
+        {title: "Coral Reef Communities Are Not Doomer By Climate Change", url: "https://www.pnas.org/doi/full/10.1073/pnas.2407112121"},
+        {title: "Dr. R. Toonen Research", url: "https://tobolab.org/rob-toonen/"},
+        {title: "Dr. R. Shaw Research", url: "https://www.macewan.ca/academics/academic-departments/biological-sciences/our- people/profile/?profileid=shawr"},
+    ]
     
     return (
         <div className="AboutPage AboutContainer">
@@ -76,9 +85,18 @@ function About() {
             {/* Resources Section */}
             <section id="resources" className="AboutSection">
                 <h1>Resources</h1>
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                </p>
+                <div className = "ResourceGrid">
+                    {resources.map((resource) => (
+                        <a
+                        className = "ResourceCard"
+                        href = {resource.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        >
+                            {resource.title}
+                        </a>
+                    ))}
+                </div>
             </section>
 
             {/* The Team Section */}
