@@ -77,6 +77,14 @@ preload() {
         this.load.spritesheet("montipora", "corals/montipora.png", { frameWidth: 180, frameHeight: 190 });
         this.load.spritesheet("staghorn1", "corals/staghorn1.png", { frameWidth: 180, frameHeight: 190 });
         this.load.spritesheet("staghorn2", "corals/staghorn2.png", { frameWidth: 180, frameHeight: 190 });
+        this.load.image("columnarColourful", "corals/ColumnarColour.png");
+        this.load.image("columnarBlue", "corals/ColumnarBlue.png");
+        this.load.image("digitateBlue", "corals/DigitateBlue.png");
+        this.load.image("digitatePurple", "corals/DigitatePurple.png");
+        this.load.image("foliosBrown", "corals/FoliosBrown.png");
+        this.load.image("foliosOrange", "corals/FoliosOrange.png");
+        this.load.image("tabularBlue", "corals/TabularBlue.png");
+        this.load.image("tabularGreen", "corals/TabularGreen.png");
 
         // background layers
         this.load.image("floor_layer0", "background/foreforeground_2860x161.png")

@@ -81,6 +81,94 @@ var coralTypes = {
     imgType: 'branch',
     img: asset('microscopes/healthy_microscope.png'),
     bleachRate: 100
+  },
+  columnarColourful: {
+    key: 'columnarColourful',
+    name: 'Columnar',
+    scientificName: 'Dendrogyra cylindrus',
+    status: 'Healthy',
+    info: 'Columnar coral, also known as Pillar Coral, is a slow-growing species that forms tall, cylindrical structures. It provides shelter for reef fish and contributes to the vertical complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  columnarBlue: {
+    key: 'columnarBlue',
+    name: 'Columnar',
+    scientificName: 'Dendrogyra cylindrus',
+    status: 'Healthy',
+    info: 'Columnar coral, also known as Pillar Coral, is a slow-growing species that forms tall, cylindrical structures. It provides shelter for reef fish and contributes to the vertical complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  digitateBlue: {
+    key: 'digitateBlue',
+    name: 'Digitate',
+    scientificName: "Acropora digitifera",
+    status: 'Healthy',
+    info: 'Digitate coral, also known as Finger Coral, is a fast-growing species that forms finger-like projections. It provides shelter for reef fish and contributes to the vertical complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  digitatePurple: {
+    key: 'digitatePurple',
+    name: 'Digitate',
+    scientificName: "Acropora digitifera",
+    status: 'Healthy',
+    info: 'Digitate coral, also known as Finger Coral, is a fast-growing species that forms finger-like projections. It provides shelter for reef fish and contributes to the vertical complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  foliosBrown: {
+    key: 'foliosBrown',
+    name: 'Folios',
+    scientificName: "Montipora foliosa",
+    status: 'Healthy',
+    info: 'Folios coral, also known as Leaf Coral, is a fast-growing species that forms leaf-like projections. It provides shelter for reef fish and contributes to the vertical complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  foliosOrange: {
+    key: 'foliosOrange',
+    name: 'Folios',
+    scientificName: "Montipora foliosa",
+    status: 'Healthy',
+    info: 'Folios coral, also known as Leaf Coral, is a fast-growing species that forms leaf-like projections. It provides shelter for reef fish and contributes to the vertical complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  tabularBlue: {
+    key: 'tabularBlue',
+    name: 'Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Tabular coral, also known as Table Coral, is a fast-growing species that forms flat, table-like structures. It provides shelter for reef fish and contributes to the horizontal complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  tabularGreen: {
+    key: 'tabularGreen',
+    name: 'Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Tabular coral, also known as Table Coral, is a fast-growing species that forms flat, table-like structures. It provides shelter for reef fish and contributes to the horizontal complexity of coral reefs, but is highly susceptible to bleaching and disease.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   }
 };
 
@@ -133,6 +221,11 @@ function createCoralGroup(scene, count) {
 
     coral.setInteractive(); // corals are clickable
     coral.type = typeName;
+
+    if (type.generatedStages === null) {
+      type.generatedStages = createBleachStages(scene, type.key);
+    }
+
     coral.bleachRate = type.bleachRate;
     coral.stress = 0;
     coral.bleachStage = 0;
@@ -213,6 +306,48 @@ function coralSway(scene, coral) {
   });
 }
 
+function createBleachStages(scene, coralType) {
+  const source = scene.textures.get(coralType).getSourceImage();
+  const strengths = [0.2, 0.4, 0.65, 0.85];
+  const keys = [coralType];
+
+  strengths.forEach((strength, index) => {
+    const key = `${coralType}-bleach-${index + 1}`;
+
+    if (!scene.textures.exists(key)) {
+      const texture = scene.textures.createCanvas(key, source.width, source.height);
+      const context = texture.getContext();
+      context.drawImage(source, 0, 0);
+
+      const image = context.getImageData(0, 0, source.width, source.height);
+      const pixels = image.data;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        const red = pixels[i];
+        const green = pixels[i + 1];
+        const blue = pixels[i + 2];
+        const gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+
+        for (let channel = 0; channel < 3; channel++) {
+          const original = pixels[i + channel];
+          const desaturated = gray + (original - gray) * (1 - strength);
+          pixels[i + channel] = Math.round(
+            desaturated + (255 - desaturated) * strength * 0.45
+          );
+        }
+      }
+
+      context.putImageData(image, 0, 0);
+      texture.refresh();
+    }
+
+    keys.push(key);
+  });
+
+  return keys;
+}
+  
+
 /* called when stress levels are updated in the game. stressAmount: 0-100 */
 export function updateCoralStress(scene, stressAmount) {
   const adjustedStress = Math.floor((stressAmount / 100) * 4); // map stress 0-100 to 0-4 (number of spritesheet frames for corals)
@@ -229,12 +364,14 @@ export function updateCoralStress(scene, stressAmount) {
   });
 
   scene.corals.forEach(coral => {
-    if (coralTypes[coral.type].status !== 'Dead') {
-      coral.setFrame(adjustedStress);
-    } else {
-      coral.setFrame(4);
-    }
-  });
+  const type = coralTypes[coral.type];
+
+  if (type.generatedStages) {
+    coral.setTexture(type.generatedStages[adjustedStress]);
+  } else {
+    coral.setFrame(type.status === "Dead" ? 4 : adjustedStress);
+  }
+});
 }
 
 /* helper function to reset coral states. Called when game is reset. */
@@ -242,7 +379,13 @@ export function resetCorals(scene) {
   scene.corals.forEach(coral => {
     coral.stress = 0;
     coral.bleachStage = 0;
-    coral.setFrame(0);
+    const type = coralTypes[coral.type];
+
+    if (type.generatedStages) {
+      coral.setTexture(type.generatedStages[0]);
+    } else {
+      coral.setFrame(0);
+    }
   });
 
   Object.values(coralTypes).forEach(type => {
