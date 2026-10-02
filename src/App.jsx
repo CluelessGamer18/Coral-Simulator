@@ -179,6 +179,7 @@ function App() {
     setReefDead(false);
     setScore(0);
     setHistory(EMPTY_HISTORY);
+    setEventNotice(null);
   }
 
   return (

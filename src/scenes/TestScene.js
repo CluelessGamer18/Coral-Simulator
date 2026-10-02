@@ -225,14 +225,9 @@ class TestScene extends Phaser.Scene {
         this.updateHistory();
         this.spawnBubbles();
 
-        // Start the timer after everything else is set up, so the first frame of the simulation doesn't get skipped
-        this.time.delayedCall(PREDATOR_SPAWN_DELAY, () => {
-            if (this.simEnd) return;
-
-            this.predatorSpawned = true;
-            this.predator.setVisible(true);
-            this.game.events.emit("predator-appeared");
-        });
+        // On a restart the tutorial has already been closed, so the predator timer starts straight away.
+        // On the first run it starts from unlockFish() once the tutorial is closed.
+        if (this.tutorialComplete) this.startPredatorTimer();
 
         this.onSimTimeUpdate = null;
 
@@ -649,7 +644,21 @@ class TestScene extends Phaser.Scene {
         });
 
     }
-    unlockFish() { this.tutorialComplete = true; }
+    unlockFish() {
+        if (this.tutorialComplete) return;
+        this.tutorialComplete = true;
+        this.startPredatorTimer();
+    }
+
+    startPredatorTimer() {
+        this.time.delayedCall(PREDATOR_SPAWN_DELAY, () => {
+            if (this.simEnd) return;
+
+            this.predatorSpawned = true;
+            this.predator.setVisible(true);
+            this.game.events.emit("predator-appeared");
+        });
+    }
 
     closeCoralPopup() {
         this.coralInfoOpen = false;
