@@ -12,6 +12,36 @@ const BUBBLE_TYPES = [
     { type: 'tempEvent', texture: 'TempBubble', ease: 'Power1', inverted: true },
 ];
 
+const RANDOM_EVENTS = [
+    {
+        title: "Ocean Temperatures Rising",
+        apply(scene) {
+            const before = scene.temperature;
+            const after = Math.min(before + 2, 35);
+            scene.updateTemperature(after);
+            return `The temperature rose from ${before}°C to ${after}°C.`;
+        }
+    },
+    {
+        title: "Nutrient Levels Rising",
+        apply(scene) {
+            const before = scene.pollutionValue;
+            const after = Math.min(before + 1, 5);
+            scene.updatePollution(after);
+            return `The nutrient levels in the water have grown from ${before} to ${after}.`;
+        }
+    },
+    {
+        title: "Light Levels Increasing",
+        apply(scene) {
+            const before = scene.lightLevel;
+            const after = Math.min(before + 200, 1839);
+            scene.updateLight(after);
+            return `The light levels have increased from ${before} to ${after}.`;
+        }
+    }
+]
+
 // [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
 const THRESHOLDS = {
     temperature: { a: 25, b: 27, c: 29, d: 31 },
@@ -340,16 +370,19 @@ class TestScene extends Phaser.Scene {
         // The temperature event applies straight away: no popup, and the fish keeps moving.
         // React listens for "temp-event" to show the notice.
         if (type === 'tempEvent') {
-            const previousTemperature = this.temperature;
-            const newTemperature = Math.min(previousTemperature + 2, 35);
-            this.updateTemperature(newTemperature);
-            this.game.events.emit("temp-event", { previousTemperature, newTemperature });
+            this.handleRandomEvent();
             return;
         }
 
         this.bubbleCollision = true;
         this.collisionType = type;
         this.emitStats();
+    }
+
+    handleRandomEvent() {
+        const event = Phaser.Utils.Array.GetRandom(RANDOM_EVENTS);
+        const message = event.apply(this);
+        this.game.events.emit("random-event", { title: event.title, message });
     }
 
 
