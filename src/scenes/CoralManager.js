@@ -222,7 +222,11 @@ function createCoralGroup(scene, count) {
     coral.setInteractive(); // corals are clickable
     coral.type = typeName;
 
-    if (type.generatedStages === null) {
+    if (
+      type.generatedStages === null ||
+      (Array.isArray(type.generatedStages) &&
+        type.generatedStages.some(stage => !scene.textures.exists(stage)))
+    ) {
       type.generatedStages = createBleachStages(scene, type.key);
     }
 

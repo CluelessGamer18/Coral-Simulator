@@ -21,6 +21,8 @@ const THRESHOLDS = {
 
 const PREDATOR_SPEED = 3.375;
 const PREDATOR_SPAWN_DELAY = 10000;
+const REEF_HIDE_DISTANCE = 150;
+const PREDATOR_ESCAPE_MARGIN = 50;
 
 function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
@@ -71,6 +73,9 @@ class TestScene extends Phaser.Scene {
         this.timeJump = 0;
         this.bubbleCollision = false;
         this.coralInfoOpen = false;
+        this.isHiding = false;
+        this.predatorFleeing = false;
+        this.predatorEscaped = false;
         this.score = 0;
 
         this.WORLD_WIDTH = 2860;
@@ -192,6 +197,7 @@ class TestScene extends Phaser.Scene {
             S: Phaser.Input.Keyboard.KeyCodes.S,
             D: Phaser.Input.Keyboard.KeyCodes.D
         });
+        this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
 
         //camera presettings
         const controlConfig = {
@@ -373,14 +379,24 @@ class TestScene extends Phaser.Scene {
         // Capped so a lag spike or returning to the tab doesn't teleport the fish.
         const frameScale = Math.min(delta, 50) / (1000 / 60);
 
+        const hidePressed = Phaser.Input.Keyboard.JustDown(this.hideKey);
+        if (hidePressed) {
+            this.hideFish();
+        }
+
         let horizontal = 0;
+        let vertical = 0;
 
         if (this.tutorialComplete && !this.bubbleCollision) {
             horizontal = (this.moveKeys.D.isDown ? 1 : 0) - (this.moveKeys.A.isDown ? 1 : 0);
-            const vertical = (this.moveKeys.S.isDown ? 1 : 0) - (this.moveKeys.W.isDown ? 1 : 0);
+            vertical = (this.moveKeys.S.isDown ? 1 : 0) - (this.moveKeys.W.isDown ? 1 : 0);
             const movementLength = Math.hypot(horizontal, vertical);
 
-            if (movementLength > 0) {
+            if (this.isHiding && movementLength > 0 && !hidePressed) {
+                this.leaveHiding();
+            }
+
+            if (!this.isHiding && movementLength > 0) {
                 const speed = 6.75 * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
@@ -421,8 +437,31 @@ class TestScene extends Phaser.Scene {
             }
         }
 
-        // Predator chases the fish once it has spawned, unless the fish is in a bubble or the coral info popup is open.
-        if (this.predatorSpawned && !this.bubbleCollision && !this.coralInfoOpen) {
+        if (this.isHiding) {
+            horizontal = 0;
+            vertical = 0;
+        }
+
+        if (this.predatorSpawned && this.isHiding) {
+            this.predatorFleeing = true;
+        }
+
+        if (this.predatorSpawned && this.predatorFleeing) {
+            const escapeDirection = this.predatorEscapeDirection;
+            this.predator.x += escapeDirection * PREDATOR_SPEED * frameScale;
+
+            const escaped = escapeDirection < 0
+                ? this.predator.x <= -PREDATOR_ESCAPE_MARGIN
+                : this.predator.x >= this.WORLD_WIDTH + PREDATOR_ESCAPE_MARGIN;
+            if (escaped) {
+                this.predator.setVisible(false);
+                this.predatorSpawned = false;
+                this.predatorEscaped = true;
+                this.predatorFleeing = false;
+                this.game.events.emit("predator-left");
+            }
+        } else if (this.predatorSpawned && !this.bubbleCollision && !this.coralInfoOpen) {
+            // The predator chases the fish unless the fish is hidden or an overlay is open.
             const predatorDistance = Phaser.Math.Distance.Between(
                 this.predator.x,
                 this.predator.y,
@@ -656,8 +695,56 @@ class TestScene extends Phaser.Scene {
 
             this.predatorSpawned = true;
             this.predator.setVisible(true);
+            if (this.isHiding) {
+                this.startPredatorFlee();
+            }
             this.game.events.emit("predator-appeared");
         });
+    }
+
+    hideFish() {
+        if (
+            !this.tutorialComplete ||
+            this.bubbleCollision ||
+            this.coralInfoOpen ||
+            this.isHiding
+        ) {
+            return;
+        }
+
+        const nearbyCoral = this.corals
+            .map(coral => ({
+                coral,
+                distance: Phaser.Math.Distance.Between(this.guide.x, this.guide.y, coral.x, coral.y)
+            }))
+            .filter(({ distance }) => distance <= REEF_HIDE_DISTANCE)
+            .sort((a, b) => a.distance - b.distance)[0]?.coral;
+
+        if (!nearbyCoral) return;
+
+        this.isHiding = true;
+        this.guide.setPosition(
+            nearbyCoral.x,
+            Phaser.Math.Clamp(nearbyCoral.y - nearbyCoral.displayHeight * 0.45, 120, 850)
+        );
+        this.guide.setDepth(nearbyCoral.depth - 0.1);
+        this.startPredatorFlee();
+    }
+
+    startPredatorFlee() {
+        if (!this.predatorSpawned || this.predatorEscaped) return;
+
+        this.predatorFleeing = true;
+        this.predatorEscapeDirection = this.predator.x <= this.WORLD_WIDTH / 2 ? -1 : 1;
+    }
+
+    leaveHiding() {
+        this.isHiding = false;
+        this.guide.setDepth(9999);
+
+        if (this.predatorFleeing && !this.predatorEscaped) {
+            this.predatorFleeing = false;
+        }
     }
 
     closeCoralPopup() {
