@@ -277,24 +277,26 @@ class TestScene extends Phaser.Scene {
         this.sfxVolume = value;
     }
 
-    spawnBubbles() {
-        const getSpawnLocation = () => {
-            let x;
-            let y;
-            do{
-                x = Phaser.Math.Between(50, this.WORLD_WIDTH - 50);
-                y = Phaser.Math.Between(50, this.WORLD_HEIGHT - 150);
-            } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
+    // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.
+    // Shared by spawnBubbles() and returnBubble() so new and cancelled bubbles use the same area.
+    getBubbleSpawnLocation() {
+        let x;
+        let y;
+        do{
+            x = Phaser.Math.Between(50, this.WORLD_WIDTH - 50);
+            y = Phaser.Math.Between(50, this.WORLD_HEIGHT - 150);
+        } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
 
-            return { x, y };
-        }
-        
+        return { x, y };
+    }
+
+    spawnBubbles() {
         // Kept so the overlaps can be removed along with the bubbles in destroyBubbles()
         this.bubbleColliders = [];
         this.bubbles = {};
 
         for (const { type, texture, ease, inverted } of BUBBLE_TYPES) {
-            const { x, y } = getSpawnLocation();
+            const { x, y } = this.getBubbleSpawnLocation();
             const bubble = this.physics.add.image(x, y, texture).setDepth(7).setInteractive();
 
             // Change the colour of the tempEvent bubble so I don't need more assets.
@@ -677,11 +679,7 @@ class TestScene extends Phaser.Scene {
         const bubble = this.bubbles[type];
         if (!bubble) return;
 
-        let x, y;
-        do {
-            x = Phaser.Math.Between(50, 2000);
-            y = Phaser.Math.Between(50, 500);
-        } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
+        const { x, y } = this.getBubbleSpawnLocation();
 
         this.tweens.killTweensOf(bubble);
         bubble.setScale(1);
