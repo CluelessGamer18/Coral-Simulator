@@ -195,7 +195,7 @@ function App() {
             onClose={endSim}
             dead={reefDead}
           ></SimEndPopUp>) : null}
-        {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
+        {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={() => setShowTutorial(false)}/>:null}
         {eventNotice ? (
           <aside className="EventNotice" role="status" aria-live="polite" aria-labelledby="event-notice-title">
               <div className="EventNoticeHeading">
