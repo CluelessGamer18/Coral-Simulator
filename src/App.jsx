@@ -160,15 +160,17 @@ function App() {
     scene.input.keyboard.disableGlobalCapture();
 
     return () => {
-      // "Return to Title" closes the dialog while the game is being torn down, so only resume a scene that is still paused
+      // "Return to Title" closes the dialog while the game is being torn down, so skip a scene that is no longer paused or already destroyed.
+      // Resuming one that is about to be destroyed is harmless: Phaser destroys the game before the scene's next update.
       if (!scene.sys?.isPaused()) return;
       scene.input.keyboard.enableGlobalCapture();
       scene.scene.resume();
     };
   }, [scene, showOptions]);
 
-  const endSim = () => {
-    scene.RestartSim();
+  // Puts the React side back to a fresh sim. Leaving the game (Return to Title / Resources) only needs this,
+  // because TestGame unmounts and destroys the whole Phaser game, so there is no scene left to restart.
+  const resetSimState = () => {
     setTemperatureValue(27);
     setLightValue(500);
     setPollutionValue(1);
@@ -180,6 +182,12 @@ function App() {
     setScore(0);
     setHistory(EMPTY_HISTORY);
     setEventNotice(null);
+  }
+
+  // "Restart Sim" on the end screen: the game keeps running, so restart the scene as well
+  const endSim = () => {
+    scene.RestartSim();
+    resetSimState();
   }
 
   return (
@@ -213,7 +221,7 @@ function App() {
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           setShowTitleScreen={setShowTitleScreen}
-          endSim={endSim}
+          resetSimState={resetSimState}
           setScene={setScene}
           scene={scene}
           musicVolume={musicVolume}
