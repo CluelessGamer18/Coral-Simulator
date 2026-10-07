@@ -128,7 +128,8 @@ class TestScene extends Phaser.Scene {
     }
 
     setupAudio() {
-        this.musicVolume = 0.5;
+        // Only default the volume on the first run: a restart reuses this scene, and React won't send the volume again
+        this.musicVolume ??= 0.5;
 
         this.bgMusic = this.sound.add('background_music', {
             loop: true,
@@ -333,7 +334,9 @@ class TestScene extends Phaser.Scene {
 
     handleBubbleCollect(type) {
         const bubble = this.bubbles[type];
-        if (this.simEnd || !bubble) return;
+        // Ignore other bubbles while a popup is open: the fish is frozen, but idle bubbles can still drift into it,
+        // and that would switch the open popup to another type
+        if (this.simEnd || this.bubbleCollision || !bubble) return;
 
         // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
         bubble.disableBody(true, true);
@@ -468,7 +471,10 @@ class TestScene extends Phaser.Scene {
         }
 
         this.deltaTimer += delta;
-        this.controls.update(delta);
+        // The arrow keys move the camera, but while the bubble popup is open they belong to its slider
+        if (!this.bubbleCollision) {
+            this.controls.update(delta);
+        }
 
         oval.clear();
         oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
