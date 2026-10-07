@@ -385,14 +385,12 @@ class TestScene extends Phaser.Scene {
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
-                // Keeps the fish with the boundaries of the world
-                this.guide.x = Phaser.Math.Clamp(this.guide.x + moveX, 100, this.WORLD_WIDTH - 100);
-                if (this.guide.y + moveY < 850) {
-                    this.guide.y = Phaser.Math.Clamp(this.guide.y + moveY, 120, 850);
-                }
+                this.guide.x += moveX;
+                this.guide.y += moveY;
 
                 const targetAngle = Math.atan2(vertical, horizontal);
-                const flip = horizontal < 0;
+                // Swimming straight up or down keeps the way the fish was facing, so it doesn't snap upside down
+                const flip = horizontal === 0 ? this.guide.flipY : horizontal < 0;
                 this.guide.setFlipY(flip);
 
                 const offset = Phaser.Math.DegToRad(0);
@@ -415,9 +413,11 @@ class TestScene extends Phaser.Scene {
                 const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount * frameScale;
 
                 this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
-                if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
-                    this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
-                }
+                this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
+
+                // Keeps the fish within the boundaries of the world. Clamped after the wiggle so it can't push the fish out either.
+                this.guide.x = Phaser.Math.Clamp(this.guide.x, 100, this.WORLD_WIDTH - 100);
+                this.guide.y = Phaser.Math.Clamp(this.guide.y, 120, 850);
             }
         }
 
