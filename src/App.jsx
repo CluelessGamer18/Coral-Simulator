@@ -124,8 +124,8 @@ function App() {
     const onTempEvent = ({ previousTemperature, newTemperature }) => {
       setEventNotice({
         title: 'Temperature Event',
-        message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
-      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
+        message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n` +
+          `This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
       });
     };
 
