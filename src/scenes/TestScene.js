@@ -158,7 +158,8 @@ class TestScene extends Phaser.Scene {
     }
 
     setupAudio() {
-        this.musicVolume = 0.5;
+        // Only default the volume on the first run: a restart reuses this scene, and React won't send the volume again
+        this.musicVolume ??= 0.5;
 
         this.bgMusic = this.sound.add('background_music', {
             loop: true,
@@ -307,24 +308,26 @@ class TestScene extends Phaser.Scene {
         this.sfxVolume = value;
     }
 
-    spawnBubbles() {
-        const getSpawnLocation = () => {
-            let x;
-            let y;
-            do{
-                x = Phaser.Math.Between(50, this.WORLD_WIDTH - 50);
-                y = Phaser.Math.Between(50, this.WORLD_HEIGHT - 150);
-            } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
+    // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.
+    // Shared by spawnBubbles() and returnBubble() so new and cancelled bubbles use the same area.
+    getBubbleSpawnLocation() {
+        let x;
+        let y;
+        do{
+            x = Phaser.Math.Between(50, this.WORLD_WIDTH - 50);
+            y = Phaser.Math.Between(50, this.WORLD_HEIGHT - 150);
+        } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
 
-            return { x, y };
-        }
-        
+        return { x, y };
+    }
+
+    spawnBubbles() {
         // Kept so the overlaps can be removed along with the bubbles in destroyBubbles()
         this.bubbleColliders = [];
         this.bubbles = {};
 
         for (const { type, texture, ease, inverted } of BUBBLE_TYPES) {
-            const { x, y } = getSpawnLocation();
+            const { x, y } = this.getBubbleSpawnLocation();
             const bubble = this.physics.add.image(x, y, texture).setDepth(7).setInteractive();
 
             // Change the colour of the tempEvent bubble so I don't need more assets.
@@ -361,7 +364,9 @@ class TestScene extends Phaser.Scene {
 
     handleBubbleCollect(type) {
         const bubble = this.bubbles[type];
-        if (this.simEnd || !bubble) return;
+        // Ignore other bubbles while a popup is open: the fish is frozen, but idle bubbles can still drift into it,
+        // and that would switch the open popup to another type
+        if (this.simEnd || this.bubbleCollision || !bubble) return;
 
         // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
         bubble.disableBody(true, true);
@@ -418,14 +423,12 @@ class TestScene extends Phaser.Scene {
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
-                // Keeps the fish with the boundaries of the world
-                this.guide.x = Phaser.Math.Clamp(this.guide.x + moveX, 100, this.WORLD_WIDTH - 100);
-                if (this.guide.y + moveY < 850) {
-                    this.guide.y = Phaser.Math.Clamp(this.guide.y + moveY, 120, 850);
-                }
+                this.guide.x += moveX;
+                this.guide.y += moveY;
 
                 const targetAngle = Math.atan2(vertical, horizontal);
-                const flip = horizontal < 0;
+                // Swimming straight up or down keeps the way the fish was facing, so it doesn't snap upside down
+                const flip = horizontal === 0 ? this.guide.flipY : horizontal < 0;
                 this.guide.setFlipY(flip);
 
                 const offset = Phaser.Math.DegToRad(0);
@@ -448,9 +451,11 @@ class TestScene extends Phaser.Scene {
                 const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount * frameScale;
 
                 this.guide.x += Math.cos(this.guide.rotation + Math.PI / 2) * wiggle;
-                if (this.guide.y + (Math.sin(this.guide.rotation + Math.PI / 2) * wiggle) < 850) {
-                    this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
-                }
+                this.guide.y += Math.sin(this.guide.rotation + Math.PI / 2) * wiggle;
+
+                // Keeps the fish within the boundaries of the world. Clamped after the wiggle so it can't push the fish out either.
+                this.guide.x = Phaser.Math.Clamp(this.guide.x, 100, this.WORLD_WIDTH - 100);
+                this.guide.y = Phaser.Math.Clamp(this.guide.y, 120, 850);
             }
         }
 
@@ -499,7 +504,10 @@ class TestScene extends Phaser.Scene {
         }
 
         this.deltaTimer += delta;
-        this.controls.update(delta);
+        // The arrow keys move the camera, but while the bubble popup is open they belong to its slider
+        if (!this.bubbleCollision) {
+            this.controls.update(delta);
+        }
 
         oval.clear();
         oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
@@ -710,11 +718,7 @@ class TestScene extends Phaser.Scene {
         const bubble = this.bubbles[type];
         if (!bubble) return;
 
-        let x, y;
-        do {
-            x = Phaser.Math.Between(50, 2000);
-            y = Phaser.Math.Between(50, 500);
-        } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
+        const { x, y } = this.getBubbleSpawnLocation();
 
         this.tweens.killTweensOf(bubble);
         bubble.setScale(1);

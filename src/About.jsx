@@ -27,9 +27,9 @@ function About() {
         {title: "Kāne'ohe Bay Coral Reef Resilience Study", url: "https://peerj.com/articles/950/"},
         {title: "NOAA Coral Reef Conservation Program", url: "https://coralreef.noaa.gov/"},
         {title: "Coral Reef Species Diversity Shuffles But Does Not Decline Under Climate Change", url: "https://www.pnas.org/doi/full/10.1073/pnas.2103275118"},
-        {title: "Coral Reef Communities Are Not Doomer By Climate Change", url: "https://www.pnas.org/doi/full/10.1073/pnas.2407112121"},
+        {title: "Coral Reef Communities Are Not Doomed By Climate Change", url: "https://www.pnas.org/doi/full/10.1073/pnas.2407112121"},
         {title: "Dr. R. Toonen Research", url: "https://tobolab.org/rob-toonen/"},
-        {title: "Dr. R. Shaw Research", url: "https://www.macewan.ca/academics/academic-departments/biological-sciences/our- people/profile/?profileid=shawr"},
+        {title: "Dr. R. Shaw Research", url: "https://www.macewan.ca/academics/academic-departments/biological-sciences/our-people/profile/?profileid=shawr"},
     ]
     
     return (
@@ -88,6 +88,7 @@ function About() {
                 <div className = "ResourceGrid">
                     {resources.map((resource) => (
                         <a
+                        key={resource.url}
                         className = "ResourceCard"
                         href = {resource.url}
                         target="_blank"
