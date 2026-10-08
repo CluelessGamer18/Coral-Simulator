@@ -197,6 +197,7 @@ const depthLevels = [-10, 120, 180];
 /* main function to create coral instances in the scene. Called when game scene is created. */
 export function createCorals(scene) {
     scene.corals = [];
+  resetCoralTypes(); // a previous game (e.g. before Return to Title) may have left the types stressed
   createCoralGroup(scene, 30); // create 30 corals
 }
 
@@ -388,6 +389,12 @@ export function resetCorals(scene) {
     }
   });
 
+  resetCoralTypes();
+}
+
+/* helper function to put every coral type's popup info back to Healthy.
+   coralTypes is shared by every game, so a new game has to reset it too, not only a restart. */
+function resetCoralTypes() {
   Object.values(coralTypes).forEach(type => {
     type.status = 'Healthy';
     if (type.imgType === 'branch') {
@@ -396,4 +403,4 @@ export function resetCorals(scene) {
       type.img = coralImgPathsTabular[0];
     }
   });
-}   
+}

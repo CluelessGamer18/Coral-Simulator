@@ -48,7 +48,12 @@ function SimBubblePopUp({type, initialValue, onApply, onCancel}){
     const [value, setValue] = useState(initialValue);
     const [displayLeft, setdisplayLeft] = useState(0);
     const sliderRef = useRef(null);
-    
+
+    // Focus the slider when the popup opens, so the arrow keys move it straight away without clicking it first
+    useEffect(() => {
+        sliderRef.current?.focus({ preventScroll: true });
+    }, []);
+
     useEffect(() => {
         const slider = sliderRef.current;
         if (!slider) return;
