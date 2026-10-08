@@ -124,8 +124,8 @@ function App() {
     const onTempEvent = ({ previousTemperature, newTemperature }) => {
       setEventNotice({
         title: 'Temperature Event',
-        message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n
-      This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
+        message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n` +
+          `This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
       });
     };
 
@@ -161,23 +161,37 @@ function App() {
   }, [scene, showTutorial])
 
   // Pause the game behind the Options dialog: movement, tweens, timers and clicks all stop until it closes.
-  // Phaser also stops blocking the arrow keys and Space, so the dialog's sliders and buttons work from the keyboard.
   useEffect(() => {
     if (!scene || !showOptions) return;
 
     scene.scene.pause();
-    scene.input.keyboard.disableGlobalCapture();
 
     return () => {
-      // "Return to Title" closes the dialog while the game is being torn down, so only resume a scene that is still paused
+      // "Return to Title" closes the dialog while the game is being torn down, so skip a scene that is no longer paused or already destroyed.
+      // Resuming one that is about to be destroyed is harmless: Phaser destroys the game before the scene's next update.
       if (!scene.sys?.isPaused()) return;
-      scene.input.keyboard.enableGlobalCapture();
       scene.scene.resume();
     };
   }, [scene, showOptions]);
 
-  const endSim = () => {
-    scene.RestartSim();
+  // Phaser blocks the arrow keys, Space, Shift and WASD on the whole page while playing. Let them through while a
+  // dialog with sliders or buttons is open, so it works from the keyboard (arrows move sliders, Space presses buttons).
+  const keyboardDialogOpen = showOptions || bubbleCollision || simEnd || showTutorial;
+  useEffect(() => {
+    if (!scene || !keyboardDialogOpen) return;
+
+    const keyboard = scene.input.keyboard;
+    keyboard.disableGlobalCapture();
+
+    return () => {
+      // the keyboard has no manager once the game has been destroyed (Return to Title / Resources)
+      if (keyboard.manager) keyboard.enableGlobalCapture();
+    };
+  }, [scene, keyboardDialogOpen]);
+
+  // Puts the React side back to a fresh sim. Leaving the game (Return to Title / Resources) only needs this,
+  // because TestGame unmounts and destroys the whole Phaser game, so there is no scene left to restart.
+  const resetSimState = () => {
     setTemperatureValue(27);
     setLightValue(500);
     setPollutionValue(1);
@@ -189,6 +203,12 @@ function App() {
     setScore(0);
     setHistory(EMPTY_HISTORY);
     setEventNotice(null);
+  }
+
+  // "Restart Sim" on the end screen: the game keeps running, so restart the scene as well
+  const endSim = () => {
+    scene.RestartSim();
+    resetSimState();
   }
 
   return (
@@ -204,7 +224,7 @@ function App() {
             onClose={endSim}
             dead={reefDead}
           ></SimEndPopUp>) : null}
-        {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={setShowTutorial}/>:null}
+        {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={() => setShowTutorial(false)}/>:null}
         {eventNotice ? (
           <aside className="EventNotice" role="status" aria-live="polite" aria-labelledby="event-notice-title">
               <div className="EventNoticeHeading">
@@ -214,7 +234,7 @@ function App() {
               <p>{eventNotice.message}</p>
           </aside>
         ) : null}
-        {scene && bubbleCollision ? <SimBubblePopUp type={collisionType} 
+        {scene && bubbleCollision ? <SimBubblePopUp key={collisionType} type={collisionType}
         initialValue={initialValue}
         onApply={applyBubble}
         onCancel={cancelBubble} /> : null}
@@ -222,7 +242,7 @@ function App() {
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           setShowTitleScreen={setShowTitleScreen}
-          endSim={endSim}
+          resetSimState={resetSimState}
           setScene={setScene}
           scene={scene}
           musicVolume={musicVolume}

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 function OptionsDialog({
     setShowOptions,
     setShowTitleScreen = null,
-    endSim = null,
+    resetSimState = null,
     setScene = null,
     scene,
     musicVolume,
@@ -41,7 +41,7 @@ function OptionsDialog({
         if(setShowTitleScreen && setScene){
             setShowTitleScreen(true);
             setScene(null)
-            endSim();
+            resetSimState();
         }
     }
     const goToResources = () => {
@@ -50,7 +50,7 @@ function OptionsDialog({
         if(setShowTitleScreen && setScene){
             setShowTitleScreen(true);
             setScene(null)
-            endSim();
+            resetSimState();
         }
     };
 
