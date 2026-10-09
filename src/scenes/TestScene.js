@@ -32,6 +32,7 @@ const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 const PREDATOR_BITE_INTERVAL = 1000; // ms of touching the predator per half heart lost
 
 const FOOD_COUNT = 5; // algae orbs sprinkled around the map at the start of each game
+const FOOD_GROWTH = 1.1; // each orb eaten makes the fish 10% bigger
 
 function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
@@ -88,6 +89,8 @@ class TestScene extends Phaser.Scene {
         this.score = 0;
         this.health = MAX_HEARTS * 2;
         this.fishDead = false;
+        this.foodEaten = 0;
+        this.fishGrowth = 1; // size multiplier from eating food, applied in update()
         this.touchingPredator = false;
         this.predatorContactTime = 0; // time since the last bite while touching the predator, in ms
 
@@ -377,6 +380,16 @@ class TestScene extends Phaser.Scene {
             this.health++;
             this.refreshHeartTextures();
         }
+
+        // Every orb makes the fish bigger, even at full health. Tweened so it grows smoothly instead of popping.
+        this.foodEaten++;
+        this.tweens.killTweensOf(this);
+        this.tweens.add({
+            targets: this,
+            fishGrowth: FOOD_GROWTH ** this.foodEaten,
+            duration: 300,
+            ease: "Back.out"
+        });
     }
 
     destroyBubbles() {
@@ -462,12 +475,6 @@ class TestScene extends Phaser.Scene {
                     0.5 * frameScale
                 );
 
-                const minScale = 1.3;
-                const maxScale = 1.3;
-                const t = this.guide.y / this.cameras.main.height;
-                const easedT = t * t;
-                this.guide.setScale((minScale + (maxScale - minScale) * easedT) / 1.5);
-
                 const wiggleAmount = 1; // Adjust the wiggle amount and speed as needed
                 const wiggleSpeed = 0.01;
                 const wiggle = Math.sin(this.time.now * wiggleSpeed) * wiggleAmount * frameScale;
@@ -480,6 +487,13 @@ class TestScene extends Phaser.Scene {
                 this.guide.y = Phaser.Math.Clamp(this.guide.y, 120, 850);
             }
         }
+
+        // Set every frame (not just while swimming) so growing from food shows straight away
+        const minScale = 1.3;
+        const maxScale = 1.3;
+        const t = this.guide.y / this.cameras.main.height;
+        const easedT = t * t;
+        this.guide.setScale((minScale + (maxScale - minScale) * easedT) / 1.5 * this.fishGrowth);
 
         if (this.isHiding) {
             horizontal = 0;
