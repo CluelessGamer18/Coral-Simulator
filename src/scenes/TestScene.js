@@ -24,6 +24,13 @@ const PREDATOR_SPAWN_DELAY = 10000;
 const REEF_HIDE_DISTANCE = 150;
 const PREDATOR_ESCAPE_MARGIN = 50;
 
+// Health is counted in half hearts, so 3 hearts = 6
+const MAX_HEARTS = 3;
+const HEART_SPACING = 36;
+const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
+
+const FOOD_COUNT = 5; // algae orbs sprinkled around the map at the start of each game
+
 function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
     const dead = !stressed && (value <= a || value >= d);
@@ -77,6 +84,8 @@ class TestScene extends Phaser.Scene {
         this.predatorFleeing = false;
         this.predatorEscaped = false;
         this.score = 0;
+        this.health = MAX_HEARTS * 2;
+        this.fishDead = false;
 
         this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
@@ -158,6 +167,13 @@ class TestScene extends Phaser.Scene {
         // preFX only exists under WebGL; on the Canvas fallback renderer it's null, so skip the shadow there
         this.guide.preFX?.addShadow(0, -8, 0.009, 1, 0x333333, 5);
 
+        // Hearts float above the fish and follow it around (positioned every frame in updateHearts())
+        this.hearts = [];
+        for (let i = 0; i < MAX_HEARTS; i++) {
+            this.hearts.push(this.add.image(0, 0, "heartFull").setDepth(9999.5));
+        }
+        this.updateHearts();
+
         // Predator is hidden until the timer runs out, then it appears and starts chasing the fish.
         this.predator = this.add.rectangle(this.WORLD_WIDTH - 100, 300, 40, 40, 0x9b2c2c)
             .setDepth(9998)
@@ -231,6 +247,7 @@ class TestScene extends Phaser.Scene {
         this.setupCamera(cam);
         this.updateHistory();
         this.spawnBubbles();
+        this.spawnFood();
 
         // On a restart the tutorial has already been closed, so the predator timer starts straight away.
         // On the first run it starts from unlockFish() once the tutorial is closed.
@@ -258,6 +275,7 @@ class TestScene extends Phaser.Scene {
             collisionType: this.collisionType,
             simEnd: this.simEnd,
             reefDead: this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution,
+            fishDead: this.fishDead,
             score: this.score,
             // copies, because the scene keeps pushing to its own arrays and React needs a new array to notice a change
             history: {
@@ -327,6 +345,38 @@ class TestScene extends Phaser.Scene {
 
             this.bubbleIdle(bubble);
             this.bubbles[type] = bubble;
+        }
+    }
+
+    // Sprinkles algae orbs at random spots the fish can reach. Eaten orbs don't come back.
+    spawnFood() {
+        this.food = this.physics.add.group();
+
+        for (let i = 0; i < FOOD_COUNT; i++) {
+            const { x, y } = this.getBubbleSpawnLocation();
+            // Keep it inside the area the fish is clamped to, so every orb can be reached
+            const orb = this.food.create(
+                Phaser.Math.Clamp(x, 100, this.WORLD_WIDTH - 100),
+                Phaser.Math.Clamp(y, 120, 850),
+                "algaeOrb"
+            ).setDepth(7);
+            this.bubbleIdle(orb);
+        }
+
+        this.physics.add.overlap(this.guide, this.food, (guide, orb) => this.eatFood(orb));
+    }
+
+    // Eating always uses up the orb, but only heals when the fish isn't already at full health
+    eatFood(orb) {
+        if (this.simEnd) return;
+
+        this.tweens.killTweensOf(orb);
+        orb.destroy();
+        this.sound.play('bubblePop', { volume: this.sfxVolume });
+
+        if (this.health < MAX_HEARTS * 2) {
+            this.health++;
+            this.refreshHeartTextures();
         }
     }
 
@@ -517,6 +567,28 @@ class TestScene extends Phaser.Scene {
 
         oval.clear();
         oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
+
+        this.updateHearts();
+    }
+
+    // Keeps the hearts centred above the fish
+    updateHearts() {
+        const y = this.guide.y - this.guide.displayHeight / 2 - HEART_OFFSET_Y;
+        const startX = this.guide.x - ((this.hearts.length - 1) * HEART_SPACING) / 2;
+        this.hearts.forEach((heart, i) => heart.setPosition(startX + i * HEART_SPACING, y));
+    }
+
+    // Shows full, half or empty hearts to match this.health
+    refreshHeartTextures() {
+        this.hearts.forEach((heart, i) => {
+            const halves = Phaser.Math.Clamp(this.health - i * 2, 0, 2);
+            heart.setTexture(["heartDead", "heartHalf", "heartFull"][halves]);
+        });
+    }
+
+    loseHalfHeart() {
+        this.health = Math.max(this.health - 1, 0);
+        this.refreshHeartTextures();
     }
     getSimTime() {
         const totalSeconds = Math.floor(this.simTime / 1000);
@@ -589,6 +661,14 @@ class TestScene extends Phaser.Scene {
         this.updateHistory();
 
         this.timeJump++;
+        // Every time jump costs the fish half a heart
+        this.loseHalfHeart();
+
+        // Out of hearts: the fish dies and the sim ends
+        if (this.health <= 0) {
+            this.fishDead = true;
+            this.simEnd = true;
+        }
 
         if (this.timeJump >= 10) {
             this.simEnd = true;
