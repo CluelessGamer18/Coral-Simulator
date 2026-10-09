@@ -12,89 +12,8 @@ Metadata for each coral type.
 */
 
 var coralTypes = { 
-  acropora: {
-    key: 'acropora',
-    name: 'Acropora',
-    scientificName: '',
-    status: 'Healthy',
-    info: 'Acropora are among the fastest-growing corals, shaping diverse habitats with their antler-like branches. Although they support thousands of species, they are highly sensitive to bleaching and other impacts of climate change. ',
-    imgType: 'tabular', // determines which set of bleach stage images to use for this coral type (tabular vs branch)
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 80
-  },
-  acropora1: {
-    key: 'acropora1',
-    name: 'Lattice Table Coral',
-    scientificName: 'Acropora Clathrata',
-    status: 'Healthy',
-    info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
-    imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 100
-  },
-  acropora2: {
-    key: 'acropora2',
-    name: 'Lattice Table Coral',
-    scientificName: 'Acropora Clathrata',
-    status: 'Healthy',
-    info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
-    imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 100
-  },
-  acropora3: {
-    key: 'acropora3',
-    name: 'Lattice Table Coral',
-    scientificName: 'Acropora Clathrata',
-    status: 'Healthy',
-    info: 'Acropora Clathrata (known as Table Coral), forms wide, flat plates that provide massive shade and shelter for reef fish. It is a fast-growing, essential architect of dynamic reef ecosystems.',
-    imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 100
-  },
-  montipora: {
-    key: 'montipora',
-    name: 'Finger Coral',
-    scientificName: 'Montipora Digitata',
-    status: 'Healthy',
-    info: 'Montipora Digitata is a resilient, fast-growing coral with velvety, textured branches. Popular in natural reefs and home aquariums, it provides essential habitat while tolerating more environmental stress than its Acropora relatives. ',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100
-  },
-  staghorn1: {
-    key: 'staghorn1',
-    name: 'Staghorn',
-    scientificName: 'Acropora Cervicornis',
-    status: 'Healthy',
-    info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100
-  },
-  staghorn2: {
-    key: 'staghorn2',
-    name: 'Staghorn',
-    scientificName: 'Acropora Cervicornis',
-    status: 'Healthy',
-    info: 'Staghorn coral, which resembles a set of deer antlers, is a fast-growing Caribbean species and a reef-building powerhouse. Although it has lost 97% of its population to disease and climate change, urgent restoration efforts are now helping it bounce back. ',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100
-  },
-  columnarColourful: {
-    key: 'columnarColourful',
-    name: 'Columnar',
-    scientificName: 'Dendrogyra cylindrus',
-    status: 'Healthy',
-    info: 'Pillar coral grows from an encrusting base into blunt, upright columns. Its polyps often extend during the day, giving the colony a soft, fuzzy appearance; the species is native to the western Atlantic and Caribbean.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  columnarBlue: {
-    key: 'columnarBlue',
+  columnar1: {
+    key: 'Columnar-1',
     name: 'Columnar',
     scientificName: 'Dendrogyra cylindrus',
     status: 'Healthy',
@@ -104,8 +23,41 @@ var coralTypes = {
     bleachRate: 100,
     generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   },
-  digitateBlue: {
-    key: 'digitateBlue',
+  columnar2: {
+    key: 'Columnar-2',
+    name: 'Columnar',
+    scientificName: 'Dendrogyra cylindrus',
+    status: 'Healthy',
+    info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  columnar3: {
+    key: 'Columnar-3',
+    name: 'Columnar',
+    scientificName: 'Dendrogyra cylindrus',
+    status: 'Healthy',
+    info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  columnar4: {
+    key: 'Columnar-4',
+    name: 'Columnar',
+    scientificName: 'Dendrogyra cylindrus',
+    status: 'Healthy',
+    info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  digitate1: {
+    key: 'Digitate-1',
     name: 'Digitate',
     scientificName: "Acropora digitifera",
     status: 'Healthy',
@@ -115,19 +67,41 @@ var coralTypes = {
     bleachRate: 100,
     generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   },
-  digitatePurple: {
-    key: 'digitatePurple',
+  digitate2: {
+    key: 'Digitate-2',
     name: 'Digitate',
     scientificName: "Acropora digitifera",
     status: 'Healthy',
-    info: 'Colonies of Acropora digitifera can spread to about a metre across. Its small corallites line the branches, and the tip corallite may be white or blue; colony colour varies across reefs.',
+    info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
     imgType: 'branch',
     img: asset('microscopes/healthy_microscope.png'),
     bleachRate: 100,
     generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   },
-  foliosBrown: {
-    key: 'foliosBrown',
+  digitate3: {
+    key: 'Digitate-3',
+    name: 'Digitate',
+    scientificName: "Acropora digitifera",
+    status: 'Healthy',
+    info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  digitate4: {
+    key: 'Digitate-4',
+    name: 'Digitate',
+    scientificName: "Acropora digitifera",
+    status: 'Healthy',
+    info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
+    imgType: 'branch',
+    img: asset('microscopes/healthy_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  folios1: {
+    key: 'Folios-1',
     name: 'Folios',
     scientificName: "Montipora foliosa",
     status: 'Healthy',
@@ -137,19 +111,19 @@ var coralTypes = {
     bleachRate: 100,
     generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   },
-  foliosOrange: {
-    key: 'foliosOrange',
+  folios2: {
+    key: 'Folios-2',
     name: 'Folios',
     scientificName: "Montipora foliosa",
     status: 'Healthy',
-    info: 'Tiny coral polyps cover each Montipora foliosa plate and build its shared skeleton. As the plates expand, they form layered shelves across the reef.',
+    info: 'Montipora foliosa grows in broad, thin plates that spread outward and can overlap in tiers. This flattened, leaf-like growth form sets it apart from corals that build upright branches.',
     imgType: 'branch',
     img: asset('microscopes/healthy_microscope.png'),
     bleachRate: 100,
     generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   },
-  tabularBlue: {
-    key: 'tabularBlue',
+  tabular1: {
+    key: 'Tabular-1',
     name: 'Tabular',
     scientificName: "Acropora clathrata",
     status: 'Healthy',
@@ -159,17 +133,61 @@ var coralTypes = {
     bleachRate: 100,
     generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
   },
-  tabularGreen: {
-    key: 'tabularGreen',
+  tabular2: {
+    key: 'Tabular-2',
     name: 'Tabular',
     scientificName: "Acropora clathrata",
     status: 'Healthy',
-    info: 'Acropora clathrata is found on fringing, sheltered, and back reefs, at reported depths of about 5 to 40 metres. Colony size and spread vary with depth, with larger surface areas recorded deeper on the reef.',
+    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
     imgType: 'tabular',
     img: asset('microscopes/healthy_tabular_microscope.png'),
     bleachRate: 100,
     generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  }
+  },
+  tabular3: {
+    key: 'Tabular-3',
+    name: 'Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  flatTabular1: {
+    key: 'Flat-Tabular-1',
+    name: 'Flat Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  flatTabular2: {
+    key: 'Flat-Tabular-2',
+    name: 'Flat Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
+  flatTabular3: {
+    key: 'Flat-Tabular-3',
+    name: 'Flat Tabular',
+    scientificName: "Acropora clathrata",
+    status: 'Healthy',
+    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
+    imgType: 'tabular',
+    img: asset('microscopes/healthy_tabular_microscope.png'),
+    bleachRate: 100,
+    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+  },
 };
 
 const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead']; // forwarded to React frontend for display
@@ -219,6 +237,10 @@ function createCoralGroup(scene, count) {
       )
       .setOrigin(0.5, 1)
       .setDepth(7-depth);
+    
+    const coralScale = Math.min(200 / coral.width, 170 / coral.height, 1);
+    coral.setScale(coralScale);
+    coral.baseScale = coralScale;
 
     coral.setInteractive(); // corals are clickable
     coral.type = typeName;
@@ -240,7 +262,7 @@ function createCoralGroup(scene, count) {
       coral.coralPulse?.stop(); // never run two pulses on the same coral
       coral.coralPulse = scene.tweens.add({
         targets: coral,
-        scale: { from: 1, to: 1.05 },
+        scale: { from: coral.baseScale, to: coral.baseScale * 1.05 },
         duration: 500,
         yoyo: true,
         repeat: -1,
@@ -256,7 +278,7 @@ function createCoralGroup(scene, count) {
         coral.coralPulse.stop();
         coral.coralPulse = null;
       }
-      coral.setScale(1); // stopping the pulse mid-way leaves the coral at whatever size it had reached
+      coral.setScale(coral.baseScale); // stopping the pulse mid-way leaves the coral at whatever size it had reached
     });
 
     coral.on('pointerdown', () => { // on click: send coral info to React frontend for info popup
