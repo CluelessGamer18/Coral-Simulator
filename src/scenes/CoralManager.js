@@ -247,8 +247,7 @@ function createCoralGroup(scene, count) {
 
     if (
       type.generatedStages === null ||
-      (Array.isArray(type.generatedStages) &&
-        type.generatedStages.some(stage => !scene.textures.exists(stage)))
+      (type.generatedStages && type.generatedStages.some(key => !scene.textures.exists(key)))
     ) {
       type.generatedStages = createBleachStages(scene, type.key);
     }
@@ -335,7 +334,7 @@ function coralSway(scene, coral) {
 
 function createBleachStages(scene, coralType) {
   const source = scene.textures.get(coralType).getSourceImage();
-  const strengths = [0.2, 0.4, 0.65, 0.85];
+  const strengths = [0.2, 0.4, 0.65, 1.0]; // bleaching strengths for each stage
   const keys = [coralType];
 
   strengths.forEach((strength, index) => {

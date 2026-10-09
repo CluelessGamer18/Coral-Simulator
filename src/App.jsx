@@ -122,13 +122,9 @@ function App() {
       setHistory(stats.history)
     };
 
-    // The scene sends "temp-event" when the fish pops the temperature event bubble
-    const onTempEvent = ({ previousTemperature, newTemperature }) => {
-      setEventNotice({
-        title: 'Temperature Event',
-        message: `The event raised the temperature from ${previousTemperature}°C to ${newTemperature}°C.\n\n` +
-          `This will increase the stress on the coral reef. Please adjust the temperature to mitigate the effects of this event.`,
-      });
+    // The scene sends the selected event's title and message when the event bubble is collected.
+    const onRandomEvent = ({ title, message }) => {
+      setEventNotice({ title, message });
     };
 
     const onPredatorAppeared = () => {
@@ -146,12 +142,12 @@ function App() {
     };
 
     events.on("stats-changed", onStats);
-    events.on("temp-event", onTempEvent);
+    events.on("random-event", onRandomEvent);
     events.on("predator-appeared", onPredatorAppeared);
     events.on("predator-left", onPredatorLeft);
     return () => {
       events.off("stats-changed", onStats);
-      events.off("temp-event", onTempEvent);
+      events.off("random-event", onRandomEvent);
       events.off("predator-appeared", onPredatorAppeared);
       events.off("predator-left", onPredatorLeft);
     };

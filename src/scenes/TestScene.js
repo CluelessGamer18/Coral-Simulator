@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
 import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js";
+import { EventManager } from "./Events.js";
 
 let oval;
 
@@ -9,7 +10,6 @@ const BUBBLE_TYPES = [
     { type: 'temp', texture: 'TempBubble', ease: 'Power1' },
     { type: 'light', texture: 'LightBubble', ease: 'Sine.inOut' },
     { type: 'poll', texture: 'PollutionBubble', ease: 'Sine.inOut' },
-    { type: 'tempEvent', texture: 'TempBubble', ease: 'Power1', inverted: true },
 ];
 
 // [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
@@ -255,6 +255,7 @@ class TestScene extends Phaser.Scene {
         this.updateHistory();
         this.spawnBubbles();
         this.spawnFood();
+        this.eventManager = new EventManager(this, THRESHOLDS);
 
         // On a restart the tutorial has already been closed, so the predator timer starts straight away.
         // On the first run it starts from unlockFish() once the tutorial is closed.
@@ -327,15 +328,9 @@ class TestScene extends Phaser.Scene {
         this.bubbleColliders = [];
         this.bubbles = {};
 
-        for (const { type, texture, ease, inverted } of BUBBLE_TYPES) {
+        for (const { type, texture, ease } of BUBBLE_TYPES) {
             const { x, y } = this.getBubbleSpawnLocation();
             const bubble = this.physics.add.image(x, y, texture).setDepth(7).setInteractive();
-
-            // Change the colour of the tempEvent bubble so I don't need more assets.
-            // preFX is WebGL-only, so on the Canvas renderer the bubble keeps its normal colour.
-            if (inverted) {
-                bubble.preFX?.addColorMatrix().negative();
-            }
 
             this.bubbleColliders.push(this.physics.add.overlap(
                 this.guide,
@@ -415,21 +410,10 @@ class TestScene extends Phaser.Scene {
         bubble.disableBody(true, true);
         this.sound.play('bubblePop', { volume: this.sfxVolume });
 
-        // The temperature event applies straight away: no popup, and the fish keeps moving.
-        // React listens for "temp-event" to show the notice.
-        if (type === 'tempEvent') {
-            const previousTemperature = this.temperature;
-            const newTemperature = Math.min(previousTemperature + 2, 35);
-            this.updateTemperature(newTemperature);
-            this.game.events.emit("temp-event", { previousTemperature, newTemperature });
-            return;
-        }
-
         this.bubbleCollision = true;
         this.collisionType = type;
         this.emitStats();
     }
-
 
     bubbleIdle(bubble) {
         this.tweens.add({
@@ -450,6 +434,7 @@ class TestScene extends Phaser.Scene {
         // Movement values below were tuned at 60fps, so scale them by how long this frame actually took.
         // Capped so a lag spike or returning to the tab doesn't teleport the fish.
         const frameScale = Math.min(delta, 50) / (1000 / 60);
+        this.eventManager.update(delta, frameScale);
 
         const hidePressed = Phaser.Input.Keyboard.JustDown(this.hideKey);
         if (hidePressed) {
@@ -670,34 +655,34 @@ class TestScene extends Phaser.Scene {
         resetCorals(this);
     }
 
-    updateTemperature(temp) {
+    updateTemperature(temp, advanceYear = true) {
         this.temperature = temp;
         const { poor, dead } = evaluateThreshold(temp, THRESHOLDS.temperature);
         this.poorTemp = poor;
         this.reefDeadTemp = dead;
-        this.updateStress();
+        this.updateStress(advanceYear);
         this.emitStats();
     }
 
-    updatePollution(poll) {
+    updatePollution(poll, advanceYear = true) {
         this.pollutionValue = poll;
         const { poor, dead } = evaluateThreshold(poll, THRESHOLDS.pollution);
         this.poorPollution = poor;
         this.reefDeadPollution = dead;
-        this.updateStress();
+        this.updateStress(advanceYear);
         this.emitStats();
     }
 
-    updateLight(light) {
+    updateLight(light, advanceYear = true) {
         this.lightLevel = light;
         const { poor, dead } = evaluateThreshold(light, THRESHOLDS.light);
         this.poorLight = poor;
         this.reefDeadLight = dead;
-        this.updateStress();
+        this.updateStress(advanceYear);
         this.emitStats();
     }
 
-    updateStress() {
+    updateStress(advanceYear = true) {
         // Once the sim is over, no more years can pass
         if (this.simEnd) return;
 
@@ -708,7 +693,7 @@ class TestScene extends Phaser.Scene {
             this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
         }
 
-        if (this.stressHistory.length > 0) {
+        if (advanceYear && this.stressHistory.length > 0) {
             const prev = this.stressHistory[this.stressHistory.length - 1];
 
             if (prev === 90 && this.stressValue === 90) {
@@ -718,27 +703,38 @@ class TestScene extends Phaser.Scene {
             }
         }
 
-        this.updateHistory();
+        if (advanceYear || this.simEnd) this.updateHistory();
+        else this.refreshVisuals();
 
-        this.timeJump++;
-        // Every time jump costs the fish half a heart
-        this.loseHalfHeart();
+        if (advanceYear){
+            this.timeJump++;
+            // Every time jump costs the fish half a heart
+            this.loseHalfHeart();
+        }
 
+        // This is the modifier that automatically ends the simulation, we could probably just take this out at somepoint
         if (this.timeJump >= 10) {
             this.simEnd = true;
         }
 
         // Only spawn new bubbles after every end condition has been checked
-        this.destroyBubbles();
-        if (!this.simEnd) {
-            this.tweens.paused = false;
-            this.spawnBubbles();
+        if (advanceYear || this.simEnd){
+            this.destroyBubbles();
+            if (!this.simEnd) {
+                this.tweens.paused = false;
+                this.spawnBubbles();
+            }
         }
 
         updateCoralStress(this, this.stressValue);
     }
 
     updateHistory() {
+        this.recordHistory();
+        this.refreshVisuals();
+    }
+
+    recordHistory(){
         this.tempHistory.push(this.temperature)
         this.lightHistory.push(this.lightLevel)
         this.pollutionHistory.push(this.pollutionValue)
@@ -748,7 +744,9 @@ class TestScene extends Phaser.Scene {
         console.table(this.lightHistory);
         console.table(this.pollutionHistory);
         console.table(this.stressHistory);
+    }
 
+    refreshVisuals() {
         /* tween light level overlays */
         const midpoint = 500;
         let brightAlpha = 0;
