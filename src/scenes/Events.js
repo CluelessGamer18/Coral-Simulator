@@ -76,3 +76,72 @@ export const EVENTS = [
     },
 ];
 
+// Event Manager
+export class EventManager {
+    constructor(scene, thresholds) {
+        this.scene = scene;
+        this.th = thresholds;
+        this.active = [];
+        this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
+    }
+
+    // Call every frame from the scene's update()
+    update(delta, frameScale) {
+        const s = this.scene;
+
+        // Nothing happens during the tutorial, popups or the end screen
+        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralIndoOpen) return;
+
+        this.nextSpawnIn -= delta;
+        if (this.nextSpawnIn <= 0) {
+            this.spawn();
+            this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
+        }
+
+        // Copy the array because resolving an event is able to modify it.
+        for (const b of [...this.active]) this.updateBubble(b, delta, frameScale);
+    }
+
+    // Check if bubbles can spawn
+    canSpawn(def) {
+        const variable = VARIABLES[def.variable];
+        const threshold = this.th[def.variable];
+        const value = this.scene[variable.prop];
+
+        if (def.type === "negative") {
+            if (value < threshold.b) return false; // Already below the healthy value
+            const after = value + def.delta;
+            if (after > variable.max) return false;
+            if (!CONFIG.eventsCanKill && after > threshold.d) return false; // Prevent events from instantly killing the reef
+            return true;
+        }
+
+        return value > threshold.b;
+    }
+
+    // Choose what event is picked
+    pickEvent() {
+        const s = this.scene;
+        const r = {
+            temperature: risk(s.temperature, this.th.temperature),
+            pollution: risk(s.pollution, this.th.pollution),
+            light: risk(s.light, this.th.light),
+        };
+        const negativeCount = this.active.filter(b => b.def.type === "negative").length;
+
+        const pool = EVENTS
+            .filter(e => !(e.type === "negative" && negCount >= CONFIG.maxNegative))
+            .filter(e => !this.active.some(b => b.def.id === e.id)) // No duplicate negative bubbles
+            .filter(e => this.canSpawn(e))
+            .map(e => ({e, w: Math.max(0, e.weight(r))}))
+            .filter(p => p.w > 0);
+
+        const total = pool.reduce((sum, p) => sum + p.w, 0);
+        if (totla <= 0) return null;
+
+        let roll = Math.random() * total;
+        return (pool.find(p => (roll -= p.w) <= 0) ?? pool[0].e);
+    }
+
+    // Spawning
+}
