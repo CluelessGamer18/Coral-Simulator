@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { asset } from './assetUrl';
 
 
-function SimEndPopUp({stress,temp,light,poll,onClose, dead = null}){
+function SimEndPopUp({stress,temp,light,poll,onClose, dead = null, fishDead = false}){
 
     const [currentChart, setCurrentChart] = useState(0);
     const [minimized, setMinimized] = useState(false);
@@ -18,7 +18,7 @@ function SimEndPopUp({stress,temp,light,poll,onClose, dead = null}){
         <>
         {!minimized ? <>            
                 <div className="SimEndPopUp">
-                <span className="SimEndPopUpTitle">Your Reef {dead ? "Died..." : "Lived!"}</span> 
+                <span className="SimEndPopUpTitle">{dead ? "Your Reef Died..." : fishDead ? "Your Fish Died..." : "Your Reef Lived!"}</span> 
                 <button className="SimEndPopUpRestartButton" onClick={onClose}>Restart Sim</button>
                 <button className="SimEndPopUpMinimizeButton" aria-label="Minimize results" onClick={() => setMinimized(!minimized)}>-</button>
                 {currentChart === 0 ? <Chart data={stress} title={"Stress"} yRange={[0, 100]}/> : null}

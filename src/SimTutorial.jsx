@@ -7,7 +7,7 @@ import { asset } from './assetUrl';
 function SimTutorial({ closeTutorial = null }) {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const lastPage = 4;
+  const lastPage = 5;
 
   const nextPage = () => {
     if (currentPage !== lastPage) {
@@ -26,8 +26,8 @@ function SimTutorial({ closeTutorial = null }) {
       case 1:
         return (<div className="SimTutorialContent">
           <h2 className="SimTutorialTitle">Controls</h2>
-          <p className="SimTutorialText">You are a fish living on a coral reef.  Move your cursor to explore your environment.</p>
-          <img src={asset("tutorial/tutorial_1.png")} alt="A computer mouse beside a fish swimming toward the coral reef" />
+          <p className="SimTutorialText">You are a fish living on a coral reef. Use the W, A, S and D keys to swim around and explore your environment.</p>
+          <img src={asset("tutorial/tutorial_wasd.png")} alt="The W, A, S and D keys beside a fish swimming toward the coral reef" />
 
         </div>
         );
@@ -45,6 +45,14 @@ function SimTutorial({ closeTutorial = null }) {
             <h2 className="SimTutorialTitle">Advancing Time</h2>
             <p className="SimTutorialText">Popping bubbles advances your reef one year, revealing its impact on the coral.</p>
             <img src={asset("tutorial/tutorial_3.png")} alt="Corals on the reef" />
+          </div>
+        );
+      case 4:
+        return (
+          <div className="SimTutorialContent">
+            <h2 className="SimTutorialTitle">Watch Out for Predators</h2>
+            <p className="SimTutorialText">A predator will come hunting for you. Swim close to the coral and press Z to hide until it swims away.</p>
+            <img src={asset("tutorial/tutorial_predator.png")} alt="The Z key beside a fish hiding in the coral while a barracuda swims past" />
           </div>
         );
       default:
