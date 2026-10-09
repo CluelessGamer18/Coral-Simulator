@@ -144,4 +144,133 @@ export class EventManager {
     }
 
     // Spawning
+    spawn() {
+        if (this.active.length >= CONFIG.maxTotalBubbles) return;
+        const def = this.pickEvent();
+        if (!def) return;
+
+        const s = this.scene;
+        const minDist = def.type === "negative" ? CONFIG.minSpawnDistance: 300;
+        let x, y, tries = 0;
+
+        do {
+            // Only spawn in the same areas that the fish can reach
+            x = Phaser.Math.Between(100, s.WORLD_WIDTH - 100);
+            y = Phaser.Math.Between(120, 850);
+        } while (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist && ++tries < 20);
+
+        const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
+
+        if (def.type === "negative") {
+            // Darker = more intense, and larger
+            const shade = Math.round(200 - def.intensity * 50);
+            sprite.setTint(Phaser.Display.Color.GetColor(shade, shade, shade));
+            const base = 0.9 + 0.15 * def.intensity;
+            sprite.setScale(base);
+
+            // Idle pulse via scale only
+            s.tweens.add({targets: sprite, scale: base * 1.08, duration: 600, yoyo: true, repeat: -1, ease: "Sine.inOut"});
+        } else {
+            s.bubbleIdle(sprite); // Reuse existing bubble idle animation
+        }
+
+        this.active.push({
+            sprite, def, age: 0, phase: Math.random() * 1000,
+            life: def.type === "negative" ? CONFIG.negativeBubbleLifetime : CONFIG.positiveBubbleLifetime,
+        });
+    }
+
+    // Per Bubble Behaviour
+    updateBubble(b, delta, frameScale) {
+        const s = this.scene;
+        b.age += delta;
+
+        const dist = Phaser.Math.Distance.Between(b.sprite.x, b.sprite.y, s.guide.x, s.guide.y);
+        const touchRadius = b.sprite.displayWidth / 2 + 30;
+
+        if (b.def.type === "negative") {
+            if (dist < CONFIG.aggroRadius && dist > 0){
+                const speed = (CONFIG.baseChaseSpeed + CONFIG.chasePerIntensity * b.def.intensity) * frameScale;
+                const step = Math.min(speed, dist);
+                b.sprite.x += ((s.guide.x - b.sprite.x) / dist) * step;
+                b.sprite.y += ((s.guide.y - b.sprite.y) / dist) * step;
+            } else {
+                // Lazy drift while the fish is far away
+                b.sprite.y += Math.sin((s.time.now + b.phase) / 400) * 0.3 * frameScale;
+            }
+        }
+
+        if (dist < touchRadius) return this.resolve(b); // negative: you got hit, positive: you collected it
+        if (b.age >= b.life) return this.expire(b); // Bubble disapears <-(how do you spell this)
+    }
+
+    // Fish touched the bubble
+    resolve(b) {
+        const s = this.scene;
+        this.remove(b);
+        // Here is where we add bubble popping noises if we have them
+
+        // Negative hits hurt the fish directly
+        if (b.def.type === "negative") {
+            for (let i = 0; i < CONFIG.negativeHitDamage && !s.simEnd; i++) s.loseHalfHeart();
+            if (s.simEnd) { // The bubble hit has killed the fish: skip the event trigger
+                s.emitStats();
+                this.clear();
+                return;
+            }
+        }
+
+        const message = this.apply(b.def);
+        s.game.events.emit("random-event", {
+            title: b.def.title,
+            message,
+            type: b.def.type,
+            id: b.def.id,
+            learning: b.def.learning
+        });
+
+        // apply() can end the simulaiton so clear the bubbles if that happened
+        if (s.simEnd) this.clear();
+    }
+
+    // Bubbles fizzle out harmlessly
+    expire(b) {
+        const s = this.scene;
+        this.active = this.active.filter(x => x !== b);
+        s.tweens.killTweensOf(b.sprite);
+        s.tweens.add({targets: b.sprite, alpha: 0, duration: 400, onComplete: () => b.sprite.destroy() });
+        if (b.def.type === "negative") {
+            s.game.events.emit("event-averted", {id: b.def.id, title: b.def.title});
+        }
+    }
+
+    // Changes the value through update()
+    apply(def) {
+        const s = this.scene;
+        const variable = VARIABLES[def.variable];
+        const threshold = this.th[def.variable];
+        const before = s[variable.prop];
+        const after  = def.type === "negative" ? Math.min(before + def.delta, variable.max) : Math.max(before + def.delta, threshold.b); // Positives stop at healthy flow
+
+        // Checks the flag to see if the event advances the year 
+        s[v.setter](after, CONFIG.eventsAdvanceYear);
+
+        const verb = after > before ? "rose" : "fell";
+        return `${v.label} ${verb} from ${before}${v.unit} to ${after}${v.unit}. ${def.teach}`
+    }
+
+    // Cleanup files
+    remove(b) {
+        this.active = this.active.filter(x => x !== b);
+        this.scene.tweens.killTweensOf(b.sprite);
+        b.sprite.destroy();
+    }
+
+    clear() {
+        for (const b of this.active) {
+            this.scene.tweens.killTweensOf(b.sprite);
+            b.sprite.destroy();
+        }
+        this.active = [];
+    }
 }
