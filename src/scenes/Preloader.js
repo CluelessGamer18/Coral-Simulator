@@ -86,6 +86,24 @@ preload() {
         this.load.image("tabularBlue", "corals/TabularBlue.png");
         this.load.image("tabularGreen", "corals/TabularGreen.png");
 
+        this.load.image("Columnar-1", "corals/Columnar-1.png");
+        this.load.image("Columnar-2", "corals/Columnar-2.png");
+        this.load.image("Columnar-3", "corals/Columnar-3.png");
+        this.load.image("Columnar-4", "corals/Columnar-4.png");
+        this.load.image("Digitate-1", "corals/Digitate-1.png");
+        this.load.image("Digitate-2", "corals/Digitate-2.png");
+        this.load.image("Digitate-3", "corals/Digitate-3.png");
+        this.load.image("Digitate-4", "corals/Digitate-4.png");
+        this.load.image("Digitate-5", "corals/Digitate-5.png");
+        this.load.image("Flat-Tabular-1", "corals/Flat-Tabular-1.png");
+        this.load.image("Flat-Tabular-2", "corals/Flat-Tabular-2.png");
+        this.load.image("Flat-Tabular-3", "corals/Flat-Tabular-3.png");
+        this.load.image("Folios-1", "corals/Folios-1.png");
+        this.load.image("Folios-2", "corals/Folios-2.png");
+        this.load.image("Tabular-1", "corals/Tabular-1.png");
+        this.load.image("Tabular-2", "corals/Tabular-2.png");
+        this.load.image("Tabular-3", "corals/Tabular-3.png");
+
         // background layers
         this.load.image("floor_layer0", "background/foreforeground_2860x161.png")
         this.load.image("floor_layer1", "background/foreground_2860x467.png")
