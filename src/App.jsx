@@ -136,13 +136,22 @@ function App() {
       });
     };
 
+    const onPredatorLeft = () => {
+      setEventNotice({
+        title: 'All Clear',
+        message: 'The predator has left. You can come out now!',
+      });
+    };
+
     events.on("stats-changed", onStats);
     events.on("temp-event", onTempEvent);
     events.on("predator-appeared", onPredatorAppeared);
+    events.on("predator-left", onPredatorLeft);
     return () => {
       events.off("stats-changed", onStats);
       events.off("temp-event", onTempEvent);
       events.off("predator-appeared", onPredatorAppeared);
+      events.off("predator-left", onPredatorLeft);
     };
   }, [scene]);
 
