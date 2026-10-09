@@ -60,6 +60,14 @@ preload() {
         // cursor-following fish
         this.load.image("Guide","fish/fish.png")
 
+        // health hearts shown above the fish
+        this.load.svg("heartFull", "health/heart_full.svg", { width: 33, height: 30 });
+        this.load.svg("heartHalf", "health/heart_half.svg", { width: 33, height: 30 });
+        this.load.svg("heartDead", "health/heart_dead.svg", { width: 33, height: 30 });
+
+        // food the fish can eat to heal
+        this.load.svg("algaeOrb", "food/algae_orb.svg", { width: 30, height: 30 });
+
         // bubbles
         this.load.image("PollutionBubble","bubbles/pollutionBubble.png")
         this.load.image("TempBubble","bubbles/tempBubble.png")

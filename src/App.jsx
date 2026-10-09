@@ -31,6 +31,7 @@ function App() {
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
   const [simEnd, setSimEnd] = useState(false);
   const [reefDead, setReefDead] = useState(false);
+  const [fishDead, setFishDead] = useState(false);
   const [history, setHistory] = useState(EMPTY_HISTORY);
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
@@ -116,6 +117,7 @@ function App() {
       setCollisionType(stats.collisionType)
       setSimEnd(stats.simEnd)
       setReefDead(stats.reefDead)
+      setFishDead(stats.fishDead)
       setScore(stats.score)
       setHistory(stats.history)
     };
@@ -196,6 +198,7 @@ function App() {
     setBubbleCollision(false);
     setSimEnd(false);
     setReefDead(false);
+    setFishDead(false);
     setScore(0);
     setHistory(EMPTY_HISTORY);
     setEventNotice(null);
@@ -219,6 +222,7 @@ function App() {
             poll={history.poll}
             onClose={endSim}
             dead={reefDead}
+            fishDead={fishDead}
           ></SimEndPopUp>) : null}
         {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={() => setShowTutorial(false)}/>:null}
         {eventNotice ? (
