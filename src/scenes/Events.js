@@ -10,7 +10,7 @@ const CONFIG = {
     positiveBubbleLifetime: 20000, 
     aggroRadius: 700, // if the player is within this distance the bubbles will chase the player
     minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
-    baseChaseSpeed: 0.9, // chase speed will be updated on a few things, base value + (per intensity value * intensity number)
+    baseChaseSpeed: 3, // chase speed will be updated on a few things, base value + (per intensity value * intensity number)
     chasePerIntensity: 0.5, // this is the base value for each point of intensity as each event can have varying values
     eventsCanKill: false, // this is a flag that stops events from killing the reef, obviously if we change how time works this can be modified / gotten rid of
     eventsAdvanceYear: false, // if set to false events dont take up a year when interacted with, true allows them to advance the year
@@ -162,16 +162,16 @@ export class EventManager {
         const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
 
         if (def.type === "negative") {
-            // Darker = more intense, and larger
-            const shade = Math.round(200 - def.intensity * 50);
-            sprite.setTint(Phaser.Display.Color.GetColor(shade, shade, shade));
+            // Red, getting darker with intensity: 1 = bright red, 3 = dark red
+            const red = Math.round(255 - (def.intensity - 1) * 55);
+            sprite.setTint(Phaser.Display.Color.GetColor(red, 40, 40));
+
             const base = 0.9 + 0.15 * def.intensity;
             sprite.setScale(base);
-
-            // Idle pulse via scale only
             s.tweens.add({targets: sprite, scale: base * 1.08, duration: 600, yoyo: true, repeat: -1, ease: "Sine.inOut"});
         } else {
-            s.bubbleIdle(sprite); // Reuse existing bubble idle animation
+            sprite.setTint(0x44dd66); // Green
+            s.bubbleIdle(sprite);
         }
 
         this.active.push({
