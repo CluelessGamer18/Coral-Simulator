@@ -29,6 +29,8 @@ const MAX_HEARTS = 3;
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
+const PREDATOR_BITE_INTERVAL = 1000; // ms of touching the predator per half heart lost
+
 const FOOD_COUNT = 5; // algae orbs sprinkled around the map at the start of each game
 
 function evaluateThreshold(value, { a, b, c, d }) {
@@ -86,6 +88,8 @@ class TestScene extends Phaser.Scene {
         this.score = 0;
         this.health = MAX_HEARTS * 2;
         this.fishDead = false;
+        this.touchingPredator = false;
+        this.predatorContactTime = 0; // time since the last bite while touching the predator, in ms
 
         this.WORLD_WIDTH = 2860;
         this.WORLD_HEIGHT = 1024;
@@ -530,6 +534,8 @@ class TestScene extends Phaser.Scene {
             }
         }
 
+        this.checkPredatorContact(delta);
+
         const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
         const edgeScrollSpeed = 6.75; // Keep equal to the fish speed so the camera keeps up with the fish at the screen edges
         const cameraSmoothing = 0.15;
@@ -589,6 +595,46 @@ class TestScene extends Phaser.Scene {
     loseHalfHeart() {
         this.health = Math.max(this.health - 1, 0);
         this.refreshHeartTextures();
+
+        // Flash the fish red so it's clear it got hurt
+        this.guide.setTint(0xff6666);
+        this.time.delayedCall(150, () => this.guide.clearTint());
+
+        // Out of hearts: the fish dies and the sim ends
+        if (this.health <= 0) {
+            this.fishDead = true;
+            this.simEnd = true;
+        }
+    }
+
+    // Half a heart the moment the fish touches the predator, then another for every second it stays in contact
+    checkPredatorContact(delta) {
+        // No damage while a popup is open, since the fish can't move away
+        const paused = this.bubbleCollision || this.coralInfoOpen;
+        // A hiding fish is safe, even if the predator swims over it on the way out
+        const touching = this.predatorSpawned && !paused && !this.isHiding && Phaser.Geom.Intersects.RectangleToRectangle(
+            this.guide.getBounds(),
+            this.predator.getBounds()
+        );
+
+        if (!touching) {
+            if (!paused) this.touchingPredator = false;
+            return;
+        }
+
+        if (!this.touchingPredator) {
+            this.touchingPredator = true;
+            this.predatorContactTime = 0;
+            this.loseHalfHeart();
+        } else {
+            this.predatorContactTime += delta;
+        }
+        if (this.predatorContactTime >= PREDATOR_BITE_INTERVAL) {
+            this.predatorContactTime -= PREDATOR_BITE_INTERVAL;
+            this.loseHalfHeart();
+        }
+
+        if (this.simEnd) this.emitStats();
     }
     getSimTime() {
         const totalSeconds = Math.floor(this.simTime / 1000);
@@ -663,12 +709,6 @@ class TestScene extends Phaser.Scene {
         this.timeJump++;
         // Every time jump costs the fish half a heart
         this.loseHalfHeart();
-
-        // Out of hearts: the fish dies and the sim ends
-        if (this.health <= 0) {
-            this.fishDead = true;
-            this.simEnd = true;
-        }
 
         if (this.timeJump >= 10) {
             this.simEnd = true;
