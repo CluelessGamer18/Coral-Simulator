@@ -2,10 +2,10 @@ import Phaser from "phaser";
 
 // Tweak these values to change how the event bubbles behave
 const CONFIG = {
-    spawnMinTime: 8000, // minimum time between event spawns
-    spawnMaxTime: 15000, // maximum time between event spawns
-    maxNegativeBubbles: 2, // maximum number of negative bubbles on screen at once
-    maxTotalBubbles: 4, // maximum number of total bubbles on screen at once
+    spawnMinTime: 1000, // minimum time between event spawns
+    spawnMaxTime: 5000, // maximum time between event spawns
+    maxNegativeBubbles: 3, // maximum number of negative bubbles on screen at once
+    maxTotalBubbles: 6, // maximum number of total bubbles on screen at once
     negativeBubbleLifetime: 15000, // evade negative bubbles for this long and they disappear
     positiveBubbleLifetime: 20000, 
     aggroRadius: 700, // if the player is within this distance the bubbles will chase the player
@@ -37,19 +37,19 @@ function risk(value, {a, b, c, d}){
 export const EVENTS = [
     // Negative events (chase fish), darker = more intense
     {
-        id: "temp_up", type: "negative", intensity: 2, variable: "temperature", delta: +2,
+        id: "temp_up", type: "negative", intensity: Math.floor(Math.random() * 3) + 1, variable: "temperature", delta: +2,
         title: "Ocean Temperatures Rising", learning: "multiple_stressors",
         teach: "Heat and bright light together stress coral far more than either one by themselves",
         weight: (r) => 1 + r.light * 1.5,
     },
     {
-        id: "nutrients_up", type: "negative", intensity: 1, variable: "pollution", delta: +1,
+        id: "nutrients_up", type: "negative", intensity: Math.floor(Math.random() * 3) + 1, variable: "pollution", delta: +1,
         title: "Nutrient Levels Rising", learning: "multiple_stressors",
         teach: "Extra nutrients make corals more sensetive to heat and light.",
         weight: (r) => 1 + r.temperature,
     },
     {
-        id: "light_up", type: "negative", intensity: 2, variable: "light", delta: +200,
+        id: "light_up", type: "negative", intensity: Math.floor(Math.random() * 3) + 1, variable: "light", delta: +200,
         title: "Light Levels Increasing", learning: "multiple_stressors",
         teach: "Bright light on warm water is a recipe for coral bleaching",
         weight: (r) => 1 + r.temperature * 1.5,
@@ -57,19 +57,19 @@ export const EVENTS = [
 
     // Positive events (swim into them to help the reef)
     {
-        id: "cool_current", type: "positive", intensity: 1, variable: "temperature", delta: -2,
+        id: "cool_current", type: "positive", intensity: Math.floor(Math.random() * 3) + 1, variable: "temperature", delta: -2,
         title: "Cool Current", learning: "reversible",
         teach: "Coral bleaching can be reversed when the stress is removed.",
         weight: (r) => 0.4 + r.temperature * 3,
     },
     {
-        id: "nutrient_flush", type: "positive", intensity: 1, variable: "pollution", delta: -1,
+        id: "nutrient_flush", type: "positive", intensity: Math.floor(Math.random() * 3) + 1, variable: "pollution", delta: -1,
         title: "Clean Water", learning: "reversible",
         teach: "Cleaner water affords coral room to recover.",
         weight: (r) => 0.4 + r.pollution * 3,
     },
     {
-        id: "shade", type: "positive", intensity: 1, variable: "light", delta: -200,
+        id: "shade", type: "positive", intensity: Math.floor(Math.random() * 3) + 1, variable: "light", delta: -200,
         title: "Cloudy", learning: "reversible",
         teach: "Shade from clouds takes pressure off of stressed corals.",
         weight: (r) => 0.4 + r.light * 3,
@@ -160,14 +160,14 @@ export class EventManager {
         } while (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist && ++tries < 20);
 
         const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
+        const base = 0.9 + 0.15 * def.intensity;
+        sprite.setScale(base);
 
         if (def.type === "negative") {
             // Red, getting darker with intensity: 1 = bright red, 3 = dark red
             const red = Math.round(255 - (def.intensity - 1) * 55);
             sprite.setTint(Phaser.Display.Color.GetColor(red, 40, 40));
 
-            const base = 0.9 + 0.15 * def.intensity;
-            sprite.setScale(base);
             s.tweens.add({targets: sprite, scale: base * 1.08, duration: 600, yoyo: true, repeat: -1, ease: "Sine.inOut"});
         } else {
             sprite.setTint(0x44dd66); // Green
