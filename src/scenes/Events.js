@@ -40,19 +40,19 @@ export const EVENTS = [
         id: "temp_up", type: "negative", intensity: 2, variable: "temperature", delta: +2,
         title: "Ocean Temperatures Rising", learning: "multiple_stressors",
         teach: "Heat and bright light together stress coral far more than either one by themselves",
-        weight: (r) => 1 + r.temperature * 1.5,
+        weight: (r) => 1 + r.light * 1.5,
     },
     {
         id: "nutrients_up", type: "negative", intensity: 1, variable: "pollution", delta: +1,
         title: "Nutrient Levels Rising", learning: "multiple_stressors",
-        teach: "Extra nutrients make corals more sensative to heat and light.",
-        weight: (r) => 1 + r.pollution,
+        teach: "Extra nutrients make corals more sensetive to heat and light.",
+        weight: (r) => 1 + r.temperature,
     },
     {
         id: "light_up", type: "negative", intensity: 2, variable: "light", delta: +200,
         title: "Light Levels Increasing", learning: "multiple_stressors",
         teach: "Bright light on warm water is a recipe for coral bleaching",
-        weight: (r) => 1 + r.light * 1.5,
+        weight: (r) => 1 + r.temperature * 1.5,
     },
 
     // Positive events (swim into them to help the reef)
@@ -60,19 +60,19 @@ export const EVENTS = [
         id: "cool_current", type: "positive", intensity: 1, variable: "temperature", delta: -2,
         title: "Cool Current", learning: "reversible",
         teach: "Coral bleaching can be reversed when the stress is removed.",
-        weight: (r) => 0.4 * r.temperature * 3,
+        weight: (r) => 0.4 + r.temperature * 3,
     },
     {
         id: "nutrient_flush", type: "positive", intensity: 1, variable: "pollution", delta: -1,
         title: "Clean Water", learning: "reversible",
         teach: "Cleaner water affords coral room to recover.",
-        weight: (r) => 0.4 * r.pollution * 3,
+        weight: (r) => 0.4 + r.pollution * 3,
     },
     {
-        id: "shade", type: "positive", intensity: 1, variable: "light", delta: -2,
+        id: "shade", type: "positive", intensity: 1, variable: "light", delta: -200,
         title: "Cloudy", learning: "reversible",
         teach: "Shade from clouds takes pressure off of stressed corals.",
-        weight: (r) => 0.4 * r.light * 3,
+        weight: (r) => 0.4 + r.light * 3,
     },
 ];
 
@@ -90,7 +90,7 @@ export class EventManager {
         const s = this.scene;
 
         // Nothing happens during the tutorial, popups or the end screen
-        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralIndoOpen) return;
+        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen) return;
 
         this.nextSpawnIn -= delta;
         if (this.nextSpawnIn <= 0) {
@@ -124,23 +124,23 @@ export class EventManager {
         const s = this.scene;
         const r = {
             temperature: risk(s.temperature, this.th.temperature),
-            pollution: risk(s.pollution, this.th.pollution),
-            light: risk(s.light, this.th.light),
+            pollution: risk(s.pollutionValue, this.th.pollution),
+            light: risk(s.lightLevel, this.th.light),
         };
         const negativeCount = this.active.filter(b => b.def.type === "negative").length;
 
         const pool = EVENTS
-            .filter(e => !(e.type === "negative" && negCount >= CONFIG.maxNegative))
+            .filter(e => !(e.type === "negative" && negativeCount >= CONFIG.maxNegativeBubbles))
             .filter(e => !this.active.some(b => b.def.id === e.id)) // No duplicate negative bubbles
             .filter(e => this.canSpawn(e))
             .map(e => ({e, w: Math.max(0, e.weight(r))}))
             .filter(p => p.w > 0);
 
         const total = pool.reduce((sum, p) => sum + p.w, 0);
-        if (totla <= 0) return null;
+        if (total <= 0) return null;
 
         let roll = Math.random() * total;
-        return (pool.find(p => (roll -= p.w) <= 0) ?? pool[0].e);
+        return (pool.find(p => (roll -= p.w) <= 0) ?? pool[0]).e;
     }
 
     // Spawning
@@ -253,10 +253,10 @@ export class EventManager {
         const after  = def.type === "negative" ? Math.min(before + def.delta, variable.max) : Math.max(before + def.delta, threshold.b); // Positives stop at healthy flow
 
         // Checks the flag to see if the event advances the year 
-        s[v.setter](after, CONFIG.eventsAdvanceYear);
+        s[variable.setter](after, CONFIG.eventsAdvanceYear);
 
         const verb = after > before ? "rose" : "fell";
-        return `${v.label} ${verb} from ${before}${v.unit} to ${after}${v.unit}. ${def.teach}`
+        return `${variable.label} ${verb} from ${before}${variable.unit} to ${after}${variable.unit}. ${def.teach}`
     }
 
     // Cleanup files
