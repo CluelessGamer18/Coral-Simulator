@@ -94,23 +94,40 @@ class TestScene extends Phaser.Scene {
         this.touchingPredator = false;
         this.predatorContactTime = 0; // time since the last bite while touching the predator, in ms
 
-        this.WORLD_WIDTH = 2860;
+        this.WORLD_WIDTH = 5720;
         this.WORLD_HEIGHT = 1024;
     }
 
     setupWorld(cam) {
         this.cameras.main.setBackgroundColor("#8ACFC9");
 
-        const floorLayer3 = this.add.image(0, 0, "floor_layer3")
-            .setOrigin(0, 0).setDepth(1)
-            // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
-            .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        floorLayer3.y = this.WORLD_HEIGHT - floorLayer3.height;
+        const addWorldLayer = (key, imageWidth, depth, bottomAligned = true) => {
+            const totalLayerWidth = imageWidth * 2;
+            const scrollFactorX = (totalLayerWidth - cam.width) / (this.WORLD_WIDTH - cam.width);
 
-        const floorLayer2 = this.add.image(0, 0, "floor_layer2")
-            .setOrigin(0, 0).setDepth(2)
-            .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
+            for (let i = 0; i < 2; i++) {
+                const layer = this.add.image(i * imageWidth, 0, key)
+                    .setOrigin(0, 0)
+                    .setDepth(depth)
+                    .setScrollFactor(scrollFactorX, 1);
+                
+                    layer.y = bottomAligned ? this.WORLD_HEIGHT - layer.height : -10;
+            }
+        }
+
+        // const floorLayer3 = this.add.image(0, 0, "floor_layer3")
+        //     .setOrigin(0, 0).setDepth(1)
+        //     // Calculation for full width parallax: (layerWidth - viewportWidth) / (worldWidth - viewportWidth)
+        //     .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        // floorLayer3.y = this.WORLD_HEIGHT - floorLayer3.height;
+
+        // const floorLayer2 = this.add.image(0, 0, "floor_layer2")
+        //     .setOrigin(0, 0).setDepth(2)
+        //     .setScrollFactor((2072 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        // floorLayer2.y = this.WORLD_HEIGHT - floorLayer2.height;
+
+        addWorldLayer("floor_layer3", 1440, 1);
+        addWorldLayer("floor_layer2", 2072, 2);
 
         createFishSchools(this); //educated fish (schools)
         createCorals(this);
@@ -131,21 +148,25 @@ class TestScene extends Phaser.Scene {
         this.pipeA.setFrame(1);
         this.pipeB.setFrame(0);
 
+        addWorldLayer("floor_layer1", 2860, 5);
+        addWorldLayer("floor_layer0", 2860, 6);
+        addWorldLayer("surface", 1440, -4, false);
 
-        const floorLayer1 = this.add.image(0, 0, "floor_layer1")
-            .setOrigin(0, 0).setDepth(5)
-            .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        floorLayer1.y = this.WORLD_HEIGHT - floorLayer1.height;
+        // Commented out old code for now, in case something is comepletely broken
+        // const floorLayer1 = this.add.image(0, 0, "floor_layer1")
+        //     .setOrigin(0, 0).setDepth(5)
+        //     .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        // floorLayer1.y = this.WORLD_HEIGHT - floorLayer1.height;
 
-        const floorLayer0 = this.add.image(0, 0, "floor_layer0")
-            .setOrigin(0, 0).setDepth(6)
-            .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        floorLayer0.y = this.WORLD_HEIGHT - floorLayer0.height;
+        // const floorLayer0 = this.add.image(0, 0, "floor_layer0")
+        //     .setOrigin(0, 0).setDepth(6)
+        //     .setScrollFactor((2860 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        // floorLayer0.y = this.WORLD_HEIGHT - floorLayer0.height;
 
-        const surface = this.add.image(0, 0, "surface")
-            .setOrigin(0, 0).setDepth(-4)
-            .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
-        surface.y = -10;
+        // const surface = this.add.image(0, 0, "surface")
+        //     .setOrigin(0, 0).setDepth(-4)
+        //     .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
+        // surface.y = -10;
     }
 
     setupAudio() {
