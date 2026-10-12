@@ -230,12 +230,17 @@ export function createCorals(scene) {
 /* helper function to create a group of coral instances with random types and positions. */
 function createCoralGroup(scene, count, minX, maxX) {
   const types = Object.keys(coralTypes);
+  const depthAssignments = Array.from(
+    { length: count },
+    (_, index) => index % depthLevels.length
+  );
+  Phaser.Utils.Array.Shuffle(depthAssignments);
 
   for (let i = 0; i < count; i++) {
     const typeName = Phaser.Utils.Array.GetRandom(types);
     const type = coralTypes[typeName];
 
-    let depth = Phaser.Math.Between(0, 2);
+    const depth = depthAssignments[i];
 
     const coral = scene.add
       .image(
