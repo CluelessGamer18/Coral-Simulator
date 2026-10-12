@@ -216,11 +216,19 @@ const depthLevels = [-10, 120, 180];
 export function createCorals(scene) {
     scene.corals = [];
   resetCoralTypes(); // a previous game (e.g. before Return to Title) may have left the types stressed
-  createCoralGroup(scene, 30); // create 30 corals
+
+  const sandbarWidth = 800; // create a sandbar with a width of 800 pixels
+  const coralClearance = 100 // half of the max coral width so it doesnt grow on the sandbar
+  const sandbarStart = (scene.WORLD_WIDTH - sandbarWidth) / 2; // where the sandbar begins
+  const sandbarEnd = sandbarStart + sandbarWidth;
+
+  createCoralGroup(scene, 30, coralClearance, sandbarStart - coralClearance);
+  createCoralGroup(scene, 30, sandbarEnd + coralClearance, scene.WORLD_WIDTH - coralClearance);
+  // createCoralGroup(scene, 30); // create 30 corals
 }
 
 /* helper function to create a group of coral instances with random types and positions. */
-function createCoralGroup(scene, count) {
+function createCoralGroup(scene, count, minX, maxX) {
   const types = Object.keys(coralTypes);
 
   for (let i = 0; i < count; i++) {
@@ -231,7 +239,7 @@ function createCoralGroup(scene, count) {
 
     const coral = scene.add
       .image(
-        Phaser.Math.Between(0, scene.WORLD_WIDTH), // random x position
+        Phaser.Math.Between(minX, maxX), // random x position
         scene.WORLD_HEIGHT - depthLevels[depth], // y position based on depth level
         type.key,
       )
