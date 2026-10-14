@@ -216,28 +216,34 @@ const depthLevels = [-10, 120, 180];
 export function createCorals(scene) {
     scene.corals = [];
   resetCoralTypes(); // a previous game (e.g. before Return to Title) may have left the types stressed
-  createCoralGroup(scene, 30); // create 30 corals
+
+  const sandbarWidth = 800; // create a sandbar with a width of 800 pixels
+  const coralClearance = 100 // half of the max coral width so it doesnt grow on the sandbar
+  const sandbarStart = (scene.WORLD_WIDTH - sandbarWidth) / 2; // where the sandbar begins
+  const sandbarEnd = sandbarStart + sandbarWidth;
+
+  createCoralGroup(scene, 100, coralClearance, sandbarStart - coralClearance);
+  createCoralGroup(scene, 100, sandbarEnd + coralClearance, scene.WORLD_WIDTH - coralClearance);
+  // createCoralGroup(scene, 30); // create 30 corals
 }
 
 /* helper function to create a group of coral instances with random types and positions. */
-function createCoralGroup(scene, count) {
-  const types = Object.keys(coralTypes);
+function createCoralGroup(scene, count, minX, maxX) {
+  const spawns = createCoralSpawnPlan(count, minX, maxX);
 
-  for (let i = 0; i < count; i++) {
-    const typeName = Phaser.Utils.Array.GetRandom(types);
+  for (const spawn of spawns) {
+    const { x, yOffset, typeName, depth } = spawn;
     const type = coralTypes[typeName];
-
-    let depth = Phaser.Math.Between(0, 2);
 
     const coral = scene.add
       .image(
-        Phaser.Math.Between(0, scene.WORLD_WIDTH), // random x position
-        scene.WORLD_HEIGHT - depthLevels[depth], // y position based on depth level
+        x,
+        scene.WORLD_HEIGHT - depthLevels[depth] + yOffset,
         type.key,
       )
       .setOrigin(0.5, 1)
-      .setDepth(7-depth);
-    
+      .setDepth(7 - depth);
+
     const coralScale = Math.min(200 / coral.width, 170 / coral.height, 1);
     coral.setScale(coralScale);
     coral.baseScale = coralScale;
@@ -270,7 +276,6 @@ function createCoralGroup(scene, count) {
       });
     });
 
-    
     coral.on('pointerout', () => { // end hover effect
       coral.clearTint();
 
@@ -318,6 +323,118 @@ function createCoralGroup(scene, count) {
     scene.corals.push(coral);
     coralSway(scene, coral);
   }
+}
+
+// Helper function to seperate the coral types when spawning them in.
+function createCoralSpawnPlan(count, minX, maxX) {
+  // --- Lookup: image key -> coral type names that use that image ---
+  const typeNamesByImage = {};
+  for (const [typeName, type] of Object.entries(coralTypes)) {
+    (typeNamesByImage[type.key] ??= []).push(typeName);
+  }
+  const imageKeys = Object.keys(typeNamesByImage);
+  const maxDepth = depthLevels.length - 1;
+ 
+  const mixedPatchChance = 0.05;  // rare patch has a second species at its edge
+  const minPatchSize = 3;
+  const maxPatchSize = 12;
+  const stepX = 35;               // how far a "larva" settles from its parent 
+  const stepY = 8;
+  const depthDriftChance = 0.3;   // chance a colony sits one layer off its parent
+ 
+  // approximate normal distribution (Box-Muller)
+  const gaussian = () => {
+    const u = 1 - Math.random();
+    const v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+ 
+  // uneven patch sizes (big and small clumps)
+  const patchSizes = [];
+  let remaining = count;
+  while (remaining > 0) {
+    let size = Math.min(remaining, Phaser.Math.Between(minPatchSize, maxPatchSize));
+    if (remaining - size < minPatchSize) size = remaining; // avoid tiny leftovers
+    patchSizes.push(size);
+    remaining -= size;
+  }
+ 
+  // irregular patch centers with gaps of bare sand between them
+  const centers = [];
+  for (let i = 0; i < patchSizes.length; i++) {
+    let best = null;
+    let bestDist = -1;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const candidate = Phaser.Math.FloatBetween(minX, maxX);
+      const dist = centers.length
+        ? Math.min(...centers.map(c => Math.abs(c - candidate)))
+        : Infinity;
+      if (dist > bestDist) {
+        best = candidate;
+        bestDist = dist;
+      }
+    }
+    centers.push(best);
+  }
+ 
+  // grow each patch outward from a founder colony
+  const spawns = [];
+ 
+  patchSizes.forEach((patchSize, patchIndex) => {
+    const center = centers[patchIndex];
+    const baseY = Phaser.Math.Between(-35, 35);
+    const baseDepth = Phaser.Math.Between(0, maxDepth);
+    const maxRadius = 25 + patchSize * 7; // bigger patches may spread wider
+ 
+    const imageKey = Phaser.Utils.Array.GetRandom(imageKeys);
+    const colonies = [{ x: center, y: baseY, depth: baseDepth }];
+ 
+    for (let i = 1; i < patchSize; i++) {
+      // New colonies settle near an existing one -> organic, blobby clusters
+      const parent = Phaser.Utils.Array.GetRandom(colonies);
+ 
+      let depth = parent.depth;
+      if (Math.random() < depthDriftChance) {
+        depth += Math.random() < 0.5 ? -1 : 1;
+      }
+ 
+      colonies.push({
+        x: Phaser.Math.Clamp(
+          parent.x + gaussian() * stepX,
+          Math.max(minX, center - maxRadius),
+          Math.min(maxX, center + maxRadius)
+        ),
+        y: Phaser.Math.Clamp(parent.y + gaussian() * stepY, baseY - 30, baseY + 30),
+        depth: Phaser.Math.Clamp(depth, 0, maxDepth)
+      });
+    }
+ 
+    // rare mixed patch: a different species along the outer edge only
+    const isMixedPatch = imageKeys.length > 1 && Math.random() < mixedPatchChance;
+    const edgeImageKey = isMixedPatch
+      ? Phaser.Utils.Array.GetRandom(imageKeys.filter(key => key !== imageKey))
+      : null;
+    const edgeColonies = new Set();
+ 
+    if (isMixedPatch) {
+      [...colonies]
+        .sort((a, b) => Math.abs(b.x - center) - Math.abs(a.x - center))
+        .slice(0, Math.max(1, Math.ceil(patchSize * 0.25)))
+        .forEach(colony => edgeColonies.add(colony));
+    }
+ 
+    for (const colony of colonies) {
+      const key = edgeColonies.has(colony) ? edgeImageKey : imageKey;
+      spawns.push({
+        x: colony.x,
+        yOffset: colony.y,
+        typeName: Phaser.Utils.Array.GetRandom(typeNamesByImage[key]),
+        depth: colony.depth
+      });
+    }
+  });
+ 
+  return spawns;
 }
 
 /* animate corals */
