@@ -9,7 +9,6 @@ import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
 import SimInfoDisplay from './SimInfoDisplay.jsx'
 import SimBubblePopUp from './SimBubblePopUp.jsx'
 import SimEndPopUp from './SimEndPopUp.jsx'
-import SimTutorial from './SimTutorial.jsx'
 
 import { Routes, Route } from 'react-router'
 import About from './About.jsx'
@@ -29,6 +28,7 @@ function App() {
   const [score, setScore] = useState(0);
 
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
+  const inTutorial = scene?.scene.key === "Tutorial"; // the tutorial scene only shares the settings button with the main game
   const [simEnd, setSimEnd] = useState(false);
   const [reefDead, setReefDead] = useState(false);
   const [fishDead, setFishDead] = useState(false);
@@ -40,7 +40,6 @@ function App() {
   const [sfxVolume, setSfxVolume] = useState(1.0);
   const [showOptions, setShowOptions] = useState(false);
 
-  const [showTutorial, setShowTutorial] = useState(true);
   const [eventNotice, setEventNotice] = useState(null);
 
 
@@ -153,11 +152,6 @@ function App() {
     };
   }, [scene]);
 
-  useEffect(() => {
-    if (!scene) {return}
-    if(!showTutorial){scene.unlockFish()}
-  }, [scene, showTutorial])
-
   // Pause the game behind the Options dialog: movement, tweens, timers and clicks all stop until it closes.
   useEffect(() => {
     if (!scene || !showOptions) return;
@@ -174,7 +168,7 @@ function App() {
 
   // Phaser blocks the arrow keys, Space, Shift and WASD on the whole page while playing. Let them through while a
   // dialog with sliders or buttons is open, so it works from the keyboard (arrows move sliders, Space presses buttons).
-  const keyboardDialogOpen = showOptions || bubbleCollision || simEnd || showTutorial;
+  const keyboardDialogOpen = showOptions || bubbleCollision || simEnd;
   useEffect(() => {
     if (!scene || !keyboardDialogOpen) return;
 
@@ -224,9 +218,8 @@ function App() {
             dead={reefDead}
             fishDead={fishDead}
           ></SimEndPopUp>) : null}
-        {scene && !showTitleScreen && showTutorial ? <SimTutorial closeTutorial={() => setShowTutorial(false)}/>:null}
         {eventNotice ? (
-          <aside className="EventNotice" role="status" aria-live="polite" aria-labelledby="event-notice-title">
+          <aside className={inTutorial ? "EventNotice EventNoticeTutorial" : "EventNotice"} role="status" aria-live="polite" aria-labelledby="event-notice-title">
               <div className="EventNoticeHeading">
               <h2 id="event-notice-title">{eventNotice.title}</h2>
               <button type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
@@ -238,7 +231,7 @@ function App() {
         initialValue={initialValue}
         onApply={applyBubble}
         onCancel={cancelBubble} /> : null}
-        {scene && !showTitleScreen  ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
+        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           setShowTitleScreen={setShowTitleScreen}

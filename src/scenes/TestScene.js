@@ -13,16 +13,16 @@ const BUBBLE_TYPES = [
 ];
 
 // [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
-const THRESHOLDS = {
+export const THRESHOLDS = {
     temperature: { a: 25, b: 27, c: 29, d: 31 },
     pollution: { a: 0, b: 1, c: 3, d: 5 },
     light: { a: 141, b: 200, c: 1100, d: 1839 },
 };
 
-const PREDATOR_SPEED = 3.375;
+export const PREDATOR_SPEED = 3.375;
 const PREDATOR_SPAWN_DELAY = 10000;
-const REEF_HIDE_DISTANCE = 150;
-const PREDATOR_ESCAPE_MARGIN = 50;
+export const REEF_HIDE_DISTANCE = 150;
+export const PREDATOR_ESCAPE_MARGIN = 50;
 
 // Health is counted in half hearts, so 3 hearts = 6
 const MAX_HEARTS = 3;
@@ -32,9 +32,9 @@ const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 const PREDATOR_BITE_INTERVAL = 1000; // ms of touching the predator per half heart lost
 
 const FOOD_COUNT = 5; // algae orbs sprinkled around the map at the start of each game
-const FOOD_GROWTH = 1.1; // each orb eaten makes the fish 10% bigger
+export const FOOD_GROWTH = 1.1; // each orb eaten makes the fish 10% bigger
 
-function evaluateThreshold(value, { a, b, c, d }) {
+export function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
     const dead = !stressed && (value <= a || value >= d);
     return { poor: stressed ? 30 : 0, dead };
@@ -51,6 +51,11 @@ class TestScene extends Phaser.Scene {
         this.camVelX = 0;
         this.tutorialComplete = false;
         // If (tutorialComplete)   
+    }
+
+    // The tutorial scene starts this one with { tutorialComplete: true } once the player has finished it
+    init(data) {
+        if (data?.tutorialComplete) this.tutorialComplete = true;
     }
 
     setupSimulationState() {

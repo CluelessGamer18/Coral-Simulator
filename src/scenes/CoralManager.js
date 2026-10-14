@@ -449,7 +449,7 @@ function coralSway(scene, coral) {
   });
 }
 
-function createBleachStages(scene, coralType) {
+export function createBleachStages(scene, coralType) {
   const source = scene.textures.get(coralType).getSourceImage();
   const strengths = [0.2, 0.4, 0.65, 1.0]; // bleaching strengths for each stage
   const keys = [coralType];

@@ -187,6 +187,11 @@
   animation: eventNoticeFadeIn 180ms ease-out;
 }
 
+/* Below the tutorial banner, so it doesn't cover the banner's button */
+.EventNoticeTutorial {
+  top: 210px;
+}
+
 .EventNoticeHeading {
   display: flex;
   align-items: center;

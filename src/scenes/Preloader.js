@@ -45,7 +45,7 @@ update() {
   this.bar.width = 460 * this.displayProgress;
 
           if (this.loadingDone && this.displayProgress > 0.95) {
-        this.scene.start('TestScene');
+        this.scene.start('Tutorial');
         }
 }
 
