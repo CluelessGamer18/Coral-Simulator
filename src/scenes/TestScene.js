@@ -19,7 +19,7 @@ export const THRESHOLDS = {
     light: { a: 141, b: 200, c: 1100, d: 1839 },
 };
 
-const PREDATOR_SPEED = 3.375;
+export const PREDATOR_SPEED = 3.375;
 const PREDATOR_SPAWN_DELAY = 30000;
 const PREDATOR_DASH_SPEED = 10;
 const PREDATOR_DASH_DURATION = 450;
@@ -28,8 +28,8 @@ const PREDATOR_DASH_RANGE = 400;
 const PREDATOR_SCARE_FOOD_COUNT = 3;
 const PREDATOR_NERVOUS_DISTANCE = 500;
 const PREDATOR_SCARE_DISTANCE = 250;
-const REEF_HIDE_DISTANCE = 150;
-const PREDATOR_ESCAPE_MARGIN = 50;
+export const REEF_HIDE_DISTANCE = 150;
+export const PREDATOR_ESCAPE_MARGIN = 50;
 
 // Health is counted in half hearts, so 3 hearts = 6
 const MAX_HEARTS = 3;
