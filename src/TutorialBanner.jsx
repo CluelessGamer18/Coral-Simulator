@@ -19,8 +19,9 @@ function TutorialBanner({ step, praise, onPraiseEnd, onButton }) {
         </div>
       ) : null}
       {praise ? (
-        <p className="TutorialPraise" role="status" aria-live="polite" onAnimationEnd={onPraiseEnd}>
-          {praise}
+        // keyed by id, so a new message restarts the fade even if it has the same text
+        <p key={praise.id} className="TutorialPraise" role="status" aria-live="polite" onAnimationEnd={onPraiseEnd}>
+          {praise.text}
         </p>
       ) : null}
     </>

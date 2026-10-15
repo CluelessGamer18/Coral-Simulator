@@ -21,9 +21,9 @@ const STEPS = [
     {
         id: "swim",
         title: "Swim Around",
-        text: "You are a fish living on a coral reef. Use the arrow keys to swim around.",
+        text: "You are a fish living on a coral reef. Use the W, A, S and D keys to swim around.",
         image: "tutorial/tutorial_wasd.png",
-        imageAlt: "Keyboard keys beside a fish swimming",
+        imageAlt: "The W, A, S and D keys beside a fish swimming toward the coral reef",
         praise: "Great swimming!",
     },
     {
@@ -125,8 +125,7 @@ class Tutorial extends Phaser.Scene {
     }
 
     setupKeys() {
-        this.cursors = this.input.keyboard.createCursorKeys();
-        // WASD as well, since that's what the main game uses
+        // WASD only, the same as the main game (where the arrow keys move the camera)
         this.moveKeys = this.input.keyboard.addKeys("W,A,S,D");
         this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
     }
@@ -144,13 +143,16 @@ class Tutorial extends Phaser.Scene {
         if (this.praised) return;
         this.praised = true;
 
-        this.game.events.emit("tutorial-praise", STEPS[this.stepIndex].praise);
+        // The id makes React show it again even when it's the same text as the last one
+        this.praiseCount = (this.praiseCount ?? 0) + 1;
+        this.game.events.emit("tutorial-praise", { text: STEPS[this.stepIndex].praise, id: this.praiseCount });
         this.time.delayedCall(PRAISE_DURATION, () => this.nextStep());
     }
 
     nextStep() {
         this.stepIndex++;
         this.praised = false;
+        this.swamThisStep = false;
         if (this.stepIndex >= STEPS.length) {
             this.finish();
             return;
@@ -206,13 +208,8 @@ class Tutorial extends Phaser.Scene {
 
         // The fish stays put while the bubble popup is open
         if (!this.bubbleCollision) {
-            const left = this.cursors.left.isDown || this.moveKeys.A.isDown;
-            const right = this.cursors.right.isDown || this.moveKeys.D.isDown;
-            const up = this.cursors.up.isDown || this.moveKeys.W.isDown;
-            const down = this.cursors.down.isDown || this.moveKeys.S.isDown;
-
-            const horizontal = (right ? 1 : 0) - (left ? 1 : 0);
-            const vertical = (down ? 1 : 0) - (up ? 1 : 0);
+            const horizontal = (this.moveKeys.D.isDown ? 1 : 0) - (this.moveKeys.A.isDown ? 1 : 0);
+            const vertical = (this.moveKeys.S.isDown ? 1 : 0) - (this.moveKeys.W.isDown ? 1 : 0);
             const movementLength = Math.hypot(horizontal, vertical);
 
             // Swimming away leaves the coral, like in the main game
@@ -220,17 +217,22 @@ class Tutorial extends Phaser.Scene {
 
             if (!this.isHiding && movementLength > 0) {
                 this.swim(horizontal, vertical, movementLength, frameScale);
+                this.swamThisStep = true;
                 if (this.stepId === "swim") this.completeStep();
             }
         }
         this.guide.setScale(FISH_SCALE * this.fishGrowth);
 
-        if (this.stepId === "food" && this.touching(this.orb)) {
-            this.eatFood();
-        } else if (this.stepId === "bubble" && !this.bubbleCollision && this.touching(this.bubble)) {
-            this.popBubble();
-        } else if (this.stepId === "time" && this.nearCoral(CORAL_VISIT_DISTANCE)) {
-            this.completeStep();
+        // Goals only count once the fish has swum during the lesson, so one it was already sitting on
+        // isn't completed before the player has had a chance to read the banner
+        if (this.swamThisStep) {
+            if (this.stepId === "food" && this.touching(this.orb)) {
+                this.eatFood();
+            } else if (this.stepId === "bubble" && !this.bubbleCollision && this.touching(this.bubble)) {
+                this.popBubble();
+            } else if (this.stepId === "time" && this.nearCoral(CORAL_VISIT_DISTANCE)) {
+                this.completeStep();
+            }
         }
 
         // Updated outside the predator lesson too, so it can finish swimming away after the lesson is complete

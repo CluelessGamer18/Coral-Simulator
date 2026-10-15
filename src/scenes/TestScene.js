@@ -283,8 +283,8 @@ class TestScene extends Phaser.Scene {
         this.spawnFood();
         this.eventManager = new EventManager(this, THRESHOLDS);
 
-        // On a restart the tutorial has already been closed, so the predator timer starts straight away.
-        // On the first run it starts from unlockFish() once the tutorial is closed.
+        // The tutorial scene starts this one with tutorialComplete set, and a restart keeps it,
+        // so the predator timer starts straight away.
         if (this.tutorialComplete) this.startPredatorTimer();
 
         this.onSimTimeUpdate = null;
@@ -849,12 +849,6 @@ class TestScene extends Phaser.Scene {
         });
 
     }
-    unlockFish() {
-        if (this.tutorialComplete) return;
-        this.tutorialComplete = true;
-        this.startPredatorTimer();
-    }
-
     startPredatorTimer() {
         this.time.delayedCall(PREDATOR_SPAWN_DELAY, () => {
             if (this.simEnd) return;
