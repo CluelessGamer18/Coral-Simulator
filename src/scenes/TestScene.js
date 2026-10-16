@@ -215,7 +215,8 @@ class TestScene extends Phaser.Scene {
         this.updateHearts();
 
         // Predator is hidden until the timer runs out, then it appears and starts chasing the fish.
-        this.predator = this.add.rectangle(this.WORLD_WIDTH - 100, 300, 40, 40, 0x9b2c2c)
+        this.predator = this.add.image(this.WORLD_WIDTH - 100, 300, "lionfish")
+            .setScale(0.5)
             .setDepth(9998)
             .setVisible(false);
         this.predatorSpawned = false;
@@ -549,13 +550,19 @@ class TestScene extends Phaser.Scene {
                 this.predator.x += this.predatorDashVelocityX * frameScale;
                 this.predator.y += this.predatorDashVelocityY * frameScale;
                 this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - Math.min(delta, 50));
+                this.facePredatorDirection(
+                    this.predatorDashVelocityX,
+                    this.predatorDashVelocityY,
+                    frameScale
+                );
             } else {
                 this.predator.x += escapeDirection * PREDATOR_SPEED * frameScale;
+                this.facePredatorDirection(escapeDirection, 0, frameScale);
             }
 
             const escaped = escapeDirection < 0
-                ? this.predator.x <= -PREDATOR_ESCAPE_MARGIN
-                : this.predator.x >= this.WORLD_WIDTH + PREDATOR_ESCAPE_MARGIN;
+                ? this.predator.x <= -this.predator.displayWidth / 2 - PREDATOR_ESCAPE_MARGIN
+                : this.predator.x >= this.WORLD_WIDTH + this.predator.displayWidth / 2 + PREDATOR_ESCAPE_MARGIN;
             if (escaped) {
                 this.predator.setVisible(false);
                 this.predatorSpawned = false;
@@ -579,21 +586,28 @@ class TestScene extends Phaser.Scene {
             ) {
                 this.predatorNervous = true;
                 this.predatorDashRemaining = 0;
-                this.predator.setFillStyle(0xffc857);
-                this.predator.setRotation(Math.atan2(
-                    this.predator.y - this.guide.y,
-                    this.predator.x - this.guide.x
-                ));
+                this.predator.setTint(0xffc857);
             }
 
             if (canScarePredator && predatorDistance <= PREDATOR_SCARE_DISTANCE) {
                 this.startPredatorFlee(true);
+            } else if (this.predatorNervous && predatorDistance > 0) {
+                this.facePredatorDirection(
+                    this.predator.x - this.guide.x,
+                    this.predator.y - this.guide.y,
+                    frameScale
+                );
             } else if (!this.predatorNervous && predatorDistance > 0) {
                 const frameDelta = Math.min(delta, 50);
                 if (this.predatorDashRemaining > 0) {
                     this.predator.x += this.predatorDashVelocityX * frameScale;
                     this.predator.y += this.predatorDashVelocityY * frameScale;
                     this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - frameDelta);
+                    this.facePredatorDirection(
+                        this.predatorDashVelocityX,
+                        this.predatorDashVelocityY,
+                        frameScale
+                    );
                 } else {
                     this.predatorDashCooldown = Math.max(0, this.predatorDashCooldown - frameDelta);
 
@@ -602,12 +616,20 @@ class TestScene extends Phaser.Scene {
                             ((this.guide.x - this.predator.x) / predatorDistance) * PREDATOR_DASH_SPEED;
                         this.predatorDashVelocityY =
                             ((this.guide.y - this.predator.y) / predatorDistance) * PREDATOR_DASH_SPEED;
+                        this.facePredatorDirection(
+                            this.predatorDashVelocityX,
+                            this.predatorDashVelocityY,
+                            frameScale
+                        );
                         this.predatorDashRemaining = PREDATOR_DASH_DURATION;
                         this.predatorDashCooldown = PREDATOR_DASH_COOLDOWN;
                     } else {
                         const predatorStep = Math.min(PREDATOR_SPEED * frameScale, predatorDistance);
-                        this.predator.x += ((this.guide.x - this.predator.x) / predatorDistance) * predatorStep;
-                        this.predator.y += ((this.guide.y - this.predator.y) / predatorDistance) * predatorStep;
+                        const directionX = (this.guide.x - this.predator.x) / predatorDistance;
+                        const directionY = (this.guide.y - this.predator.y) / predatorDistance;
+                        this.predator.x += directionX * predatorStep;
+                        this.predator.y += directionY * predatorStep;
+                        this.facePredatorDirection(directionX, directionY, frameScale);
                     }
                 }
             }
@@ -651,7 +673,9 @@ class TestScene extends Phaser.Scene {
         }
 
         oval.clear();
-        oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
+        if (!this.isHiding) {
+            oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
+        }
 
         this.updateHearts();
     }
@@ -969,6 +993,19 @@ class TestScene extends Phaser.Scene {
                 : 0;
             this.predatorDashRemaining = PREDATOR_DASH_DURATION;
         }
+        this.predator.clearTint();
+    }
+
+    facePredatorDirection(directionX, directionY, frameScale) {
+        // The lionfish artwork faces left, so mirror horizontally to face right.
+        const flip = directionX === 0 ? this.predator.flipX : directionX > 0;
+        this.predator.setFlipX(flip);
+        const targetAngle = Math.atan2(directionY, directionX) - (flip ? 0 : Math.PI);
+        this.predator.rotation = Phaser.Math.Angle.RotateTo(
+            this.predator.rotation,
+            targetAngle,
+            0.5 * frameScale
+        );
     }
 
     leaveHiding() {
