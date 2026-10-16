@@ -187,6 +187,7 @@ export class EventManager {
     // Per Bubble Behaviour
     updateBubble(b, delta, frameScale) {
         const s = this.scene;
+        if (b.resolving) return;
         b.age += delta;
 
         const dist = Phaser.Math.Distance.Between(b.sprite.x, b.sprite.y, s.guide.x, s.guide.y);
@@ -222,30 +223,41 @@ export class EventManager {
     // Fish touched the bubble
     resolve(b) {
         const s = this.scene;
-        this.remove(b);
-        // Here is where we add bubble popping noises if we have them
+        if (b.resolving) return;
+        b.resolving = true;
+        s.tweens.killTweensOf(b.sprite);
+        s.sound.play("bubblePop", { volume: s.sfxVolume });
+        s.tweens.add({
+            targets: b.sprite,
+            scale: b.sprite.scaleX * 1.4,
+            alpha: 0,
+            angle: b.sprite.angle + 12,
+            duration: 180,
+            ease: "Back.in",
+            onComplete: () => {
+                this.remove(b);
 
-        // Negative hits hurt the fish directly
-        if (b.def.type === "negative") {
-            for (let i = 0; i < CONFIG.negativeHitDamage && !s.simEnd; i++) s.loseHalfHeart();
-            if (s.simEnd) { // The bubble hit has killed the fish: skip the event trigger
-                s.emitStats();
-                this.clear();
-                return;
+                if (b.def.type === "negative") {
+                    for (let i = 0; i < CONFIG.negativeHitDamage && !s.simEnd; i++) s.loseHalfHeart();
+                    if (s.simEnd) {
+                        s.emitStats();
+                        this.clear();
+                        return;
+                    }
+                }
+
+                const message = this.apply(b.def);
+                s.game.events.emit("random-event", {
+                    title: b.def.title,
+                    message,
+                    type: b.def.type,
+                    id: b.def.id,
+                    learning: b.def.learning
+                });
+
+                if (s.simEnd) this.clear();
             }
-        }
-
-        const message = this.apply(b.def);
-        s.game.events.emit("random-event", {
-            title: b.def.title,
-            message,
-            type: b.def.type,
-            id: b.def.id,
-            learning: b.def.learning
         });
-
-        // apply() can end the simulaiton so clear the bubbles if that happened
-        if (s.simEnd) this.clear();
     }
 
     // Bubbles fizzle out harmlessly
