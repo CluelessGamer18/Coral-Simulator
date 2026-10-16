@@ -2,19 +2,19 @@ import Phaser from "phaser";
 
 // Tweak these values to change how the event bubbles behave
 const CONFIG = {
-    spawnMinTime: 8000, // minimum time between event spawns
-    spawnMaxTime: 15000, // maximum time between event spawns
-    maxNegativeBubbles: 2, // maximum number of negative bubbles on screen at once
-    maxTotalBubbles: 4, // maximum number of total bubbles on screen at once
-    negativeBubbleLifetime: 15000, // evade negative bubbles for this long and they disappear
-    positiveBubbleLifetime: 20000, 
+    spawnMinTime: 1000, // minimum time between event spawns
+    spawnMaxTime: 7000, // maximum time between event spawns
+    maxNegativeBubbles: 6, // maximum number of negative bubbles on screen at once
+    maxTotalBubbles: 10, // maximum number of total bubbles on screen at once
+    negativeBubbleLifetime: 30000, // evade negative bubbles for this long and they disappear
+    positiveBubbleLifetime: 45000, 
     aggroRadius: 700, // if the player is within this distance the bubbles will chase the player
     minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
-    baseChaseSpeed: 3, // chase speed will be updated on a few things, base value + (per intensity value * intensity number)
-    chasePerIntensity: 0.5, // this is the base value for each point of intensity as each event can have varying values
+    baseChaseSpeed: 1.2,
+    chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
     eventsCanKill: false, // this is a flag that stops events from killing the reef, obviously if we change how time works this can be modified / gotten rid of
     eventsAdvanceYear: false, // if set to false events dont take up a year when interacted with, true allows them to advance the year
-    negativeHitDamage: 1, // half a heart lost by interacting with event bubble
+    negativeHitDamage: 0, // half a heart lost by interacting with event bubble
 };
 
 // Environmental variable map
@@ -176,7 +176,11 @@ export class EventManager {
 
         this.active.push({
             sprite, def, age: 0, phase: Math.random() * 1000,
-            life: def.type === "negative" ? CONFIG.negativeBubbleLifetime : CONFIG.positiveBubbleLifetime,
+            life: def.type === "negative" ? CONFIG.negativeBubbleLifetime : CONFIG.positiveBubbleLifetime, 
+            direction: Phaser.Math.FloatBetween(0, Math.PI * 2), 
+            targetDirection: Phaser.Math.FloatBetween(0, Math.PI * 2),
+            directionTimer: Phaser.Math.Between(500, 1500),
+
         });
     }
 
@@ -189,15 +193,26 @@ export class EventManager {
         const touchRadius = b.sprite.displayWidth / 2 + 30;
 
         if (b.def.type === "negative") {
-            if (dist < CONFIG.aggroRadius && dist > 0){
-                const speed = (CONFIG.baseChaseSpeed + CONFIG.chasePerIntensity * b.def.intensity) * frameScale;
-                const step = Math.min(speed, dist);
-                b.sprite.x += ((s.guide.x - b.sprite.x) / dist) * step;
-                b.sprite.y += ((s.guide.y - b.sprite.y) / dist) * step;
-            } else {
-                // Lazy drift while the fish is far away
-                b.sprite.y += Math.sin((s.time.now + b.phase) / 400) * 0.3 * frameScale;
+            b.directionTimer -= delta;
+
+            if (b.directionTimer <= 0) {
+                b.direction = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                b.directionTimer = Phaser.Math.Between(500, 1500);
             }
+
+            b.targetDirection = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            b.directionTimer = Phaser.Math.Between(1500, 3000);
+
+            const speed =
+                (CONFIG.baseChaseSpeed + CONFIG.chasePerIntensity * b.def.intensity) * frameScale;
+
+            const angleDifference = Phaser.Math.Angle.Wrap(b.targetDirection - b.direction);
+            const maxTurn = 0.8 * delta / 1000; // radians per second
+            b.direction += Phaser.Math.Clamp(angleDifference, -maxTurn, maxTurn);
+            b.sprite.x += Math.cos(b.direction) * speed;
+            b.sprite.y += Math.sin(b.direction) * speed;
+            b.sprite.x = Phaser.Math.Clamp(b.sprite.x, 100, s.WORLD_WIDTH - 100);
+            b.sprite.y = Phaser.Math.Clamp(b.sprite.y, 120, 850);
         }
 
         if (dist < touchRadius) return this.resolve(b); // negative: you got hit, positive: you collected it
