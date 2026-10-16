@@ -78,6 +78,7 @@ class Tutorial extends Phaser.Scene {
     }
 
     create() {
+        this.finished = false;
         this.fishGrowth = 1;
         this.temperature = 27;
         this.bubbleCollision = false;
@@ -88,6 +89,7 @@ class Tutorial extends Phaser.Scene {
         this.setupWorld();
         this.setupFish();
         this.setupKeys();
+        this.setupSkipButton();
 
         this.stepIndex = -1;
         this.nextStep();
@@ -128,6 +130,27 @@ class Tutorial extends Phaser.Scene {
         // WASD only, the same as the main game (where the arrow keys move the camera)
         this.moveKeys = this.input.keyboard.addKeys("W,A,S,D");
         this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+    }
+
+    setupSkipButton() {
+        this.add.text(this.scale.width - 24, 24, "Skip tutorial", {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "20px",
+            color: "#ffffff",
+            backgroundColor: "#0292A5",
+            padding: { x: 14, y: 10 }
+        })
+            .setOrigin(1, 0)
+            .setDepth(10002)
+            .setScrollFactor(0)
+            .setInteractive({ useHandCursor: true })
+            .on("pointerover", function () {
+                this.setStyle({ backgroundColor: "#F86A1C" });
+            })
+            .on("pointerout", function () {
+                this.setStyle({ backgroundColor: "#0292A5" });
+            })
+            .on("pointerdown", () => this.finish());
     }
 
     get stepId() {
@@ -173,6 +196,8 @@ class Tutorial extends Phaser.Scene {
 
     // Called by the "Let's Go!" button on the last lesson
     finish() {
+        if (this.finished) return;
+        this.finished = true;
         this.game.events.emit("tutorial-step", null);
         this.scene.start("TestScene", { tutorialComplete: true });
     }
