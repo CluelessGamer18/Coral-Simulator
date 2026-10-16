@@ -183,7 +183,7 @@ class TestScene extends Phaser.Scene {
 
     setupAudio() {
         // Only default the volume on the first run: a restart reuses this scene, and React won't send the volume again
-        this.musicVolume ??= 0.5;
+        this.musicVolume ??= 0.15;
 
         this.bgMusic = this.sound.add('background_music', {
             loop: true,
@@ -293,7 +293,7 @@ class TestScene extends Phaser.Scene {
         this.setupMouseInput();
         this.setupCamera(cam);
         this.updateHistory();
-        this.spawnBubbles();
+        // this.spawnBubbles();
         this.spawnFood();
         this.eventManager = new EventManager(this, THRESHOLDS);
 
@@ -823,7 +823,7 @@ class TestScene extends Phaser.Scene {
 
         // Only spawn new bubbles after every end condition has been checked
         if (advanceYear || this.simEnd){
-            this.destroyBubbles();
+            // this.destroyBubbles();
             if (!this.simEnd) {
                 this.tweens.paused = false;
                 this.spawnBubbles();
