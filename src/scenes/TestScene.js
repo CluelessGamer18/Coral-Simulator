@@ -33,6 +33,9 @@ export const PREDATOR_ESCAPE_MARGIN = 50;
 
 // Health is counted in half hearts, so 3 hearts = 6
 const MAX_HEARTS = 3;
+const YEAR_DURATION_MS = 60_000;
+const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
+const TIME_UI_UPDATE_MS = 250;
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
@@ -92,7 +95,10 @@ class TestScene extends Phaser.Scene {
         this.reefDeadPollution = false;
 
         this.simEnd = false;
-        this.timeJump = 0;
+        this.timeJump = 0; // Legacy counter retained while the stress system is migrated.
+        this.elapsedSimMs = 0;
+        this.yearsElapsed = 0;
+        this.timeUiElapsedMs = 0;
         this.bubbleCollision = false;
         this.coralInfoOpen = false;
         this.isHiding = false;
@@ -319,6 +325,7 @@ class TestScene extends Phaser.Scene {
             temperature: this.temperature,
             pollution: this.pollutionValue,
             timeJump: this.timeJump,
+            yearsElapsed: this.yearsElapsed,
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
             simEnd: this.simEnd,
@@ -470,6 +477,30 @@ class TestScene extends Phaser.Scene {
     update(time, delta) {
         // Freeze the fish, camera and timer once the end screen is showing
         if (this.simEnd) return;
+
+        const clockIsRunning = this.tutorialComplete && !this.bubbleCollision && !this.coralInfoOpen;
+
+        if (clockIsRunning) {
+            this.elapsedSimMs = Math.min(
+                this.elapsedSimMs + delta,
+                SIMULATION_DURATION_MS
+            );
+            this.yearsElapsed = this.elapsedSimMs / YEAR_DURATION_MS;
+
+            if (this.elapsedSimMs >= SIMULATION_DURATION_MS) {
+                this.simEnd = true;
+                this.emitStats();
+                return;
+            }
+        }
+
+        if (clockIsRunning) {
+            this.timeUiElapsedMs += delta;
+            if (this.timeUiElapsedMs >= TIME_UI_UPDATE_MS) {
+                this.timeUiElapsedMs %= TIME_UI_UPDATE_MS;
+                this.emitStats();
+            }
+        }
 
         // Movement values below were tuned at 60fps, so scale them by how long this frame actually took.
         // Capped so a lag spike or returning to the tab doesn't teleport the fish.
@@ -814,11 +845,6 @@ class TestScene extends Phaser.Scene {
             this.timeJump++;
             // Every time jump costs the fish half a heart
             this.loseHalfHeart();
-        }
-
-        // This is the modifier that automatically ends the simulation, we could probably just take this out at somepoint
-        if (this.timeJump >= 10) {
-            this.simEnd = true;
         }
 
         // Only spawn new bubbles after every end condition has been checked
