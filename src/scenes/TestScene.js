@@ -37,7 +37,7 @@ const TIME_UI_UPDATE_MS = 250;
 const STARTING_POLLUTION = 1;
 const MAX_POLLUTION = 5;
 const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
-const STRESS_PER_STRESSOR_PER_YEAR = 10;
+const STRESS_PER_STRESSOR_PER_YEAR = 20;
 const STRESS_RECOVERY_PER_YEAR = 10;
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
@@ -51,6 +51,12 @@ export function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
     const dead = !stressed && (value <= a || value >= d);
     return { poor: stressed ? 30 : 0, dead };
+}
+
+function stressSeverity(value, { a, b, c, d }) {
+    if (value < b) return Phaser.Math.Clamp((b - value) / (b - a), 0, 1);
+    if (value > c) return Phaser.Math.Clamp((value - c) / (d - c), 0, 1);
+    return 0;
 }
 
 class TestScene extends Phaser.Scene {
@@ -88,8 +94,8 @@ class TestScene extends Phaser.Scene {
         this.stressHistory = []
 
         //Individual Flags
-        this.poorTemp = 0;
-        this.poorLight = 0;
+        this.tempStressSeverity = 0;
+        this.lightStressSeverity = 0;
         this.reefDeadStress = false;
 
         this.simEnd = false;
@@ -787,14 +793,14 @@ class TestScene extends Phaser.Scene {
 
     updateTemperature(temp, advanceYear = true) {
         this.temperature = temp;
-        this.poorTemp = temp < THRESHOLDS.temperature.b || temp > THRESHOLDS.temperature.c ? 30 : 0;
+        this.tempStressSeverity = stressSeverity(temp, THRESHOLDS.temperature);
         this.updateStress(advanceYear);
         this.emitStats();
     }
 
     updateLight(light, advanceYear = true) {
         this.lightLevel = light;
-        this.poorLight = light < THRESHOLDS.light.b || light > THRESHOLDS.light.c ? 30 : 0;
+        this.lightStressSeverity = stressSeverity(light, THRESHOLDS.light);
         this.updateStress(advanceYear);
         this.emitStats();
     }
@@ -832,13 +838,13 @@ class TestScene extends Phaser.Scene {
     }
 
     advanceStress(delta) {
-        const activeStressors = Number(this.poorTemp > 0) + Number(this.poorLight > 0);
+        const stressorSeverity = this.tempStressSeverity + this.lightStressSeverity;
         const pollutionMultiplier = 1
             + (this.pollutionValue - STARTING_POLLUTION)
             / (MAX_POLLUTION - STARTING_POLLUTION)
             * (MAX_POLLUTION_STRESS_MULTIPLIER - 1);
-        const stressRate = activeStressors > 0
-            ? STRESS_PER_STRESSOR_PER_YEAR * activeStressors * pollutionMultiplier
+        const stressRate = stressorSeverity > 0
+            ? STRESS_PER_STRESSOR_PER_YEAR * stressorSeverity * pollutionMultiplier
             : -STRESS_RECOVERY_PER_YEAR;
 
         this.stressValue = Phaser.Math.Clamp(

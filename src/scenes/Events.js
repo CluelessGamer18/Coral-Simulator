@@ -12,7 +12,7 @@ const CONFIG = {
     minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
     baseChaseSpeed: 1.2,
     chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
-    eventsCanKill: false, // this is a flag that stops events from killing the reef, obviously if we change how time works this can be modified / gotten rid of
+    eventsCanKill: true, // when false, negative events cannot push conditions into fatal ranges
     negativeHitDamage: 0, // half a heart lost by interacting with event bubble
 };
 
@@ -97,8 +97,18 @@ export class EventManager {
         if (def.type === "negative") {
             if (value < threshold.b) return false; // Already below the healthy value
             const after = value + def.delta;
-            if (after > variable.max) return false;
+            if (!CONFIG.eventsCanKill && after > variable.max) return false;
             if (!CONFIG.eventsCanKill && after > threshold.d) return false; // Prevent events from instantly killing the reef
+            if (!CONFIG.eventsCanKill) {
+                const nextTemperature = def.variable === "temperature" ? after : this.scene.temperature;
+                const nextLight = def.variable === "light" ? after : this.scene.lightLevel;
+                const temperatureThreshold = this.th.temperature;
+                const lightThreshold = this.th.light;
+                const wouldCauseFatalPair =
+                    (nextTemperature >= temperatureThreshold.d && nextLight >= lightThreshold.d)
+                    || (nextTemperature <= temperatureThreshold.a && nextLight <= lightThreshold.a);
+                if (wouldCauseFatalPair) return false;
+            }
             return true;
         }
 
