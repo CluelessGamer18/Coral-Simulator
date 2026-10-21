@@ -1,8 +1,8 @@
 import "./styles/SimInfoDisplay.css";
 import { asset } from "./assetUrl";
 
-function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
-    timejump = 2*timejump
+function SimInfoDisplay({yearsElapsed,light,temp,stress=0,poll,score=0}){
+    yearsElapsed = 2*yearsElapsed
     const dots = [ 
         "large", "small", 
         "large", "small", 
@@ -41,7 +41,7 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
                 <span
                     className="TimelineIndicator"
                     style={{
-                        transform: `translateX(${timejump * 8.59}px)`
+                        transform: `translateX(${yearsElapsed * 8.59}px)`
                     }}
                 />
                 {/*<img className="hoverPreview" src={asset("tooltip_timeline.png")} />*/}

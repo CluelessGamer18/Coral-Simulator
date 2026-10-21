@@ -13,7 +13,6 @@ const CONFIG = {
     baseChaseSpeed: 1.2,
     chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
     eventsCanKill: false, // this is a flag that stops events from killing the reef, obviously if we change how time works this can be modified / gotten rid of
-    eventsAdvanceYear: false, // if set to false events dont take up a year when interacted with, true allows them to advance the year
     negativeHitDamage: 0, // half a heart lost by interacting with event bubble
 };
 
@@ -279,8 +278,7 @@ export class EventManager {
         const before = s[variable.prop];
         const after  = def.type === "negative" ? Math.min(before + def.delta, variable.max) : Math.max(before + def.delta, threshold.b); // Positives stop at healthy flow
 
-        // Checks the flag to see if the event advances the year 
-        s[variable.setter](after, CONFIG.eventsAdvanceYear);
+        s[variable.setter](after, false);
 
         const verb = after > before ? "rose" : "fell";
         return `${variable.label} ${verb} from ${before}${variable.unit} to ${after}${variable.unit}. ${def.teach}`

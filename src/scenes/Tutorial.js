@@ -213,7 +213,6 @@ class Tutorial extends Phaser.Scene {
             light: 500,
             temperature: this.temperature,
             pollution: 1,
-            timeJump: 0,
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
             simEnd: false,
@@ -418,7 +417,7 @@ class Tutorial extends Phaser.Scene {
             outcome = `A year at ${value}°C has kept your coral healthy and colourful.`;
         }
         this.emitStep({
-            text: `Every bubble you pop moves the reef forward one year. ${outcome} Swim over to your coral to see how it's doing.`
+            text: `The main simulation advances through years over time, and conditions affect coral health. ${outcome} Swim over to your coral to see how it's doing.`
         });
     }
 

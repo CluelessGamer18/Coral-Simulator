@@ -74,19 +74,12 @@ let schoolChance = 50; // 50% chance a school will have more than 1 fish
 let maxFishScale = 0.5; // fish size variation
 let minFishScale = 0.3;
 
-let timeJump = 1;
-
 // settings for 3 depth levels of fish, which affect their size, speed, and how far they move in the scene
 const depthSettings = [ 
   { scale: 0.1, scroll: 1440, speed: 1.6, distance: 0.3, tint: 0x32AFAC}, // background
   { scale: 0.3, scroll: 2072, speed: 1.3, distance: 0.6, tint: 0x143F45}, // mid
   { scale: 0.85, scroll: 2860, speed: 1.0, distance: 1.0, tint: null}  // foreground
 ];
-
-/* hypothetical settings for faster movement during time jumps (not curently implemented) */
-export function timeJumpAnimate(speed) {
-  timeJump = speed;
-}
 
 /* main function to create fish schools in the scene. Called when game scene is created. */
 export function createFishSchools(scene) {
@@ -143,7 +136,7 @@ function repeatMovement(scene, school) {
   const minInterval = 5000;
   const maxInterval = 20000;
 
-  const nextCall = Phaser.Math.Between(minInterval * timeJump, maxInterval * timeJump);
+  const nextCall = Phaser.Math.Between(minInterval, maxInterval);
 
   chooseNextPos(scene, school, nextCall);
 
@@ -174,7 +167,7 @@ function chooseNextPos(scene, school, duration) {
     targets: school,
     x: newX,
     y: newY,
-    duration: duration * depthSettings[school.depthLevel].speed * timeJump,
+    duration: duration * depthSettings[school.depthLevel].speed,
     ease: "Sine.easeInOut"
   });
 
@@ -190,7 +183,7 @@ function chooseNextPos(scene, school, duration) {
       targets: child,
       x: offsetX,
       y: offsetY,
-      duration: duration * depthSettings[school.depthLevel].speed * timeJump
+      duration: duration * depthSettings[school.depthLevel].speed
     });
 
   });

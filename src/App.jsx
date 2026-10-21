@@ -21,7 +21,7 @@ function App() {
   const [lightValue, setLightValue] = useState(500);
   const [pollutionValue, setPollutionValue] = useState(1);
   const [stressValue, setStressValue] = useState(0);
-  const [timeAdvanced, setTimeAdvanced] = useState(0);
+  const [yearsElapsed, setYearsElapsed] = useState(0);
 
   const [bubbleCollision, setBubbleCollision] = useState(false);
   const [collisionType, setCollisionType] = useState("None");
@@ -111,8 +111,7 @@ function App() {
       setLightValue(stats.light)
       setTemperatureValue(stats.temperature)
       setPollutionValue(stats.pollution)
-      // setTimeAdvanced(stats.timeJump)
-      setTimeAdvanced(stats.yearsElapsed)
+      setYearsElapsed(stats.yearsElapsed)
       setBubbleCollision(stats.bubbleCollision)
       setCollisionType(stats.collisionType)
       setSimEnd(stats.simEnd)
@@ -189,7 +188,7 @@ function App() {
     setLightValue(500);
     setPollutionValue(1);
     setStressValue(0);
-    setTimeAdvanced(0);
+    setYearsElapsed(0);
     setBubbleCollision(false);
     setSimEnd(false);
     setReefDead(false);
@@ -232,7 +231,7 @@ function App() {
         initialValue={initialValue}
         onApply={applyBubble}
         onCancel={cancelBubble} /> : null}
-        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
+        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay yearsElapsed={yearsElapsed} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           setShowTitleScreen={setShowTitleScreen}

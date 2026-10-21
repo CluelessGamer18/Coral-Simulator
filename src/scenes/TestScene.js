@@ -54,7 +54,6 @@ class TestScene extends Phaser.Scene {
     constructor() {
         super("TestScene");
 
-        this.deltaTimer = 0;
         this.simStart = false;
 
         this.collisionType = "None";
@@ -95,7 +94,6 @@ class TestScene extends Phaser.Scene {
         this.reefDeadPollution = false;
 
         this.simEnd = false;
-        this.timeJump = 0; // Legacy counter retained while the stress system is migrated.
         this.elapsedSimMs = 0;
         this.yearsElapsed = 0;
         this.timeUiElapsedMs = 0;
@@ -307,8 +305,6 @@ class TestScene extends Phaser.Scene {
         // so the predator timer starts straight away.
         if (this.tutorialComplete) this.startPredatorTimer();
 
-        this.onSimTimeUpdate = null;
-
         window.gameScene = this;
         // Only tell React about the scene once everything above has been set up
         this.game.events.emit("scene-ready", this);
@@ -324,7 +320,6 @@ class TestScene extends Phaser.Scene {
             light: this.lightLevel,
             temperature: this.temperature,
             pollution: this.pollutionValue,
-            timeJump: this.timeJump,
             yearsElapsed: this.yearsElapsed,
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
@@ -689,15 +684,6 @@ class TestScene extends Phaser.Scene {
             this.WORLD_WIDTH - this.cameras.main.width
         );
 
-        if (this.timerRunning) {
-            this.simTime += delta;
-
-            if (this.onSimTimeUpdate) {
-                this.onSimTimeUpdate(this.getSimTime());
-            }
-        }
-
-        this.deltaTimer += delta;
         // The arrow keys move the camera, but while the bubble popup is open they belong to its slider
         if (!this.bubbleCollision) {
             this.controls.update(delta);
@@ -770,20 +756,6 @@ class TestScene extends Phaser.Scene {
 
         if (this.simEnd) this.emitStats();
     }
-    getSimTime() {
-        const totalSeconds = Math.floor(this.simTime / 1000);
-
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        return [
-            hours.toString().padStart(2, "0"),
-            minutes.toString().padStart(2, "0"),
-            seconds.toString().padStart(2, "0")
-        ].join(":");
-    }
-
     RestartSim() {
         this.scene.restart();
         this.bgMusic.stop(); // silence it straight away; the shutdown handler in setupAudio() destroys it
@@ -842,7 +814,6 @@ class TestScene extends Phaser.Scene {
         else this.refreshVisuals();
 
         if (advanceYear){
-            this.timeJump++;
             // Every time jump costs the fish half a heart
             this.loseHalfHeart();
         }
