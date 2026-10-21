@@ -37,13 +37,13 @@ export const EVENTS = [
     {
         id: "temp_up", type: "negative", intensity: 2, variable: "temperature", delta: +2,
         title: "Ocean Temperatures Rising", learning: "multiple_stressors",
-        teach: "Heat and bright light together stress coral far more than either one by themselves",
+        teach: "High heat builds stress over time, and bright light can make that stress build faster.",
         weight: (r) => 1 + r.light * 1.5,
     },
     {
         id: "light_up", type: "negative", intensity: 2, variable: "light", delta: +200,
         title: "Light Levels Increasing", learning: "multiple_stressors",
-        teach: "Bright light on warm water is a recipe for coral bleaching",
+        teach: "Bright light can accelerate bleaching when water is too warm.",
         weight: (r) => 1 + r.temperature * 1.5,
     },
 

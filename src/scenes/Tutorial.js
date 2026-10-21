@@ -37,7 +37,7 @@ const STEPS = [
     {
         id: "bubble",
         title: "Changing the Environment",
-        text: "Bubbles change the light, temperature and pollution of the reef. Swim into the temperature bubble to pop it, then choose a new water temperature.",
+        text: "Temperature and light bubbles change reef conditions. Pollution gradually rises over time and amplifies heat stress. Swim into the temperature bubble to pop it, then choose a new water temperature.",
         image: "tutorial/tutorial_2.png",
         imageAlt: "A fish swimming toward a bubble",
         praise: "Complete!",
@@ -417,7 +417,7 @@ class Tutorial extends Phaser.Scene {
             outcome = `A year at ${value}°C has kept your coral healthy and colourful.`;
         }
         this.emitStep({
-            text: `The main simulation advances through years over time, and conditions affect coral health. ${outcome} Swim over to your coral to see how it's doing.`
+            text: `In the main simulation, high heat builds coral stress over time. Bright light can make that stress build faster, and rising pollution amplifies it. ${outcome} Swim over to your coral to see how it's doing.`
         });
     }
 
