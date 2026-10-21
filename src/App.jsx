@@ -54,9 +54,6 @@ function App() {
         initialValue = lightValue;
         break;
 
-      case "poll":
-        initialValue = pollutionValue;
-        break;
     }
   }
 
@@ -68,8 +65,6 @@ function App() {
       scene.updateTemperature(value);
     } else if (type === 'light') {
       scene.updateLight(value);
-    } else if (type === 'poll') {
-      scene.updatePollution(value);
     }
     scene.freeFish(false);
   };

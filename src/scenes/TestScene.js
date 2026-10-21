@@ -9,13 +9,11 @@ let oval;
 const BUBBLE_TYPES = [
     { type: 'temp', texture: 'TempBubble', ease: 'Power1' },
     { type: 'light', texture: 'LightBubble', ease: 'Sine.inOut' },
-    { type: 'poll', texture: 'PollutionBubble', ease: 'Sine.inOut' },
 ];
 
 // [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
 export const THRESHOLDS = {
     temperature: { a: 25, b: 27, c: 29, d: 31 },
-    pollution: { a: 0, b: 1, c: 3, d: 5 },
     light: { a: 141, b: 200, c: 1100, d: 1839 },
 };
 
@@ -36,6 +34,11 @@ const MAX_HEARTS = 3;
 const YEAR_DURATION_MS = 60_000;
 const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
 const TIME_UI_UPDATE_MS = 250;
+const STARTING_POLLUTION = 1;
+const MAX_POLLUTION = 5;
+const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
+const STRESS_PER_STRESSOR_PER_YEAR = 10;
+const STRESS_RECOVERY_PER_YEAR = 10;
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
@@ -70,7 +73,7 @@ class TestScene extends Phaser.Scene {
     setupSimulationState() {
         this.lightLevel = 500; // Default
         this.temperature = 27; // Default
-        this.pollutionValue = 1; // Default
+        this.pollutionValue = STARTING_POLLUTION;
         this.stressValue = 0; // Will range from 0 - 100
         // 0 means healthy
         // 30 means slightly stressed
@@ -87,11 +90,7 @@ class TestScene extends Phaser.Scene {
         //Individual Flags
         this.poorTemp = 0;
         this.poorLight = 0;
-        this.poorPollution = 0;
-
-        this.reefDeadTemp = false;
-        this.reefDeadLight = false;
-        this.reefDeadPollution = false;
+        this.reefDeadStress = false;
 
         this.simEnd = false;
         this.elapsedSimMs = 0;
@@ -324,7 +323,7 @@ class TestScene extends Phaser.Scene {
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
             simEnd: this.simEnd,
-            reefDead: this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution,
+            reefDead: this.reefDeadStress,
             fishDead: this.fishDead,
             score: this.score,
             // copies, because the scene keeps pushing to its own arrays and React needs a new array to notice a change
@@ -476,11 +475,34 @@ class TestScene extends Phaser.Scene {
         const clockIsRunning = this.tutorialComplete && !this.bubbleCollision && !this.coralInfoOpen;
 
         if (clockIsRunning) {
+            const previousElapsedSimMs = this.elapsedSimMs;
             this.elapsedSimMs = Math.min(
                 this.elapsedSimMs + delta,
                 SIMULATION_DURATION_MS
             );
             this.yearsElapsed = this.elapsedSimMs / YEAR_DURATION_MS;
+            const simulationProgress = this.elapsedSimMs / SIMULATION_DURATION_MS;
+            this.pollutionValue = STARTING_POLLUTION
+                + (MAX_POLLUTION - STARTING_POLLUTION) * simulationProgress;
+
+            this.advanceStress(delta);
+
+            const previousYear = Math.floor(previousElapsedSimMs / YEAR_DURATION_MS);
+            const currentYear = Math.floor(this.elapsedSimMs / YEAR_DURATION_MS);
+            for (let year = previousYear; year < currentYear && !this.reefDeadStress; year++) {
+                if (this.hasFatalClimateCombination()) {
+                    this.stressValue = 100;
+                    this.reefDeadStress = true;
+                    this.simEnd = true;
+                    updateCoralStress(this, this.stressValue);
+                }
+                this.updateHistory();
+            }
+
+            if (this.simEnd) {
+                this.emitStats();
+                return;
+            }
 
             if (this.elapsedSimMs >= SIMULATION_DURATION_MS) {
                 this.simEnd = true;
@@ -493,6 +515,7 @@ class TestScene extends Phaser.Scene {
             this.timeUiElapsedMs += delta;
             if (this.timeUiElapsedMs >= TIME_UI_UPDATE_MS) {
                 this.timeUiElapsedMs %= TIME_UI_UPDATE_MS;
+                updateCoralStress(this, this.stressValue);
                 this.emitStats();
             }
         }
@@ -764,27 +787,14 @@ class TestScene extends Phaser.Scene {
 
     updateTemperature(temp, advanceYear = true) {
         this.temperature = temp;
-        const { poor, dead } = evaluateThreshold(temp, THRESHOLDS.temperature);
-        this.poorTemp = poor;
-        this.reefDeadTemp = dead;
-        this.updateStress(advanceYear);
-        this.emitStats();
-    }
-
-    updatePollution(poll, advanceYear = true) {
-        this.pollutionValue = poll;
-        const { poor, dead } = evaluateThreshold(poll, THRESHOLDS.pollution);
-        this.poorPollution = poor;
-        this.reefDeadPollution = dead;
+        this.poorTemp = temp < THRESHOLDS.temperature.b || temp > THRESHOLDS.temperature.c ? 30 : 0;
         this.updateStress(advanceYear);
         this.emitStats();
     }
 
     updateLight(light, advanceYear = true) {
         this.lightLevel = light;
-        const { poor, dead } = evaluateThreshold(light, THRESHOLDS.light);
-        this.poorLight = poor;
-        this.reefDeadLight = dead;
+        this.poorLight = light < THRESHOLDS.light.b || light > THRESHOLDS.light.c ? 30 : 0;
         this.updateStress(advanceYear);
         this.emitStats();
     }
@@ -792,23 +802,6 @@ class TestScene extends Phaser.Scene {
     updateStress(advanceYear = true) {
         // Once the sim is over, no more years can pass
         if (this.simEnd) return;
-
-        if (this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution) {
-            this.stressValue = 100;
-            this.simEnd = true;
-        } else {
-            this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
-        }
-
-        if (advanceYear && this.stressHistory.length > 0) {
-            const prev = this.stressHistory[this.stressHistory.length - 1];
-
-            if (prev === 90 && this.stressValue === 90) {
-                this.stressValue = 100;
-                this.simEnd = true;
-                this.reefDeadLight = true;
-            }
-        }
 
         if (advanceYear || this.simEnd) this.updateHistory();
         else this.refreshVisuals();
@@ -828,6 +821,38 @@ class TestScene extends Phaser.Scene {
         }
 
         updateCoralStress(this, this.stressValue);
+    }
+
+    hasFatalClimateCombination() {
+        const temperature = THRESHOLDS.temperature;
+        const light = THRESHOLDS.light;
+        const bothLow = this.temperature <= temperature.a && this.lightLevel <= light.a;
+        const bothHigh = this.temperature >= temperature.d && this.lightLevel >= light.d;
+        return bothLow || bothHigh;
+    }
+
+    advanceStress(delta) {
+        const activeStressors = Number(this.poorTemp > 0) + Number(this.poorLight > 0);
+        const pollutionMultiplier = 1
+            + (this.pollutionValue - STARTING_POLLUTION)
+            / (MAX_POLLUTION - STARTING_POLLUTION)
+            * (MAX_POLLUTION_STRESS_MULTIPLIER - 1);
+        const stressRate = activeStressors > 0
+            ? STRESS_PER_STRESSOR_PER_YEAR * activeStressors * pollutionMultiplier
+            : -STRESS_RECOVERY_PER_YEAR;
+
+        this.stressValue = Phaser.Math.Clamp(
+            this.stressValue + stressRate * delta / YEAR_DURATION_MS,
+            0,
+            100
+        );
+
+        if (this.stressValue >= 100) {
+            this.reefDeadStress = true;
+            this.simEnd = true;
+            this.updateHistory();
+            updateCoralStress(this, this.stressValue);
+        }
     }
 
     updateHistory() {

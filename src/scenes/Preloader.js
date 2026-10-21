@@ -70,7 +70,6 @@ preload() {
         this.load.svg("algaeOrb", "food/algae_orb.svg", { width: 30, height: 30 });
 
         // bubbles
-        this.load.image("PollutionBubble","bubbles/pollutionBubble.png")
         this.load.image("TempBubble","bubbles/tempBubble.png")
         this.load.image("LightBubble","bubbles/light_levelBubble.png")
 

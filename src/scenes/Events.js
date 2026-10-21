@@ -19,7 +19,6 @@ const CONFIG = {
 // Environmental variable map
 const VARIABLES = {
     temperature: {prop: "temperature", setter: "updateTemperature", texture: "TempBubble", label: "The temperature", unit: "°C", max: 35},
-    pollution: {prop: "pollutionValue", setter: "updatePollution", texture: "PollutionBubble", label: "The nutrient level", unit: "", max: 5},
     light: {prop: "lightLevel", setter: "updateLight", texture: "LightBubble", label: "The light level", unit: "", max: 1839},
 };
 
@@ -42,12 +41,6 @@ export const EVENTS = [
         weight: (r) => 1 + r.light * 1.5,
     },
     {
-        id: "nutrients_up", type: "negative", intensity: 1, variable: "pollution", delta: +1,
-        title: "Nutrient Levels Rising", learning: "multiple_stressors",
-        teach: "Extra nutrients make corals more sensetive to heat and light.",
-        weight: (r) => 1 + r.temperature,
-    },
-    {
         id: "light_up", type: "negative", intensity: 2, variable: "light", delta: +200,
         title: "Light Levels Increasing", learning: "multiple_stressors",
         teach: "Bright light on warm water is a recipe for coral bleaching",
@@ -60,12 +53,6 @@ export const EVENTS = [
         title: "Cool Current", learning: "reversible",
         teach: "Coral bleaching can be reversed when the stress is removed.",
         weight: (r) => 0.4 + r.temperature * 3,
-    },
-    {
-        id: "nutrient_flush", type: "positive", intensity: 1, variable: "pollution", delta: -1,
-        title: "Clean Water", learning: "reversible",
-        teach: "Cleaner water affords coral room to recover.",
-        weight: (r) => 0.4 + r.pollution * 3,
     },
     {
         id: "shade", type: "positive", intensity: 1, variable: "light", delta: -200,
@@ -123,7 +110,6 @@ export class EventManager {
         const s = this.scene;
         const r = {
             temperature: risk(s.temperature, this.th.temperature),
-            pollution: risk(s.pollutionValue, this.th.pollution),
             light: risk(s.lightLevel, this.th.light),
         };
         const negativeCount = this.active.filter(b => b.def.type === "negative").length;
