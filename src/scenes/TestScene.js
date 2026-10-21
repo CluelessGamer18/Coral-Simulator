@@ -40,6 +40,7 @@ const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
 const HEAT_STRESS_POINTS_PER_YEAR = 20;
 const LIGHT_STRESS_WEIGHT = 0.5;
 const STRESS_RECOVERY_PER_YEAR = 10;
+const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
@@ -96,6 +97,8 @@ class TestScene extends Phaser.Scene {
         this.tempStressSeverity = 0;
         this.lightStressSeverity = 0;
         this.reefDeadStress = false;
+        this.stressWarningLevel = 0;
+        this.fatalClimateWarningActive = false;
 
         this.simEnd = false;
         this.elapsedSimMs = 0;
@@ -479,6 +482,8 @@ class TestScene extends Phaser.Scene {
 
         const clockIsRunning = this.tutorialComplete && !this.bubbleCollision && !this.coralInfoOpen;
 
+        if (this.tutorialComplete) this.updateFatalClimateWarning();
+
         if (clockIsRunning) {
             const previousElapsedSimMs = this.elapsedSimMs;
             this.elapsedSimMs = Math.min(
@@ -860,6 +865,57 @@ class TestScene extends Phaser.Scene {
             this.simEnd = true;
             this.updateHistory();
             updateCoralStress(this, this.stressValue);
+            return;
+        }
+
+        const rearmedWarningLevel = STRESS_WARNING_THRESHOLDS.reduce(
+            (level, threshold, index) => this.stressValue >= threshold - 5 ? index + 1 : level,
+            0
+        );
+        this.stressWarningLevel = Math.min(this.stressWarningLevel, rearmedWarningLevel);
+        const nextWarningLevel = STRESS_WARNING_THRESHOLDS.reduce(
+            (level, threshold, index) => this.stressValue >= threshold ? index + 1 : level,
+            0
+        );
+        if (nextWarningLevel > this.stressWarningLevel) {
+            const warning = [
+                null,
+                {
+                    warning: true,
+                    title: "Coral Stress Building",
+                    message: "Heat is building stress over time. Lowering the temperature slows bleaching; high light and pollution make stress build faster.",
+                },
+                {
+                    warning: true,
+                    title: "Serious Bleaching Risk",
+                    message: "Coral stress is high. Reduce the heat, and lower light if it is elevated, to slow further damage.",
+                },
+                {
+                    warning: true,
+                    title: "Critical Reef Stress",
+                    message: "The reef is close to collapse. Lower the temperature now; reducing elevated light can also slow bleaching.",
+                },
+            ][nextWarningLevel];
+            this.game.events.emit("reef-warning", warning);
+        }
+        this.stressWarningLevel = nextWarningLevel;
+    }
+
+    updateFatalClimateWarning() {
+        const isFatalClimate = this.hasFatalClimateCombination();
+        if (isFatalClimate === this.fatalClimateWarningActive) return;
+
+        this.fatalClimateWarningActive = isFatalClimate;
+        if (isFatalClimate) {
+            this.game.events.emit("reef-warning", {
+                id: "fatal-climate",
+                persistent: true,
+                warning: true,
+                title: "Extreme Conditions",
+                message: "Temperature and light are both at fatal extremes. Lower at least one before the year ends to save the reef.",
+            });
+        } else {
+            this.game.events.emit("reef-warning-cleared", "fatal-climate");
         }
     }
 

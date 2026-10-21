@@ -192,6 +192,12 @@
   top: 210px;
 }
 
+.EventNoticeWarning {
+  border-color: #ffb000;
+  border-left-color: #ff3b30;
+  background: #762b20;
+}
+
 .EventNoticeHeading {
   display: flex;
   align-items: center;
