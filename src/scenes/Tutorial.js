@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { createBleachStages } from "./CoralManager.js";
+import { BLEACH_STAGE_COUNT, createBleachStages, getBleachStage } from "./CoralManager.js";
 import {
     THRESHOLDS,
     evaluateThreshold,
@@ -380,7 +380,7 @@ class Tutorial extends Phaser.Scene {
         this.temperature = value;
         const { poor, dead } = evaluateThreshold(value, THRESHOLDS.temperature);
         // the stage the main game would show for this temperature on its own
-        this.coralStage = dead ? 4 : Math.floor((poor / 100) * 4);
+        this.coralStage = dead ? BLEACH_STAGE_COUNT : getBleachStage(poor);
         this.coral.setTexture(this.coralStages[this.coralStage]);
     }
 
@@ -409,7 +409,7 @@ class Tutorial extends Phaser.Scene {
     startTime() {
         const value = this.temperature;
         let outcome;
-        if (this.coralStage === 4) {
+        if (this.coralStage === BLEACH_STAGE_COUNT) {
             outcome = `A year at ${value}°C was too extreme, and your coral bleached and died. In the main game that ends the simulation, so choose carefully!`;
         } else if (this.coralStage > 0) {
             outcome = `A year at ${value}°C has stressed your coral, and it has started to lose its colour.`;

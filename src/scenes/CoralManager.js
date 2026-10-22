@@ -191,6 +191,7 @@ var coralTypes = {
 };
 
 const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead']; // forwarded to React frontend for display
+export const BLEACH_STAGE_COUNT = 10;
 
 const coralImgPathsTabular = [ // microscope images of tabular coral bleach stages (for sending to React frontend)
   asset('microscopes/healthy_tabular_microscope.png'),
@@ -451,7 +452,10 @@ function coralSway(scene, coral) {
 
 export function createBleachStages(scene, coralType) {
   const source = scene.textures.get(coralType).getSourceImage();
-  const strengths = [0.2, 0.4, 0.65, 1.0]; // bleaching strengths for each stage
+  const strengths = Array.from(
+    { length: BLEACH_STAGE_COUNT },
+    (_, index) => (index + 1) / BLEACH_STAGE_COUNT
+  );
   const keys = [coralType];
 
   strengths.forEach((strength, index) => {
@@ -491,17 +495,22 @@ export function createBleachStages(scene, coralType) {
 }
   
 
+export function getBleachStage(stressAmount) {
+  return Math.floor(Phaser.Math.Clamp(stressAmount, 0, 100) / 100 * BLEACH_STAGE_COUNT);
+}
+
 /* called when stress levels are updated in the game. stressAmount: 0-100 */
 export function updateCoralStress(scene, stressAmount) {
-  const adjustedStress = Math.floor((stressAmount / 100) * 4); // map stress 0-100 to 0-4 (number of spritesheet frames for corals)
+  const statusStage = Math.floor((Phaser.Math.Clamp(stressAmount, 0, 100) / 100) * 4);
+  const bleachStage = getBleachStage(stressAmount);
 
   Object.values(coralTypes).forEach(type => {
     if (type.status !== 'Dead') {
-      type.status = coralStatuses[adjustedStress];
+      type.status = coralStatuses[statusStage];
       if (type.imgType === 'branch') {
-        type.img = coralImgPathsBranch[adjustedStress];
+        type.img = coralImgPathsBranch[statusStage];
       } else {
-        type.img = coralImgPathsTabular[adjustedStress];
+        type.img = coralImgPathsTabular[statusStage];
       }
     }
   });
@@ -510,9 +519,9 @@ export function updateCoralStress(scene, stressAmount) {
   const type = coralTypes[coral.type];
 
   if (type.generatedStages) {
-    coral.setTexture(type.generatedStages[adjustedStress]);
+    coral.setTexture(type.generatedStages[bleachStage]);
   } else {
-    coral.setFrame(type.status === "Dead" ? 4 : adjustedStress);
+    coral.setFrame(type.status === "Dead" ? 4 : statusStage);
   }
 });
 }
