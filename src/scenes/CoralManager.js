@@ -211,6 +211,13 @@ const coralImgPathsBranch = [ // microscope images of branch coral bleach stages
 
 // z levels for corals, which determine their y position and rendering depth in the scene
 const depthLevels = [-10, 120, 180];
+const coralSwayAngles = {
+  Columnar: 0.45,
+  Digitate: 2.25,
+  Folios: 1.25,
+  Tabular: 0.45,
+  "Flat Tabular": 0.45,
+};
 
 
 /* main function to create coral instances in the scene. Called when game scene is created. */
@@ -322,7 +329,7 @@ function createCoralGroup(scene, count, minX, maxX) {
     });
 
     scene.corals.push(coral);
-    coralSway(scene, coral);
+    coralSway(scene, coral, coralSwayAngles[type.name]);
   }
 }
 
@@ -439,11 +446,14 @@ function createCoralSpawnPlan(count, minX, maxX) {
 }
 
 /* animate corals */
-function coralSway(scene, coral) {
-    scene.tweens.add({
+function coralSway(scene, coral, maxAngle) {
+  const swayAngle = Phaser.Math.FloatBetween(maxAngle * 0.7, maxAngle * 1.3);
+
+  scene.tweens.add({
     targets: coral,
-    angle: { from: -4, to: 4 },
-    duration: Phaser.Math.Between(2500, 4000),
+    angle: { from: -swayAngle, to: swayAngle },
+    duration: Phaser.Math.Between(4000, 6000),
+    delay: Phaser.Math.Between(0, 2500),
     yoyo: true,
     repeat: -1,
     ease: 'sine.inOut'
