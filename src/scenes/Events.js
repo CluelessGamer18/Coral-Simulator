@@ -22,6 +22,16 @@ const VARIABLES = {
     light: {prop: "lightLevel", setter: "updateLight", texture: "LightBubble", label: "The light level", unit: "", max: 1839},
 };
 
+const EVENT_CHANGE_RANGES = {
+    temperature: {min: 1, max: 5, step: 1},
+    light: {min: 100, max: 500, step: 10},
+};
+
+function randomEventChange(variable) {
+    const { min, max, step } = EVENT_CHANGE_RANGES[variable];
+    return Phaser.Math.Between(min / step, max / step) * step;
+}
+
 // Calculate risk with something defined as the profile of a trapezoid-shaped distribution
 // This calculates the normalized probability (0 to 1) or risk occuring up to value
 function risk(value, {a, b, c, d}){
@@ -35,13 +45,13 @@ function risk(value, {a, b, c, d}){
 export const EVENTS = [
     // Negative events (chase fish), darker = more intense
     {
-        id: "temp_up", type: "negative", intensity: 2, variable: "temperature", delta: +2,
+        id: "temp_up", type: "negative", intensity: 2, variable: "temperature",
         title: "Ocean Temperatures Rising", learning: "multiple_stressors",
         teach: "High heat builds stress over time, and bright light can make that stress build faster.",
         weight: (r) => 1 + r.light * 1.5,
     },
     {
-        id: "light_up", type: "negative", intensity: 2, variable: "light", delta: +200,
+        id: "light_up", type: "negative", intensity: 2, variable: "light",
         title: "Light Levels Increasing", learning: "multiple_stressors",
         teach: "Bright light can accelerate bleaching when water is too warm.",
         weight: (r) => 1 + r.temperature * 1.5,
@@ -49,13 +59,13 @@ export const EVENTS = [
 
     // Positive events (swim into them to help the reef)
     {
-        id: "cool_current", type: "positive", intensity: 1, variable: "temperature", delta: -2,
+        id: "cool_current", type: "positive", intensity: 1, variable: "temperature",
         title: "Cool Current", learning: "reversible",
         teach: "Coral bleaching can be reversed when the stress is removed.",
         weight: (r) => 0.4 + r.temperature * 3,
     },
     {
-        id: "shade", type: "positive", intensity: 1, variable: "light", delta: -200,
+        id: "shade", type: "positive", intensity: 1, variable: "light",
         title: "Cloudy", learning: "reversible",
         teach: "Shade from clouds takes pressure off of stressed corals.",
         weight: (r) => 0.4 + r.light * 3,
@@ -96,7 +106,8 @@ export class EventManager {
 
         if (def.type === "negative") {
             if (value < threshold.b) return false; // Already below the healthy value
-            const after = value + def.delta;
+            const maxChange = EVENT_CHANGE_RANGES[def.variable].max;
+            const after = value + maxChange;
             if (!CONFIG.eventsCanKill && after > variable.max) return false;
             if (!CONFIG.eventsCanKill && after > threshold.d) return false; // Prevent events from instantly killing the reef
             if (!CONFIG.eventsCanKill) {
@@ -126,7 +137,6 @@ export class EventManager {
 
         const pool = EVENTS
             .filter(e => !(e.type === "negative" && negativeCount >= CONFIG.maxNegativeBubbles))
-            .filter(e => !this.active.some(b => b.def.id === e.id)) // No duplicate negative bubbles
             .filter(e => this.canSpawn(e))
             .map(e => ({e, w: Math.max(0, e.weight(r))}))
             .filter(p => p.w > 0);
@@ -272,7 +282,15 @@ export class EventManager {
         const variable = VARIABLES[def.variable];
         const threshold = this.th[def.variable];
         const before = s[variable.prop];
-        const after  = def.type === "negative" ? Math.min(before + def.delta, variable.max) : Math.max(before + def.delta, threshold.b); // Positives stop at healthy flow
+        const change = randomEventChange(def.variable);
+        const direction = def.type === "negative" ? 1 : -1;
+        const rawAfter = before + direction * change;
+        const boundedAfter = def.type === "negative"
+            ? Math.min(rawAfter, variable.max)
+            : Math.max(rawAfter, threshold.b); // Positives stop at healthy flow
+        const after = def.variable === "light"
+            ? Math.min(Math.round(boundedAfter / 10) * 10, variable.max)
+            : boundedAfter;
 
         s[variable.setter](after, false);
 
