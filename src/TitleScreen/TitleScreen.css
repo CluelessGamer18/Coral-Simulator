@@ -217,6 +217,29 @@
 }
 
 .OptionsSliderGroup input[type="range"] {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     cursor: pointer;
+}
+
+.OptionsSliderControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.OptionsMuteButton {
+    flex: 0 0 72px;
+    padding: 5px 8px;
+    border: 1px solid white;
+    border-radius: 16px;
+    background-color: #0292A5;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+}
+
+.OptionsMuteButton:hover {
+    background-color: rgba(251, 105, 0, 0.864);
 }
