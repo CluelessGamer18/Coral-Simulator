@@ -155,6 +155,7 @@ export class EventManager {
         if (!def) return;
 
         const s = this.scene;
+        const change = randomEventChange(def.variable);
         const minDist = def.type === "negative" ? CONFIG.minSpawnDistance: 300;
         let x, y, tries = 0;
 
@@ -165,6 +166,18 @@ export class EventManager {
         } while (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist && ++tries < 20);
 
         const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
+        const changeSign = def.type === "negative" ? "+" : "−";
+        const changeUnit = def.variable === "temperature" ? "°C" : "";
+        const label = s.add.text(x, y, `${changeSign}${change}${changeUnit}`, {
+            fontSize: "18px",
+            fontFamily: "Arial, sans-serif",
+            fontStyle: "bold",
+            color: def.type === "negative" ? "#ffffff" : "#123d24",
+            stroke: def.type === "negative" ? "#7d1717" : "#ffffff",
+            strokeThickness: 3,
+        })
+            .setOrigin(0.5, 1)
+            .setDepth(8);
 
         if (def.type === "negative") {
             // Red, getting darker with intensity: 1 = bright red, 3 = dark red
@@ -180,7 +193,7 @@ export class EventManager {
         }
 
         this.active.push({
-            sprite, def, age: 0, phase: Math.random() * 1000,
+            sprite, label, def, change, age: 0, phase: Math.random() * 1000,
             life: def.type === "negative" ? CONFIG.negativeBubbleLifetime : CONFIG.positiveBubbleLifetime, 
             direction: Phaser.Math.FloatBetween(0, Math.PI * 2), 
             targetDirection: Phaser.Math.FloatBetween(0, Math.PI * 2),
@@ -221,6 +234,8 @@ export class EventManager {
             b.sprite.y = Phaser.Math.Clamp(b.sprite.y, 120, 850);
         }
 
+        b.label.setPosition(b.sprite.x, b.sprite.y - b.sprite.displayHeight * 0.55);
+
         if (dist < touchRadius) return this.resolve(b); // negative: you got hit, positive: you collected it
         if (b.age >= b.life) return this.expire(b); // Bubble disapears <-(how do you spell this)
     }
@@ -251,7 +266,7 @@ export class EventManager {
                     }
                 }
 
-                const message = this.apply(b.def);
+                const message = this.apply(b);
                 s.game.events.emit("random-event", {
                     title: b.def.title,
                     message,
@@ -270,6 +285,7 @@ export class EventManager {
         const s = this.scene;
         this.active = this.active.filter(x => x !== b);
         s.tweens.killTweensOf(b.sprite);
+        s.tweens.add({targets: b.label, alpha: 0, duration: 400, onComplete: () => b.label.destroy() });
         s.tweens.add({targets: b.sprite, alpha: 0, duration: 400, onComplete: () => b.sprite.destroy() });
         if (b.def.type === "negative") {
             s.game.events.emit("event-averted", {id: b.def.id, title: b.def.title});
@@ -277,12 +293,12 @@ export class EventManager {
     }
 
     // Changes the value through update()
-    apply(def) {
+    apply(bubble) {
         const s = this.scene;
+        const {def, change} = bubble;
         const variable = VARIABLES[def.variable];
         const threshold = this.th[def.variable];
         const before = s[variable.prop];
-        const change = randomEventChange(def.variable);
         const direction = def.type === "negative" ? 1 : -1;
         const rawAfter = before + direction * change;
         const boundedAfter = def.type === "negative"
@@ -302,13 +318,17 @@ export class EventManager {
     remove(b) {
         this.active = this.active.filter(x => x !== b);
         this.scene.tweens.killTweensOf(b.sprite);
+        this.scene.tweens.killTweensOf(b.label);
         b.sprite.destroy();
+        b.label.destroy();
     }
 
     clear() {
         for (const b of this.active) {
             this.scene.tweens.killTweensOf(b.sprite);
+            this.scene.tweens.killTweensOf(b.label);
             b.sprite.destroy();
+            b.label.destroy();
         }
         this.active = [];
     }
