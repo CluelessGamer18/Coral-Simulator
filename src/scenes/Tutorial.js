@@ -53,7 +53,7 @@ const STEPS = [
     {
         id: "predator",
         title: "Watch Out for Predators",
-        text: "A predator is hunting you! Swim close to the coral and press Z to hide until it swims away.",
+        text: "A predator is hunting you! Swim close to the coral and press E to hide until it swims away.",
         image: "tutorial/tutorial_predator.png",
         imageAlt: "The Z key beside a fish hiding in the coral while a barracuda swims past",
         praise: "Complete!",
@@ -129,7 +129,7 @@ class Tutorial extends Phaser.Scene {
     setupKeys() {
         // WASD only, the same as the main game (where the arrow keys move the camera)
         this.moveKeys = this.input.keyboard.addKeys("W,A,S,D");
-        this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+        this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     }
 
     setupSkipButton() {
