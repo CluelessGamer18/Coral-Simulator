@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
-import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js";
+import { createCorals, updateCoralStress, refreshCoralStress, killCorals, resetCorals } from "./CoralManager.js";
 import { EventManager } from "./Events.js";
 
 let oval;
@@ -504,7 +504,7 @@ class TestScene extends Phaser.Scene {
                     this.stressValue = 100;
                     this.reefDeadStress = true;
                     this.simEnd = true;
-                    updateCoralStress(this, this.stressValue);
+                    killCorals(this);
                 }
                 this.updateHistory();
             }
@@ -525,7 +525,7 @@ class TestScene extends Phaser.Scene {
             this.timeUiElapsedMs += delta;
             if (this.timeUiElapsedMs >= TIME_UI_UPDATE_MS) {
                 this.timeUiElapsedMs %= TIME_UI_UPDATE_MS;
-                updateCoralStress(this, this.stressValue);
+                refreshCoralStress(this);
                 this.emitStats();
             }
         }
@@ -830,7 +830,7 @@ class TestScene extends Phaser.Scene {
             }
         }
 
-        updateCoralStress(this, this.stressValue);
+        refreshCoralStress(this);
     }
 
     hasFatalClimateCombination() {
@@ -854,17 +854,19 @@ class TestScene extends Phaser.Scene {
                 * pollutionMultiplier
             : -STRESS_RECOVERY_PER_YEAR;
 
+        const stressDelta = stressRate * delta / YEAR_DURATION_MS;
         this.stressValue = Phaser.Math.Clamp(
-            this.stressValue + stressRate * delta / YEAR_DURATION_MS,
+            this.stressValue + stressDelta,
             0,
             100
         );
+        updateCoralStress(this, stressDelta);
 
         if (this.stressValue >= 100) {
             this.reefDeadStress = true;
             this.simEnd = true;
             this.updateHistory();
-            updateCoralStress(this, this.stressValue);
+            killCorals(this);
             return;
         }
 
