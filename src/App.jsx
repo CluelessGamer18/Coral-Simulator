@@ -38,6 +38,8 @@ function App() {
 
   const [musicVolume, setMusicVolume] = useState(0.5);
   const [sfxVolume, setSfxVolume] = useState(1.0);
+  const [musicMuted, setMusicMuted] = useState(false);
+  const [sfxMuted, setSfxMuted] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
   const [eventNotice, setEventNotice] = useState(null);
@@ -92,9 +94,9 @@ function App() {
   useEffect(() => {
     if (!scene) return;
 
-    scene.setMusicVolume?.(musicVolume);
-    scene.setSfxVolume?.(sfxVolume);
-  }, [scene, musicVolume, sfxVolume]);
+    scene.setMusicVolume?.(musicMuted ? 0 : musicVolume);
+    scene.setSfxVolume?.(sfxMuted ? 0 : sfxVolume);
+  }, [scene, musicVolume, musicMuted, sfxVolume, sfxMuted]);
 
   // The scene sends "stats-changed" whenever one of these values changes, so React only updates when something happens
   useEffect(() => {
@@ -244,11 +246,14 @@ function App() {
           setShowTitleScreen={setShowTitleScreen}
           resetSimState={resetSimState}
           setScene={setScene}
-          scene={scene}
           musicVolume={musicVolume}
           setMusicVolume={setMusicVolume}
+          musicMuted={musicMuted}
+          setMusicMuted={setMusicMuted}
           sfxVolume={sfxVolume}
           setSfxVolume={setSfxVolume}
+          sfxMuted={sfxMuted}
+          setSfxMuted={setSfxMuted}
         /> : null}
         {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
         <>

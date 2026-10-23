@@ -272,7 +272,7 @@ class TestScene extends Phaser.Scene {
             S: Phaser.Input.Keyboard.KeyCodes.S,
             D: Phaser.Input.Keyboard.KeyCodes.D
         });
-        this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+        this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
         //camera presettings
         const controlConfig = {
@@ -606,17 +606,15 @@ class TestScene extends Phaser.Scene {
         if (this.predatorSpawned && this.predatorFleeing) {
             const escapeDirection = this.predatorEscapeDirection;
             if (this.predatorScared && this.predatorDashRemaining > 0) {
-                this.predator.x += this.predatorDashVelocityX * frameScale;
-                this.predator.y += this.predatorDashVelocityY * frameScale;
-                this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - Math.min(delta, 50));
-                this.facePredatorDirection(
+                this.movePredator(
                     this.predatorDashVelocityX,
                     this.predatorDashVelocityY,
+                    PREDATOR_DASH_SPEED,
                     frameScale
                 );
+                this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - Math.min(delta, 50));
             } else {
-                this.predator.x += escapeDirection * PREDATOR_SPEED * frameScale;
-                this.facePredatorDirection(escapeDirection, 0, frameScale);
+                this.movePredator(escapeDirection, 0, PREDATOR_SPEED, frameScale);
             }
 
             const escaped = escapeDirection < 0
@@ -645,28 +643,56 @@ class TestScene extends Phaser.Scene {
             ) {
                 this.predatorNervous = true;
                 this.predatorDashRemaining = 0;
-                this.predator.setTint(0xffc857);
             }
 
             if (canScarePredator && predatorDistance <= PREDATOR_SCARE_DISTANCE) {
                 this.startPredatorFlee(true);
             } else if (this.predatorNervous && predatorDistance > 0) {
-                this.facePredatorDirection(
-                    this.predator.x - this.guide.x,
-                    this.predator.y - this.guide.y,
-                    frameScale
-                );
+                const awayX = (this.predator.x - this.guide.x) / predatorDistance;
+                const awayY = (this.predator.y - this.guide.y) / predatorDistance;
+                const retreatDirections = [
+                    { x: awayX, y: awayY },
+                    { x: awayX, y: 0 },
+                    { x: 0, y: awayY },
+                    { x: 1, y: 0 },
+                    { x: -1, y: 0 },
+                    { x: 0, y: 1 },
+                    { x: 0, y: -1 }
+                ];
+                const retreatDirection = retreatDirections
+                    .filter(({ x, y }) => x !== 0 || y !== 0)
+                    .map(({ x, y }) => {
+                        const length = Math.hypot(x, y);
+                        return { x: x / length, y: y / length };
+                    })
+                    .filter(({ x, y }) => {
+                        const nextX = this.predator.x + x * PREDATOR_SPEED * frameScale;
+                        const nextY = this.predator.y + y * PREDATOR_SPEED * frameScale;
+                        return nextX >= this.predator.displayWidth / 2 &&
+                            nextX <= this.WORLD_WIDTH - this.predator.displayWidth / 2 &&
+                            nextY >= this.predator.displayHeight / 2 &&
+                            nextY <= this.WORLD_HEIGHT - this.predator.displayHeight / 2;
+                    })
+                    .sort((a, b) => (b.x * awayX + b.y * awayY) - (a.x * awayX + a.y * awayY))[0];
+
+                if (retreatDirection) {
+                    this.movePredator(
+                        retreatDirection.x,
+                        retreatDirection.y,
+                        PREDATOR_SPEED,
+                        frameScale
+                    );
+                }
             } else if (!this.predatorNervous && predatorDistance > 0) {
                 const frameDelta = Math.min(delta, 50);
                 if (this.predatorDashRemaining > 0) {
-                    this.predator.x += this.predatorDashVelocityX * frameScale;
-                    this.predator.y += this.predatorDashVelocityY * frameScale;
-                    this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - frameDelta);
-                    this.facePredatorDirection(
+                    this.movePredator(
                         this.predatorDashVelocityX,
                         this.predatorDashVelocityY,
+                        PREDATOR_DASH_SPEED,
                         frameScale
                     );
+                    this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - frameDelta);
                 } else {
                     this.predatorDashCooldown = Math.max(0, this.predatorDashCooldown - frameDelta);
 
@@ -683,12 +709,9 @@ class TestScene extends Phaser.Scene {
                         this.predatorDashRemaining = PREDATOR_DASH_DURATION;
                         this.predatorDashCooldown = PREDATOR_DASH_COOLDOWN;
                     } else {
-                        const predatorStep = Math.min(PREDATOR_SPEED * frameScale, predatorDistance);
                         const directionX = (this.guide.x - this.predator.x) / predatorDistance;
                         const directionY = (this.guide.y - this.predator.y) / predatorDistance;
-                        this.predator.x += directionX * predatorStep;
-                        this.predator.y += directionY * predatorStep;
-                        this.facePredatorDirection(directionX, directionY, frameScale);
+                        this.movePredator(directionX, directionY, PREDATOR_SPEED, frameScale);
                     }
                 }
             }
@@ -1094,6 +1117,24 @@ class TestScene extends Phaser.Scene {
             targetAngle,
             0.5 * frameScale
         );
+    }
+
+    movePredator(directionX, directionY, speed, frameScale) {
+        const directionLength = Math.hypot(directionX, directionY);
+        if (directionLength === 0) return;
+
+        const normalizedX = directionX / directionLength;
+        const normalizedY = directionY / directionLength;
+        const wiggle = Math.sin(this.time.now * 0.01) * frameScale;
+
+        this.predator.x += normalizedX * speed * frameScale - normalizedY * wiggle;
+        this.predator.y += normalizedY * speed * frameScale + normalizedX * wiggle;
+        this.predator.y = Phaser.Math.Clamp(
+            this.predator.y,
+            this.predator.displayHeight / 2,
+            this.WORLD_HEIGHT - this.predator.displayHeight / 2
+        );
+        this.facePredatorDirection(normalizedX, normalizedY, frameScale);
     }
 
     leaveHiding() {

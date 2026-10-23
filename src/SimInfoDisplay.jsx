@@ -1,9 +1,23 @@
 import "./styles/SimInfoDisplay.css";
 import { asset } from "./assetUrl";
 
+function getTemperatureColor(temp) {
+    const value = Number(temp);
+    const average = 28;
+    const endpoint = value < average ? 24 : 32;
+    const startColor = value < average ? [77, 166, 255] : [255, 83, 77];
+    const amount = Math.min(Math.abs(value - average) / Math.abs(endpoint - average), 1);
+    const channel = (index) => Math.round(255 + (startColor[index] - 255) * amount)
+        .toString(16)
+        .padStart(2, "0");
+
+    return `#${channel(0)}${channel(1)}${channel(2)}`;
+}
+
 function SimInfoDisplay({yearsElapsed,light,temp,stress=0,poll,score=0}){
     yearsElapsed = 2*yearsElapsed
     const displayedPollution = Math.round(poll * 2) / 2
+    const temperatureColor = getTemperatureColor(temp);
     const dots = [ 
         "large", "small", 
         "large", "small", 
@@ -52,8 +66,18 @@ function SimInfoDisplay({yearsElapsed,light,temp,stress=0,poll,score=0}){
             </div>
             <div className="SimInfoBottom">
                 <div className="statusGroup">
-                    <img className="SimInfoIcon" src={asset("temperature.svg")} alt="Temperature" />
-                    <span className="SimInfoText">{temp}°C</span>
+                    <span
+                        className="TemperatureIcon"
+                        aria-hidden="true"
+                        style={{
+                            backgroundColor: temperatureColor,
+                            maskImage: `url(${asset("temperature.svg")})`,
+                            WebkitMaskImage: `url(${asset("temperature.svg")})`
+                        }}
+                    />
+                    <span className="SimInfoText TemperatureValue" style={{ color: temperatureColor }}>
+                        {temp}°C
+                    </span>
                     <img className="hoverPreview" src={asset("tooltips/tooltip_temperature.png")} alt="Temperature, in degrees Celsius." />
                 </div>
                 <div className="statusGroup">

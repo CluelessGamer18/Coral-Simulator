@@ -69,6 +69,25 @@
     font-weight: 600;
 }
 
+.TemperatureIcon {
+    display: inline-block;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 31px;
+    background-color: #fff;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    transition: background-color 300ms ease;
+}
+
+.TemperatureValue {
+    transition: color 300ms ease;
+}
+
 
 .SimInfoDial{
     width: 120px; 
