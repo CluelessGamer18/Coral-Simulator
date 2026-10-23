@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
-import { createCorals, updateCoralStress, resetCorals } from "./CoralManager.js";
+import { createCorals, updateCoralStress, refreshCoralStress, killCorals, resetCorals } from "./CoralManager.js";
 import { EventManager } from "./Events.js";
 
 let oval;
@@ -9,13 +9,11 @@ let oval;
 const BUBBLE_TYPES = [
     { type: 'temp', texture: 'TempBubble', ease: 'Power1' },
     { type: 'light', texture: 'LightBubble', ease: 'Sine.inOut' },
-    { type: 'poll', texture: 'PollutionBubble', ease: 'Sine.inOut' },
 ];
 
 // [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
 export const THRESHOLDS = {
     temperature: { a: 25, b: 27, c: 29, d: 31 },
-    pollution: { a: 0, b: 1, c: 3, d: 5 },
     light: { a: 141, b: 200, c: 1100, d: 1839 },
 };
 
@@ -33,6 +31,16 @@ export const PREDATOR_ESCAPE_MARGIN = 50;
 
 // Health is counted in half hearts, so 3 hearts = 6
 const MAX_HEARTS = 3;
+const YEAR_DURATION_MS = 60_000;
+const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
+const TIME_UI_UPDATE_MS = 250;
+const STARTING_POLLUTION = 1;
+const MAX_POLLUTION = 5;
+const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
+const HEAT_STRESS_POINTS_PER_YEAR = 20;
+const LIGHT_STRESS_WEIGHT = 0.5;
+const STRESS_RECOVERY_PER_YEAR = 10;
+const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
@@ -47,11 +55,14 @@ export function evaluateThreshold(value, { a, b, c, d }) {
     return { poor: stressed ? 30 : 0, dead };
 }
 
+function highRangeSeverity(value, { c, d }) {
+    return value > c ? Phaser.Math.Clamp((value - c) / (d - c), 0, 1) : 0;
+}
+
 class TestScene extends Phaser.Scene {
     constructor() {
         super("TestScene");
 
-        this.deltaTimer = 0;
         this.simStart = false;
 
         this.collisionType = "None";
@@ -68,7 +79,7 @@ class TestScene extends Phaser.Scene {
     setupSimulationState() {
         this.lightLevel = 500; // Default
         this.temperature = 27; // Default
-        this.pollutionValue = 1; // Default
+        this.pollutionValue = STARTING_POLLUTION;
         this.stressValue = 0; // Will range from 0 - 100
         // 0 means healthy
         // 30 means slightly stressed
@@ -83,16 +94,16 @@ class TestScene extends Phaser.Scene {
         this.stressHistory = []
 
         //Individual Flags
-        this.poorTemp = 0;
-        this.poorLight = 0;
-        this.poorPollution = 0;
-
-        this.reefDeadTemp = false;
-        this.reefDeadLight = false;
-        this.reefDeadPollution = false;
+        this.tempStressSeverity = 0;
+        this.lightStressSeverity = 0;
+        this.reefDeadStress = false;
+        this.stressWarningLevel = 0;
+        this.fatalClimateWarningActive = false;
 
         this.simEnd = false;
-        this.timeJump = 0;
+        this.elapsedSimMs = 0;
+        this.yearsElapsed = 0;
+        this.timeUiElapsedMs = 0;
         this.bubbleCollision = false;
         this.coralInfoOpen = false;
         this.isHiding = false;
@@ -301,8 +312,6 @@ class TestScene extends Phaser.Scene {
         // so the predator timer starts straight away.
         if (this.tutorialComplete) this.startPredatorTimer();
 
-        this.onSimTimeUpdate = null;
-
         window.gameScene = this;
         // Only tell React about the scene once everything above has been set up
         this.game.events.emit("scene-ready", this);
@@ -318,11 +327,11 @@ class TestScene extends Phaser.Scene {
             light: this.lightLevel,
             temperature: this.temperature,
             pollution: this.pollutionValue,
-            timeJump: this.timeJump,
+            yearsElapsed: this.yearsElapsed,
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
             simEnd: this.simEnd,
-            reefDead: this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution,
+            reefDead: this.reefDeadStress,
             fishDead: this.fishDead,
             score: this.score,
             // copies, because the scene keeps pushing to its own arrays and React needs a new array to notice a change
@@ -470,6 +479,56 @@ class TestScene extends Phaser.Scene {
     update(time, delta) {
         // Freeze the fish, camera and timer once the end screen is showing
         if (this.simEnd) return;
+
+        const clockIsRunning = this.tutorialComplete && !this.bubbleCollision && !this.coralInfoOpen;
+
+        if (this.tutorialComplete) this.updateFatalClimateWarning();
+
+        if (clockIsRunning) {
+            const previousElapsedSimMs = this.elapsedSimMs;
+            this.elapsedSimMs = Math.min(
+                this.elapsedSimMs + delta,
+                SIMULATION_DURATION_MS
+            );
+            this.yearsElapsed = this.elapsedSimMs / YEAR_DURATION_MS;
+            const simulationProgress = this.elapsedSimMs / SIMULATION_DURATION_MS;
+            this.pollutionValue = STARTING_POLLUTION
+                + (MAX_POLLUTION - STARTING_POLLUTION) * simulationProgress;
+
+            this.advanceStress(delta);
+
+            const previousYear = Math.floor(previousElapsedSimMs / YEAR_DURATION_MS);
+            const currentYear = Math.floor(this.elapsedSimMs / YEAR_DURATION_MS);
+            for (let year = previousYear; year < currentYear && !this.reefDeadStress; year++) {
+                if (this.hasFatalClimateCombination()) {
+                    this.stressValue = 100;
+                    this.reefDeadStress = true;
+                    this.simEnd = true;
+                    killCorals(this);
+                }
+                this.updateHistory();
+            }
+
+            if (this.simEnd) {
+                this.emitStats();
+                return;
+            }
+
+            if (this.elapsedSimMs >= SIMULATION_DURATION_MS) {
+                this.simEnd = true;
+                this.emitStats();
+                return;
+            }
+        }
+
+        if (clockIsRunning) {
+            this.timeUiElapsedMs += delta;
+            if (this.timeUiElapsedMs >= TIME_UI_UPDATE_MS) {
+                this.timeUiElapsedMs %= TIME_UI_UPDATE_MS;
+                refreshCoralStress(this);
+                this.emitStats();
+            }
+        }
 
         // Movement values below were tuned at 60fps, so scale them by how long this frame actually took.
         // Capped so a lag spike or returning to the tab doesn't teleport the fish.
@@ -681,15 +740,6 @@ class TestScene extends Phaser.Scene {
             this.WORLD_WIDTH - this.cameras.main.width
         );
 
-        if (this.timerRunning) {
-            this.simTime += delta;
-
-            if (this.onSimTimeUpdate) {
-                this.onSimTimeUpdate(this.getSimTime());
-            }
-        }
-
-        this.deltaTimer += delta;
         // The arrow keys move the camera, but while the bubble popup is open they belong to its slider
         if (!this.bubbleCollision) {
             this.controls.update(delta);
@@ -762,20 +812,6 @@ class TestScene extends Phaser.Scene {
 
         if (this.simEnd) this.emitStats();
     }
-    getSimTime() {
-        const totalSeconds = Math.floor(this.simTime / 1000);
-
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        return [
-            hours.toString().padStart(2, "0"),
-            minutes.toString().padStart(2, "0"),
-            seconds.toString().padStart(2, "0")
-        ].join(":");
-    }
-
     RestartSim() {
         this.scene.restart();
         this.bgMusic.stop(); // silence it straight away; the shutdown handler in setupAudio() destroys it
@@ -784,27 +820,14 @@ class TestScene extends Phaser.Scene {
 
     updateTemperature(temp, advanceYear = true) {
         this.temperature = temp;
-        const { poor, dead } = evaluateThreshold(temp, THRESHOLDS.temperature);
-        this.poorTemp = poor;
-        this.reefDeadTemp = dead;
-        this.updateStress(advanceYear);
-        this.emitStats();
-    }
-
-    updatePollution(poll, advanceYear = true) {
-        this.pollutionValue = poll;
-        const { poor, dead } = evaluateThreshold(poll, THRESHOLDS.pollution);
-        this.poorPollution = poor;
-        this.reefDeadPollution = dead;
+        this.tempStressSeverity = highRangeSeverity(temp, THRESHOLDS.temperature);
         this.updateStress(advanceYear);
         this.emitStats();
     }
 
     updateLight(light, advanceYear = true) {
         this.lightLevel = light;
-        const { poor, dead } = evaluateThreshold(light, THRESHOLDS.light);
-        this.poorLight = poor;
-        this.reefDeadLight = dead;
+        this.lightStressSeverity = highRangeSeverity(light, THRESHOLDS.light);
         this.updateStress(advanceYear);
         this.emitStats();
     }
@@ -813,35 +836,12 @@ class TestScene extends Phaser.Scene {
         // Once the sim is over, no more years can pass
         if (this.simEnd) return;
 
-        if (this.reefDeadTemp || this.reefDeadLight || this.reefDeadPollution) {
-            this.stressValue = 100;
-            this.simEnd = true;
-        } else {
-            this.stressValue = this.poorTemp + this.poorLight + this.poorPollution;
-        }
-
-        if (advanceYear && this.stressHistory.length > 0) {
-            const prev = this.stressHistory[this.stressHistory.length - 1];
-
-            if (prev === 90 && this.stressValue === 90) {
-                this.stressValue = 100;
-                this.simEnd = true;
-                this.reefDeadLight = true;
-            }
-        }
-
         if (advanceYear || this.simEnd) this.updateHistory();
         else this.refreshVisuals();
 
         if (advanceYear){
-            this.timeJump++;
             // Every time jump costs the fish half a heart
             this.loseHalfHeart();
-        }
-
-        // This is the modifier that automatically ends the simulation, we could probably just take this out at somepoint
-        if (this.timeJump >= 10) {
-            this.simEnd = true;
         }
 
         // Only spawn new bubbles after every end condition has been checked
@@ -853,7 +853,95 @@ class TestScene extends Phaser.Scene {
             }
         }
 
-        updateCoralStress(this, this.stressValue);
+        refreshCoralStress(this);
+    }
+
+    hasFatalClimateCombination() {
+        const temperature = THRESHOLDS.temperature;
+        const light = THRESHOLDS.light;
+        const bothLow = this.temperature <= temperature.a && this.lightLevel <= light.a;
+        const bothHigh = this.temperature >= temperature.d && this.lightLevel >= light.d;
+        return bothLow || bothHigh;
+    }
+
+    advanceStress(delta) {
+        const pollutionMultiplier = 1
+            + (this.pollutionValue - STARTING_POLLUTION)
+            / (MAX_POLLUTION - STARTING_POLLUTION)
+            * (MAX_POLLUTION_STRESS_MULTIPLIER - 1);
+        const lightFactor = 1 + LIGHT_STRESS_WEIGHT * this.lightStressSeverity;
+        const stressRate = this.tempStressSeverity > 0
+            ? HEAT_STRESS_POINTS_PER_YEAR
+                * this.tempStressSeverity
+                * lightFactor
+                * pollutionMultiplier
+            : -STRESS_RECOVERY_PER_YEAR;
+
+        const stressDelta = stressRate * delta / YEAR_DURATION_MS;
+        this.stressValue = Phaser.Math.Clamp(
+            this.stressValue + stressDelta,
+            0,
+            100
+        );
+        updateCoralStress(this, stressDelta);
+
+        if (this.stressValue >= 100) {
+            this.reefDeadStress = true;
+            this.simEnd = true;
+            this.updateHistory();
+            killCorals(this);
+            return;
+        }
+
+        const rearmedWarningLevel = STRESS_WARNING_THRESHOLDS.reduce(
+            (level, threshold, index) => this.stressValue >= threshold - 5 ? index + 1 : level,
+            0
+        );
+        this.stressWarningLevel = Math.min(this.stressWarningLevel, rearmedWarningLevel);
+        const nextWarningLevel = STRESS_WARNING_THRESHOLDS.reduce(
+            (level, threshold, index) => this.stressValue >= threshold ? index + 1 : level,
+            0
+        );
+        if (nextWarningLevel > this.stressWarningLevel) {
+            const warning = [
+                null,
+                {
+                    warning: true,
+                    title: "Coral Stress Building",
+                    message: "Heat is building stress over time. Lowering the temperature slows bleaching; high light and pollution make stress build faster.",
+                },
+                {
+                    warning: true,
+                    title: "Serious Bleaching Risk",
+                    message: "Coral stress is high. Reduce the heat, and lower light if it is elevated, to slow further damage.",
+                },
+                {
+                    warning: true,
+                    title: "Critical Reef Stress",
+                    message: "The reef is close to collapse. Lower the temperature now; reducing elevated light can also slow bleaching.",
+                },
+            ][nextWarningLevel];
+            this.game.events.emit("reef-warning", warning);
+        }
+        this.stressWarningLevel = nextWarningLevel;
+    }
+
+    updateFatalClimateWarning() {
+        const isFatalClimate = this.hasFatalClimateCombination();
+        if (isFatalClimate === this.fatalClimateWarningActive) return;
+
+        this.fatalClimateWarningActive = isFatalClimate;
+        if (isFatalClimate) {
+            this.game.events.emit("reef-warning", {
+                id: "fatal-climate",
+                persistent: true,
+                warning: true,
+                title: "Extreme Conditions",
+                message: "Temperature and light are both at fatal extremes. Lower at least one before the year ends to save the reef.",
+            });
+        } else {
+            this.game.events.emit("reef-warning-cleared", "fatal-climate");
+        }
     }
 
     updateHistory() {

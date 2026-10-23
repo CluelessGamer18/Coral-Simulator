@@ -14,8 +14,9 @@ function getTemperatureColor(temp) {
     return `#${channel(0)}${channel(1)}${channel(2)}`;
 }
 
-function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
-    timejump = 2*timejump
+function SimInfoDisplay({yearsElapsed,light,temp,stress=0,poll,score=0}){
+    yearsElapsed = 2*yearsElapsed
+    const displayedPollution = Math.round(poll * 2) / 2
     const temperatureColor = getTemperatureColor(temp);
     const dots = [ 
         "large", "small", 
@@ -55,7 +56,7 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
                 <span
                     className="TimelineIndicator"
                     style={{
-                        transform: `translateX(${timejump * 8.59}px)`
+                        transform: `translateX(${yearsElapsed * 8.59}px)`
                     }}
                 />
                 {/*<img className="hoverPreview" src={asset("tooltip_timeline.png")} />*/}
@@ -86,7 +87,7 @@ function SimInfoDisplay({timejump,light,temp,stress=0,poll,score=0}){
                 </div>
                 <div className="statusGroup">
                     <img className="SimInfoIcon" src={asset("poop.svg")} alt="Pollution" />
-                    <span className="SimInfoText">{poll}</span>
+                    <span className="SimInfoText">{displayedPollution}</span>
                     <img className="hoverPreview" src={asset("tooltips/tooltip_pollution.png")} alt="Pollution, in µMol: the amount of nutrients expelled from sewage waste." />
                 </div>
                 <div className="statusGroup scoreGroup">

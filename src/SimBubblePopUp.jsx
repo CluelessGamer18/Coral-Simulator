@@ -26,17 +26,6 @@ const CONFIG = {
         graphAlt: "Graph of coral health against light level: corals are only safe between 140 and 1840 µMol/m²/s.",
         dangerA: 140,
         dangerB: 1840,
-        },
-        poll: {
-        min: 0,
-        max: 13,
-        title: "Set Bubble Value",
-        subtitle: "Nutrient Level (µMolar)",
-        icon: asset("pollution_bubble.svg"),
-        graph: asset("graphs/pollutionGraph.svg"),
-        graphAlt: "Graph of coral health against nutrient level: corals are only safe between 0 and 6 µMolar.",
-        dangerA: 0,
-        dangerB: 6,
         }
 
 }

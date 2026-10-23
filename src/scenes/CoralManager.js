@@ -191,6 +191,7 @@ var coralTypes = {
 };
 
 const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead']; // forwarded to React frontend for display
+export const BLEACH_STAGE_COUNT = 10;
 
 const coralImgPathsTabular = [ // microscope images of tabular coral bleach stages (for sending to React frontend)
   asset('microscopes/healthy_tabular_microscope.png'),
@@ -210,12 +211,18 @@ const coralImgPathsBranch = [ // microscope images of branch coral bleach stages
 
 // z levels for corals, which determine their y position and rendering depth in the scene
 const depthLevels = [-10, 120, 180];
+const coralSwayAngles = {
+  Columnar: 0.45,
+  Digitate: 2.25,
+  Folios: 1.25,
+  Tabular: 0.45,
+  "Flat Tabular": 0.45,
+};
 
 
 /* main function to create coral instances in the scene. Called when game scene is created. */
 export function createCorals(scene) {
     scene.corals = [];
-  resetCoralTypes(); // a previous game (e.g. before Return to Title) may have left the types stressed
 
   const sandbarWidth = 800; // create a sandbar with a width of 800 pixels
   const coralClearance = 100 // half of the max coral width so it doesnt grow on the sandbar
@@ -261,6 +268,10 @@ function createCoralGroup(scene, count, minX, maxX) {
     coral.bleachRate = type.bleachRate;
     coral.stress = 0;
     coral.bleachStage = 0;
+    coral.statusStage = 0;
+    coral.status = coralStatuses[0];
+    coral.dead = false;
+    coral.img = type.imgType === 'branch' ? coralImgPathsBranch[0] : coralImgPathsTabular[0];
 
     coral.on('pointerover', () => { // hover effect
       coral.setTint(0xffcc88);
@@ -314,14 +325,14 @@ function createCoralGroup(scene, count, minX, maxX) {
       scene.game.events.emit('coralInfo', {
         name: type.name,
         scientificName: type.scientificName,
-        status: type.status,
+        status: coral.status,
         info: type.info,
-        img: type.img
+        img: coral.img
       });
     });
 
     scene.corals.push(coral);
-    coralSway(scene, coral);
+    coralSway(scene, coral, coralSwayAngles[type.name]);
   }
 }
 
@@ -438,11 +449,14 @@ function createCoralSpawnPlan(count, minX, maxX) {
 }
 
 /* animate corals */
-function coralSway(scene, coral) {
-    scene.tweens.add({
+function coralSway(scene, coral, maxAngle) {
+  const swayAngle = Phaser.Math.FloatBetween(maxAngle * 0.7, maxAngle * 1.3);
+
+  scene.tweens.add({
     targets: coral,
-    angle: { from: -4, to: 4 },
-    duration: Phaser.Math.Between(2500, 4000),
+    angle: { from: -swayAngle, to: swayAngle },
+    duration: Phaser.Math.Between(4000, 6000),
+    delay: Phaser.Math.Between(0, 2500),
     yoyo: true,
     repeat: -1,
     ease: 'sine.inOut'
@@ -451,7 +465,10 @@ function coralSway(scene, coral) {
 
 export function createBleachStages(scene, coralType) {
   const source = scene.textures.get(coralType).getSourceImage();
-  const strengths = [0.2, 0.4, 0.65, 1.0]; // bleaching strengths for each stage
+  const strengths = Array.from(
+    { length: BLEACH_STAGE_COUNT },
+    (_, index) => (index + 1) / BLEACH_STAGE_COUNT
+  );
   const keys = [coralType];
 
   strengths.forEach((strength, index) => {
@@ -491,30 +508,53 @@ export function createBleachStages(scene, coralType) {
 }
   
 
-/* called when stress levels are updated in the game. stressAmount: 0-100 */
-export function updateCoralStress(scene, stressAmount) {
-  const adjustedStress = Math.floor((stressAmount / 100) * 4); // map stress 0-100 to 0-4 (number of spritesheet frames for corals)
+export function getBleachStage(stressAmount) {
+  return Math.floor(Phaser.Math.Clamp(stressAmount, 0, 100) / 100 * BLEACH_STAGE_COUNT);
+}
 
-  Object.values(coralTypes).forEach(type => {
-    if (type.status !== 'Dead') {
-      type.status = coralStatuses[adjustedStress];
-      if (type.imgType === 'branch') {
-        type.img = coralImgPathsBranch[adjustedStress];
+/* Apply the reef's stress change to each coral using its susceptibility percentage. */
+export function updateCoralStress(scene, stressDelta) {
+  scene.corals.forEach(coral => {
+    if (!coral.dead) {
+      const scaledDelta = stressDelta > 0
+        ? stressDelta * coral.bleachRate / 100
+        : stressDelta;
+      coral.stress = Phaser.Math.Clamp(coral.stress + scaledDelta, 0, 100);
+      if (coral.stress >= 100) coral.dead = true;
+    }
+  });
+  refreshCoralStress(scene);
+}
+
+export function refreshCoralStress(scene) {
+  scene.corals.forEach(coral => {
+    const type = coralTypes[coral.type];
+    const statusStage = coral.dead
+      ? coralStatuses.length - 1
+      : Math.min(Math.floor(coral.stress / 25), coralStatuses.length - 2);
+    const bleachStage = getBleachStage(coral.stress);
+
+    coral.statusStage = statusStage;
+    coral.status = coralStatuses[statusStage];
+    coral.img = (type.imgType === 'branch' ? coralImgPathsBranch : coralImgPathsTabular)[statusStage];
+
+    if (coral.bleachStage !== bleachStage) {
+      coral.bleachStage = bleachStage;
+      if (type.generatedStages) {
+        coral.setTexture(type.generatedStages[bleachStage]);
       } else {
-        type.img = coralImgPathsTabular[adjustedStress];
+        coral.setFrame(statusStage);
       }
     }
   });
+}
 
+export function killCorals(scene) {
   scene.corals.forEach(coral => {
-  const type = coralTypes[coral.type];
-
-  if (type.generatedStages) {
-    coral.setTexture(type.generatedStages[adjustedStress]);
-  } else {
-    coral.setFrame(type.status === "Dead" ? 4 : adjustedStress);
-  }
-});
+    coral.stress = 100;
+    coral.dead = true;
+  });
+  refreshCoralStress(scene);
 }
 
 /* helper function to reset coral states. Called when game is reset. */
@@ -522,27 +562,16 @@ export function resetCorals(scene) {
   scene.corals.forEach(coral => {
     coral.stress = 0;
     coral.bleachStage = 0;
+    coral.statusStage = 0;
+    coral.status = coralStatuses[0];
+    coral.dead = false;
     const type = coralTypes[coral.type];
+    coral.img = type.imgType === 'branch' ? coralImgPathsBranch[0] : coralImgPathsTabular[0];
 
     if (type.generatedStages) {
       coral.setTexture(type.generatedStages[0]);
     } else {
       coral.setFrame(0);
-    }
-  });
-
-  resetCoralTypes();
-}
-
-/* helper function to put every coral type's popup info back to Healthy.
-   coralTypes is shared by every game, so a new game has to reset it too, not only a restart. */
-function resetCoralTypes() {
-  Object.values(coralTypes).forEach(type => {
-    type.status = 'Healthy';
-    if (type.imgType === 'branch') {
-      type.img = coralImgPathsBranch[0];
-    } else {
-      type.img = coralImgPathsTabular[0];
     }
   });
 }

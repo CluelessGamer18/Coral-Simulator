@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { createBleachStages } from "./CoralManager.js";
+import { BLEACH_STAGE_COUNT, createBleachStages, getBleachStage } from "./CoralManager.js";
 import {
     THRESHOLDS,
     evaluateThreshold,
@@ -37,7 +37,7 @@ const STEPS = [
     {
         id: "bubble",
         title: "Changing the Environment",
-        text: "Bubbles change the light, temperature and pollution of the reef. Swim into the temperature bubble to pop it, then choose a new water temperature.",
+        text: "Temperature and light bubbles change reef conditions. Pollution gradually rises over time and amplifies heat stress. Swim into the temperature bubble to pop it, then choose a new water temperature.",
         image: "tutorial/tutorial_2.png",
         imageAlt: "A fish swimming toward a bubble",
         praise: "Complete!",
@@ -213,7 +213,6 @@ class Tutorial extends Phaser.Scene {
             light: 500,
             temperature: this.temperature,
             pollution: 1,
-            timeJump: 0,
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
             simEnd: false,
@@ -381,7 +380,7 @@ class Tutorial extends Phaser.Scene {
         this.temperature = value;
         const { poor, dead } = evaluateThreshold(value, THRESHOLDS.temperature);
         // the stage the main game would show for this temperature on its own
-        this.coralStage = dead ? 4 : Math.floor((poor / 100) * 4);
+        this.coralStage = dead ? BLEACH_STAGE_COUNT : getBleachStage(poor);
         this.coral.setTexture(this.coralStages[this.coralStage]);
     }
 
@@ -410,7 +409,7 @@ class Tutorial extends Phaser.Scene {
     startTime() {
         const value = this.temperature;
         let outcome;
-        if (this.coralStage === 4) {
+        if (this.coralStage === BLEACH_STAGE_COUNT) {
             outcome = `A year at ${value}°C was too extreme, and your coral bleached and died. In the main game that ends the simulation, so choose carefully!`;
         } else if (this.coralStage > 0) {
             outcome = `A year at ${value}°C has stressed your coral, and it has started to lose its colour.`;
@@ -418,7 +417,7 @@ class Tutorial extends Phaser.Scene {
             outcome = `A year at ${value}°C has kept your coral healthy and colourful.`;
         }
         this.emitStep({
-            text: `Every bubble you pop moves the reef forward one year. ${outcome} Swim over to your coral to see how it's doing.`
+            text: `In the main simulation, high heat builds coral stress over time. Bright light can make that stress build faster, and rising pollution amplifies it. ${outcome} Swim over to your coral to see how it's doing.`
         });
     }
 

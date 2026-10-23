@@ -21,7 +21,7 @@ function App() {
   const [lightValue, setLightValue] = useState(500);
   const [pollutionValue, setPollutionValue] = useState(1);
   const [stressValue, setStressValue] = useState(0);
-  const [timeAdvanced, setTimeAdvanced] = useState(0);
+  const [yearsElapsed, setYearsElapsed] = useState(0);
 
   const [bubbleCollision, setBubbleCollision] = useState(false);
   const [collisionType, setCollisionType] = useState("None");
@@ -56,9 +56,6 @@ function App() {
         initialValue = lightValue;
         break;
 
-      case "poll":
-        initialValue = pollutionValue;
-        break;
     }
   }
 
@@ -70,8 +67,6 @@ function App() {
       scene.updateTemperature(value);
     } else if (type === 'light') {
       scene.updateLight(value);
-    } else if (type === 'poll') {
-      scene.updatePollution(value);
     }
     scene.freeFish(false);
   };
@@ -86,7 +81,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (!eventNotice) return;
+    if (!eventNotice || eventNotice.persistent) return;
 
     const timeoutId = window.setTimeout(() => {
       setEventNotice(null);
@@ -113,7 +108,7 @@ function App() {
       setLightValue(stats.light)
       setTemperatureValue(stats.temperature)
       setPollutionValue(stats.pollution)
-      setTimeAdvanced(stats.timeJump)
+      setYearsElapsed(stats.yearsElapsed)
       setBubbleCollision(stats.bubbleCollision)
       setCollisionType(stats.collisionType)
       setSimEnd(stats.simEnd)
@@ -125,18 +120,26 @@ function App() {
 
     // The scene sends the selected event's title and message when the event bubble is collected.
     const onRandomEvent = ({ title, message }) => {
-      setEventNotice({ title, message });
+      setEventNotice((current) => current?.persistent ? current : { title, message });
+    };
+
+    const onReefWarning = (warning) => {
+      setEventNotice((current) => current?.persistent && !warning.persistent ? current : warning);
+    };
+
+    const onReefWarningCleared = (id) => {
+      setEventNotice((current) => current?.id === id ? null : current);
     };
 
     const onPredatorAppeared = () => {
-      setEventNotice({
+      setEventNotice((current) => current?.persistent ? current : {
         title: 'Predator Alert',
         message: 'A predator has appeared in the reef!',
       });
     };
 
     const onPredatorLeft = () => {
-      setEventNotice({
+      setEventNotice((current) => current?.persistent ? current : {
         title: 'All Clear',
         message: 'The predator has left. You can come out now!',
       });
@@ -144,11 +147,15 @@ function App() {
 
     events.on("stats-changed", onStats);
     events.on("random-event", onRandomEvent);
+    events.on("reef-warning", onReefWarning);
+    events.on("reef-warning-cleared", onReefWarningCleared);
     events.on("predator-appeared", onPredatorAppeared);
     events.on("predator-left", onPredatorLeft);
     return () => {
       events.off("stats-changed", onStats);
       events.off("random-event", onRandomEvent);
+      events.off("reef-warning", onReefWarning);
+      events.off("reef-warning-cleared", onReefWarningCleared);
       events.off("predator-appeared", onPredatorAppeared);
       events.off("predator-left", onPredatorLeft);
     };
@@ -190,7 +197,7 @@ function App() {
     setLightValue(500);
     setPollutionValue(1);
     setStressValue(0);
-    setTimeAdvanced(0);
+    setYearsElapsed(0);
     setBubbleCollision(false);
     setSimEnd(false);
     setReefDead(false);
@@ -221,7 +228,7 @@ function App() {
             fishDead={fishDead}
           ></SimEndPopUp>) : null}
         {eventNotice ? (
-          <aside className={inTutorial ? "EventNotice EventNoticeTutorial" : "EventNotice"} role="status" aria-live="polite" aria-labelledby="event-notice-title">
+          <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}`} role={eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
               <div className="EventNoticeHeading">
               <h2 id="event-notice-title">{eventNotice.title}</h2>
               <button type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
@@ -233,7 +240,7 @@ function App() {
         initialValue={initialValue}
         onApply={applyBubble}
         onCancel={cancelBubble} /> : null}
-        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay timejump={timeAdvanced} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
+        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay yearsElapsed={yearsElapsed} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           setShowTitleScreen={setShowTitleScreen}

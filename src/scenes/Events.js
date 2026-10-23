@@ -12,17 +12,25 @@ const CONFIG = {
     minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
     baseChaseSpeed: 1.2,
     chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
-    eventsCanKill: false, // this is a flag that stops events from killing the reef, obviously if we change how time works this can be modified / gotten rid of
-    eventsAdvanceYear: false, // if set to false events dont take up a year when interacted with, true allows them to advance the year
+    eventsCanKill: true, // when false, negative events cannot push conditions into fatal ranges
     negativeHitDamage: 0, // half a heart lost by interacting with event bubble
 };
 
 // Environmental variable map
 const VARIABLES = {
     temperature: {prop: "temperature", setter: "updateTemperature", texture: "TempBubble", label: "The temperature", unit: "°C", max: 35},
-    pollution: {prop: "pollutionValue", setter: "updatePollution", texture: "PollutionBubble", label: "The nutrient level", unit: "", max: 5},
     light: {prop: "lightLevel", setter: "updateLight", texture: "LightBubble", label: "The light level", unit: "", max: 1839},
 };
+
+const EVENT_CHANGE_RANGES = {
+    temperature: {min: 1, max: 5, step: 1},
+    light: {min: 100, max: 500, step: 10},
+};
+
+function randomEventChange(variable) {
+    const { min, max, step } = EVENT_CHANGE_RANGES[variable];
+    return Phaser.Math.Between(min / step, max / step) * step;
+}
 
 // Calculate risk with something defined as the profile of a trapezoid-shaped distribution
 // This calculates the normalized probability (0 to 1) or risk occuring up to value
@@ -37,39 +45,27 @@ function risk(value, {a, b, c, d}){
 export const EVENTS = [
     // Negative events (chase fish), darker = more intense
     {
-        id: "temp_up", type: "negative", intensity: 2, variable: "temperature", delta: +2,
+        id: "temp_up", type: "negative", intensity: 2, variable: "temperature",
         title: "Ocean Temperatures Rising", learning: "multiple_stressors",
-        teach: "Heat and bright light together stress coral far more than either one by themselves",
+        teach: "High heat builds stress over time, and bright light can make that stress build faster.",
         weight: (r) => 1 + r.light * 1.5,
     },
     {
-        id: "nutrients_up", type: "negative", intensity: 1, variable: "pollution", delta: +1,
-        title: "Nutrient Levels Rising", learning: "multiple_stressors",
-        teach: "Extra nutrients make corals more sensetive to heat and light.",
-        weight: (r) => 1 + r.temperature,
-    },
-    {
-        id: "light_up", type: "negative", intensity: 2, variable: "light", delta: +200,
+        id: "light_up", type: "negative", intensity: 2, variable: "light",
         title: "Light Levels Increasing", learning: "multiple_stressors",
-        teach: "Bright light on warm water is a recipe for coral bleaching",
+        teach: "Bright light can accelerate bleaching when water is too warm.",
         weight: (r) => 1 + r.temperature * 1.5,
     },
 
     // Positive events (swim into them to help the reef)
     {
-        id: "cool_current", type: "positive", intensity: 1, variable: "temperature", delta: -2,
+        id: "cool_current", type: "positive", intensity: 1, variable: "temperature",
         title: "Cool Current", learning: "reversible",
         teach: "Coral bleaching can be reversed when the stress is removed.",
         weight: (r) => 0.4 + r.temperature * 3,
     },
     {
-        id: "nutrient_flush", type: "positive", intensity: 1, variable: "pollution", delta: -1,
-        title: "Clean Water", learning: "reversible",
-        teach: "Cleaner water affords coral room to recover.",
-        weight: (r) => 0.4 + r.pollution * 3,
-    },
-    {
-        id: "shade", type: "positive", intensity: 1, variable: "light", delta: -200,
+        id: "shade", type: "positive", intensity: 1, variable: "light",
         title: "Cloudy", learning: "reversible",
         teach: "Shade from clouds takes pressure off of stressed corals.",
         weight: (r) => 0.4 + r.light * 3,
@@ -110,9 +106,20 @@ export class EventManager {
 
         if (def.type === "negative") {
             if (value < threshold.b) return false; // Already below the healthy value
-            const after = value + def.delta;
-            if (after > variable.max) return false;
+            const maxChange = EVENT_CHANGE_RANGES[def.variable].max;
+            const after = value + maxChange;
+            if (!CONFIG.eventsCanKill && after > variable.max) return false;
             if (!CONFIG.eventsCanKill && after > threshold.d) return false; // Prevent events from instantly killing the reef
+            if (!CONFIG.eventsCanKill) {
+                const nextTemperature = def.variable === "temperature" ? after : this.scene.temperature;
+                const nextLight = def.variable === "light" ? after : this.scene.lightLevel;
+                const temperatureThreshold = this.th.temperature;
+                const lightThreshold = this.th.light;
+                const wouldCauseFatalPair =
+                    (nextTemperature >= temperatureThreshold.d && nextLight >= lightThreshold.d)
+                    || (nextTemperature <= temperatureThreshold.a && nextLight <= lightThreshold.a);
+                if (wouldCauseFatalPair) return false;
+            }
             return true;
         }
 
@@ -124,14 +131,12 @@ export class EventManager {
         const s = this.scene;
         const r = {
             temperature: risk(s.temperature, this.th.temperature),
-            pollution: risk(s.pollutionValue, this.th.pollution),
             light: risk(s.lightLevel, this.th.light),
         };
         const negativeCount = this.active.filter(b => b.def.type === "negative").length;
 
         const pool = EVENTS
             .filter(e => !(e.type === "negative" && negativeCount >= CONFIG.maxNegativeBubbles))
-            .filter(e => !this.active.some(b => b.def.id === e.id)) // No duplicate negative bubbles
             .filter(e => this.canSpawn(e))
             .map(e => ({e, w: Math.max(0, e.weight(r))}))
             .filter(p => p.w > 0);
@@ -150,6 +155,7 @@ export class EventManager {
         if (!def) return;
 
         const s = this.scene;
+        const change = randomEventChange(def.variable);
         const minDist = def.type === "negative" ? CONFIG.minSpawnDistance: 300;
         let x, y, tries = 0;
 
@@ -160,6 +166,18 @@ export class EventManager {
         } while (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist && ++tries < 20);
 
         const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
+        const changeSign = def.type === "negative" ? "+" : "−";
+        const changeUnit = def.variable === "temperature" ? "°C" : "";
+        const label = s.add.text(x, y, `${changeSign}${change}${changeUnit}`, {
+            fontSize: "18px",
+            fontFamily: "Arial, sans-serif",
+            fontStyle: "bold",
+            color: def.type === "negative" ? "#ffffff" : "#123d24",
+            stroke: def.type === "negative" ? "#7d1717" : "#ffffff",
+            strokeThickness: 3,
+        })
+            .setOrigin(0.5, 1)
+            .setDepth(8);
 
         if (def.type === "negative") {
             // Red, getting darker with intensity: 1 = bright red, 3 = dark red
@@ -175,7 +193,7 @@ export class EventManager {
         }
 
         this.active.push({
-            sprite, def, age: 0, phase: Math.random() * 1000,
+            sprite, label, def, change, age: 0, phase: Math.random() * 1000,
             life: def.type === "negative" ? CONFIG.negativeBubbleLifetime : CONFIG.positiveBubbleLifetime, 
             direction: Phaser.Math.FloatBetween(0, Math.PI * 2), 
             targetDirection: Phaser.Math.FloatBetween(0, Math.PI * 2),
@@ -216,6 +234,8 @@ export class EventManager {
             b.sprite.y = Phaser.Math.Clamp(b.sprite.y, 120, 850);
         }
 
+        b.label.setPosition(b.sprite.x, b.sprite.y - b.sprite.displayHeight * 0.55);
+
         if (dist < touchRadius) return this.resolve(b); // negative: you got hit, positive: you collected it
         if (b.age >= b.life) return this.expire(b); // Bubble disapears <-(how do you spell this)
     }
@@ -246,7 +266,7 @@ export class EventManager {
                     }
                 }
 
-                const message = this.apply(b.def);
+                const message = this.apply(b);
                 s.game.events.emit("random-event", {
                     title: b.def.title,
                     message,
@@ -265,6 +285,7 @@ export class EventManager {
         const s = this.scene;
         this.active = this.active.filter(x => x !== b);
         s.tweens.killTweensOf(b.sprite);
+        s.tweens.add({targets: b.label, alpha: 0, duration: 400, onComplete: () => b.label.destroy() });
         s.tweens.add({targets: b.sprite, alpha: 0, duration: 400, onComplete: () => b.sprite.destroy() });
         if (b.def.type === "negative") {
             s.game.events.emit("event-averted", {id: b.def.id, title: b.def.title});
@@ -272,15 +293,22 @@ export class EventManager {
     }
 
     // Changes the value through update()
-    apply(def) {
+    apply(bubble) {
         const s = this.scene;
+        const {def, change} = bubble;
         const variable = VARIABLES[def.variable];
         const threshold = this.th[def.variable];
         const before = s[variable.prop];
-        const after  = def.type === "negative" ? Math.min(before + def.delta, variable.max) : Math.max(before + def.delta, threshold.b); // Positives stop at healthy flow
+        const direction = def.type === "negative" ? 1 : -1;
+        const rawAfter = before + direction * change;
+        const boundedAfter = def.type === "negative"
+            ? Math.min(rawAfter, variable.max)
+            : Math.max(rawAfter, threshold.b); // Positives stop at healthy flow
+        const after = def.variable === "light"
+            ? Math.min(Math.round(boundedAfter / 10) * 10, variable.max)
+            : boundedAfter;
 
-        // Checks the flag to see if the event advances the year 
-        s[variable.setter](after, CONFIG.eventsAdvanceYear);
+        s[variable.setter](after, false);
 
         const verb = after > before ? "rose" : "fell";
         return `${variable.label} ${verb} from ${before}${variable.unit} to ${after}${variable.unit}. ${def.teach}`
@@ -290,13 +318,17 @@ export class EventManager {
     remove(b) {
         this.active = this.active.filter(x => x !== b);
         this.scene.tweens.killTweensOf(b.sprite);
+        this.scene.tweens.killTweensOf(b.label);
         b.sprite.destroy();
+        b.label.destroy();
     }
 
     clear() {
         for (const b of this.active) {
             this.scene.tweens.killTweensOf(b.sprite);
+            this.scene.tweens.killTweensOf(b.label);
             b.sprite.destroy();
+            b.label.destroy();
         }
         this.active = [];
     }
