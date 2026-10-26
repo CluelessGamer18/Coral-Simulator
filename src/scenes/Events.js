@@ -78,6 +78,7 @@ export class EventManager {
         this.scene = scene;
         this.th = thresholds;
         this.active = [];
+        this.season = scene.season;
         this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
     }
 
@@ -87,6 +88,12 @@ export class EventManager {
 
         // Nothing happens during the tutorial, popups or the end screen
         if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen) return;
+
+        if (this.season !== s.season) {
+            this.clear();
+            this.season = s.season;
+            this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
+        }
 
         this.nextSpawnIn -= delta;
         if (this.nextSpawnIn <= 0) {
@@ -100,6 +107,9 @@ export class EventManager {
 
     // Check if bubbles can spawn
     canSpawn(def) {
+        const isSummer = this.scene.season === "summer";
+        if ((def.type === "negative") !== isSummer) return false;
+
         const variable = VARIABLES[def.variable];
         const threshold = this.th[def.variable];
         const value = this.scene[variable.prop];
