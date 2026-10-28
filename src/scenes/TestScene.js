@@ -37,13 +37,13 @@ const SUMMER_DURATION_MS = YEAR_DURATION_MS * SUMMER_FRACTION_OF_YEAR;
 const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
 const NORMAL_TEMPERATURE = 27;
 const NORMAL_LIGHT_LEVEL = 500;
+const SUMMER_PEAK_LIGHT_LEVEL = 1500;
 const TIME_UI_UPDATE_MS = 250;
 const STARTING_POLLUTION = 1;
 const MAX_POLLUTION = 5;
 const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
 // Heat alone should raise stress gradually; light amplifies this rate through LIGHT_STRESS_WEIGHT.
-const HEAT_STRESS_POINTS_PER_YEAR = 6;
-const LIGHT_STRESS_WEIGHT = 0.5;
+const HEAT_STRESS_POINTS_PER_YEAR = 30;
 const STRESS_RECOVERY_PER_YEAR = 10;
 const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
 const HEART_SPACING = 36;
@@ -60,8 +60,8 @@ export function evaluateThreshold(value, { a, b, c, d }) {
     return { poor: stressed ? 30 : 0, dead };
 }
 
-function highRangeSeverity(value, { c, d }) {
-    return value > c ? Phaser.Math.Clamp((value - c) / (d - c), 0, 1) : 0;
+function highRangeSeverity(value, { b, d }) {
+    return value > b ? Phaser.Math.Clamp((value - b) / (d - b), 0, 1) : 0;
 }
 
 class TestScene extends Phaser.Scene {
@@ -111,6 +111,7 @@ class TestScene extends Phaser.Scene {
         this.season = "summer";
         this.lastSeason = "summer";
         this.summerTemperatureChange = 0;
+        this.summerLightOffset = 0;
         this.winterClimateStart = null;
         this.winterClimateYear = null;
         this.timeUiElapsedMs = 0;
@@ -507,6 +508,7 @@ class TestScene extends Phaser.Scene {
                 ? "summer"
                 : "winter";
             this.applySummerTemperatureEvent();
+            this.applySummerLightRamp(this.elapsedSimMs);
             this.normalizeWinterClimate(this.elapsedSimMs);
             const simulationProgress = this.elapsedSimMs / SIMULATION_DURATION_MS;
             this.pollutionValue = STARTING_POLLUTION
@@ -839,6 +841,10 @@ class TestScene extends Phaser.Scene {
     applySummerTemperatureEvent() {
         if (this.season === this.lastSeason) return;
 
+        if (this.season === "summer") {
+            this.summerLightOffset = 0;
+        }
+
         if (this.season === "winter") {
             this.summerTemperatureChange = 0;
         } else if (this.season === "summer" && this.yearsElapsed >= 1 && this.elapsedSimMs < SIMULATION_DURATION_MS) {
@@ -859,9 +865,48 @@ class TestScene extends Phaser.Scene {
         this.emitStats();
     }
 
+    getNaturalSummerLight() {
+        const summerProgress = Phaser.Math.Clamp(
+            (this.elapsedSimMs % YEAR_DURATION_MS) / SUMMER_DURATION_MS,
+            0,
+            1
+        );
+        // Ease toward the peak so light rises gently at both ends of the summer.
+        const easedProgress = summerProgress * summerProgress * (3 - 2 * summerProgress);
+        return NORMAL_LIGHT_LEVEL
+            + (SUMMER_PEAK_LIGHT_LEVEL - NORMAL_LIGHT_LEVEL) * easedProgress;
+    }
+
+    applySummerLightRamp() {
+        if (this.season !== "summer") return;
+
+        if (this.yearsElapsed < 1) {
+            this.lightLevel = NORMAL_LIGHT_LEVEL;
+            this.lightStressSeverity = 0;
+            return;
+        }
+
+        if (this.season !== this.lastSeason && this.lastSeason !== "summer") {
+            this.summerLightOffset = 0;
+        }
+
+        const naturalLight = this.getNaturalSummerLight();
+        this.lightLevel = Phaser.Math.Clamp(
+            Math.round(naturalLight + this.summerLightOffset),
+            THRESHOLDS.light.a,
+            THRESHOLDS.light.d
+        );
+        this.lightStressSeverity = highRangeSeverity(this.lightLevel, THRESHOLDS.light);
+    }
+
     updateLight(light, advanceYear = true) {
         this.adjustWinterClimateStart("light", light);
-        this.lightLevel = light;
+        if (this.season === "summer") {
+            this.summerLightOffset = light - this.getNaturalSummerLight();
+            this.lightLevel = Phaser.Math.Clamp(Math.round(light), THRESHOLDS.light.a, THRESHOLDS.light.d);
+        } else {
+            this.lightLevel = light;
+        }
         this.lightStressSeverity = highRangeSeverity(light, THRESHOLDS.light);
         this.updateStress(advanceYear);
         this.emitStats();
@@ -948,11 +993,12 @@ class TestScene extends Phaser.Scene {
             + (this.pollutionValue - STARTING_POLLUTION)
             / (MAX_POLLUTION - STARTING_POLLUTION)
             * (MAX_POLLUTION_STRESS_MULTIPLIER - 1);
-        const lightFactor = 1 + LIGHT_STRESS_WEIGHT * this.lightStressSeverity;
-        const stressRate = this.season === "summer" && this.tempStressSeverity > 0
+        const combinedClimateSeverity = this.tempStressSeverity > 0 && this.lightStressSeverity > 0
+            ? Math.sqrt(this.tempStressSeverity * this.lightStressSeverity)
+            : 0;
+        const stressRate = this.season === "summer" && combinedClimateSeverity > 0
             ? HEAT_STRESS_POINTS_PER_YEAR / SUMMER_FRACTION_OF_YEAR
-                * this.tempStressSeverity
-                * lightFactor
+                * combinedClimateSeverity
                 * pollutionMultiplier
             : -STRESS_RECOVERY_PER_YEAR / (1 - SUMMER_FRACTION_OF_YEAR);
 
