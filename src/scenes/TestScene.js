@@ -44,7 +44,7 @@ const MAX_POLLUTION = 5;
 const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
 // Heat alone should raise stress gradually; light amplifies this rate through LIGHT_STRESS_WEIGHT.
 const HEAT_STRESS_POINTS_PER_YEAR = 30;
-const STRESS_RECOVERY_PER_YEAR = 10;
+// Reef stress follows a proportional recovery curve throughout winter and reaches zero naturally.
 const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
@@ -847,6 +847,7 @@ class TestScene extends Phaser.Scene {
 
         if (this.season === "winter") {
             this.summerTemperatureChange = 0;
+            // Living coral recovers gradually throughout winter; do not reset the reef stress meter instantly.
         } else if (this.season === "summer" && this.yearsElapsed >= 1 && this.elapsedSimMs < SIMULATION_DURATION_MS) {
             this.summerTemperatureChange = Phaser.Math.Between(2, 8);
             this.temperature = Math.min(35, this.temperature + this.summerTemperatureChange);
@@ -854,6 +855,7 @@ class TestScene extends Phaser.Scene {
         }
 
         this.lastSeason = this.season;
+        refreshCoralStress(this);
         this.emitStats();
     }
 
@@ -996,11 +998,22 @@ class TestScene extends Phaser.Scene {
         const combinedClimateSeverity = this.tempStressSeverity > 0 && this.lightStressSeverity > 0
             ? Math.sqrt(this.tempStressSeverity * this.lightStressSeverity)
             : 0;
-        const stressRate = this.season === "summer" && combinedClimateSeverity > 0
-            ? HEAT_STRESS_POINTS_PER_YEAR / SUMMER_FRACTION_OF_YEAR
+        let stressRate = 0;
+        if (this.season === "summer" && combinedClimateSeverity > 0) {
+            stressRate = HEAT_STRESS_POINTS_PER_YEAR / SUMMER_FRACTION_OF_YEAR
                 * combinedClimateSeverity
-                * pollutionMultiplier
-            : -STRESS_RECOVERY_PER_YEAR / (1 - SUMMER_FRACTION_OF_YEAR);
+                * pollutionMultiplier;
+        } else if (this.season === "winter") {
+            const winterProgress = Phaser.Math.Clamp(
+                ((this.elapsedSimMs % YEAR_DURATION_MS) - SUMMER_DURATION_MS)
+                    / (YEAR_DURATION_MS - SUMMER_DURATION_MS),
+                0,
+                1
+            );
+            const remainingWinterFraction = Math.max(1 - winterProgress, 0.001);
+            stressRate = -this.stressValue / remainingWinterFraction
+                / (YEAR_DURATION_MS - SUMMER_DURATION_MS) * YEAR_DURATION_MS;
+        }
 
         const stressDelta = stressRate * delta / YEAR_DURATION_MS;
         this.stressValue = Phaser.Math.Clamp(
@@ -1008,7 +1021,7 @@ class TestScene extends Phaser.Scene {
             0,
             100
         );
-        updateCoralStress(this, stressDelta);
+        updateCoralStress(this, stressDelta, delta);
 
         if (this.stressValue >= 100) {
             this.reefDeadStress = true;
