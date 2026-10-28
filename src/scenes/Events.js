@@ -13,6 +13,7 @@ const CONFIG = {
     baseChaseSpeed: 1.2,
     chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
     eventsCanKill: true, // when false, negative events cannot push conditions into fatal ranges
+    negativeBubblesEnabled: false, // Temporarily disable negative bubbles until they receive their updated behavior
     negativeHitDamage: 0, // half a heart lost by interacting with event bubble
 };
 
@@ -108,6 +109,8 @@ export class EventManager {
 
     // Check if bubbles can spawn
     canSpawn(def) {
+        if (def.type === "negative" && !CONFIG.negativeBubblesEnabled) return false;
+
         const isSummer = this.scene.season === "summer";
         if ((def.type === "negative") !== isSummer) return false;
 

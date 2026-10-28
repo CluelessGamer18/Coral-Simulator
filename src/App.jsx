@@ -82,7 +82,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (!scene || scene.scene.key !== "TestScene" || yearsElapsed < 1) return;
+    if (!scene || scene.scene.key !== "TestScene" || yearsElapsed < 1 || simEnd) return;
 
     if (noticedSeason.current !== season) {
       noticedSeason.current = season;
@@ -97,7 +97,12 @@ function App() {
         setEventNotice((current) => current?.bleaching ? null : current);
       }
     }
-  }, [scene, season, yearsElapsed]);
+  }, [scene, season, yearsElapsed, simEnd]);
+
+  useEffect(() => {
+    if (!simEnd) return;
+    setEventNotice((current) => current?.bleaching ? null : current);
+  }, [simEnd]);
 
   useEffect(() => {
     if (!eventNotice) return;
