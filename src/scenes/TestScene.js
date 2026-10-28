@@ -375,6 +375,10 @@ class TestScene extends Phaser.Scene {
         this.sfxVolume = value;
     }
 
+    playBleachingWarning() {
+        this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.15 });
+    }
+
     // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.
     // Shared by spawnBubbles() and returnBubble() so new and cancelled bubbles use the same area.
     getBubbleSpawnLocation() {
@@ -1075,6 +1079,7 @@ class TestScene extends Phaser.Scene {
                     message: "The reef is close to collapse. Lower the temperature now; reducing elevated light can also slow summer bleaching.",
                 },
             ][nextWarningLevel];
+            this.playBleachingWarning();
             this.game.events.emit("reef-warning", warning);
         }
         this.stressWarningLevel = nextWarningLevel;
@@ -1086,6 +1091,7 @@ class TestScene extends Phaser.Scene {
 
         this.fatalClimateWarningActive = isFatalClimate;
         if (isFatalClimate) {
+            this.playBleachingWarning();
             this.game.events.emit("reef-warning", {
                 id: "fatal-climate",
                 persistent: true,
