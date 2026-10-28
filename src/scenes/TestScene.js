@@ -38,12 +38,15 @@ const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
 const NORMAL_TEMPERATURE = 27;
 const NORMAL_LIGHT_LEVEL = 500;
 const SUMMER_PEAK_LIGHT_LEVEL = 1500;
+const BLEACHING_LIGHT_START = 600;
 const TIME_UI_UPDATE_MS = 250;
 const STARTING_POLLUTION = 1;
 const MAX_POLLUTION = 5;
 const MAX_POLLUTION_STRESS_MULTIPLIER = 1.75;
 // Heat alone should raise stress gradually; light amplifies this rate through LIGHT_STRESS_WEIGHT.
 const HEAT_STRESS_POINTS_PER_YEAR = 120;
+// Summer bleaching must still reach fatal reef stress under sustained high heat/light.
+const BLEACHING_RATE_SCALE = 1.6;
 // Reef stress follows a proportional recovery curve throughout winter and reaches zero naturally.
 const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
 const HEART_SPACING = 36;
@@ -995,14 +998,27 @@ class TestScene extends Phaser.Scene {
             + (this.pollutionValue - STARTING_POLLUTION)
             / (MAX_POLLUTION - STARTING_POLLUTION)
             * (MAX_POLLUTION_STRESS_MULTIPLIER - 1);
-        const combinedClimateSeverity = this.tempStressSeverity > 0 && this.lightStressSeverity > 0
-            ? Math.sqrt(this.tempStressSeverity * this.lightStressSeverity)
+        const lightBleachingSeverity = this.lightLevel > BLEACHING_LIGHT_START
+            ? Phaser.Math.Clamp(
+                (this.lightLevel - BLEACHING_LIGHT_START)
+                    / (THRESHOLDS.light.d - BLEACHING_LIGHT_START),
+                0,
+                1
+            )
+            : 0;
+        const combinedClimateSeverity = this.tempStressSeverity > 0 && lightBleachingSeverity > 0
+            ? Math.sqrt(this.tempStressSeverity * lightBleachingSeverity)
             : 0;
         let stressRate = 0;
-        if (this.season === "summer" && combinedClimateSeverity > 0) {
-            stressRate = HEAT_STRESS_POINTS_PER_YEAR / SUMMER_FRACTION_OF_YEAR
-                * combinedClimateSeverity
-                * pollutionMultiplier;
+        if (this.season === "summer") {
+            if (combinedClimateSeverity > 0) {
+                stressRate = HEAT_STRESS_POINTS_PER_YEAR / SUMMER_FRACTION_OF_YEAR
+                    * combinedClimateSeverity
+                    * pollutionMultiplier
+                    * BLEACHING_RATE_SCALE;
+            }
+            // Temperature alone cannot bleach coral. When light is back in the healthy range,
+            // summer stress stays flat until winter recovery begins.
         } else if (this.season === "winter") {
             const winterProgress = Phaser.Math.Clamp(
                 ((this.elapsedSimMs % YEAR_DURATION_MS) - SUMMER_DURATION_MS)
