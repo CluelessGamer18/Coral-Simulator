@@ -41,7 +41,8 @@ const TIME_UI_UPDATE_MS = 250;
 const STARTING_POLLUTION = 1;
 const MAX_POLLUTION = 5;
 const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
-const HEAT_STRESS_POINTS_PER_YEAR = 20;
+// Heat alone should raise stress gradually; light amplifies this rate through LIGHT_STRESS_WEIGHT.
+const HEAT_STRESS_POINTS_PER_YEAR = 6;
 const LIGHT_STRESS_WEIGHT = 0.5;
 const STRESS_RECOVERY_PER_YEAR = 10;
 const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
@@ -108,6 +109,8 @@ class TestScene extends Phaser.Scene {
         this.elapsedSimMs = 0;
         this.yearsElapsed = 0;
         this.season = "summer";
+        this.lastSeason = "summer";
+        this.summerTemperatureChange = 0;
         this.winterClimateStart = null;
         this.winterClimateYear = null;
         this.timeUiElapsedMs = 0;
@@ -336,6 +339,7 @@ class TestScene extends Phaser.Scene {
             pollution: this.pollutionValue,
             yearsElapsed: this.yearsElapsed,
             season: this.season,
+            summerTemperatureChange: this.summerTemperatureChange,
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
             simEnd: this.simEnd,
@@ -502,6 +506,7 @@ class TestScene extends Phaser.Scene {
             this.season = this.elapsedSimMs % YEAR_DURATION_MS < SUMMER_DURATION_MS
                 ? "summer"
                 : "winter";
+            this.applySummerTemperatureEvent();
             this.normalizeWinterClimate(this.elapsedSimMs);
             const simulationProgress = this.elapsedSimMs / SIMULATION_DURATION_MS;
             this.pollutionValue = STARTING_POLLUTION
@@ -829,6 +834,21 @@ class TestScene extends Phaser.Scene {
         this.scene.restart();
         this.bgMusic.stop(); // silence it straight away; the shutdown handler in setupAudio() destroys it
         resetCorals(this);
+    }
+
+    applySummerTemperatureEvent() {
+        if (this.season === this.lastSeason) return;
+
+        if (this.season === "winter") {
+            this.summerTemperatureChange = 0;
+        } else if (this.season === "summer" && this.yearsElapsed >= 1 && this.elapsedSimMs < SIMULATION_DURATION_MS) {
+            this.summerTemperatureChange = Phaser.Math.Between(2, 8);
+            this.temperature = Math.min(35, this.temperature + this.summerTemperatureChange);
+            this.tempStressSeverity = highRangeSeverity(this.temperature, THRESHOLDS.temperature);
+        }
+
+        this.lastSeason = this.season;
+        this.emitStats();
     }
 
     updateTemperature(temp, advanceYear = true) {

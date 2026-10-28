@@ -44,6 +44,7 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
 
   const [eventNotice, setEventNotice] = useState(null);
+  const [summerTemperatureChange, setSummerTemperatureChange] = useState(0);
   const noticedSeason = useRef(null);
 
   let initialValue;
@@ -89,7 +90,7 @@ function App() {
       if (season === "summer") {
         setEventNotice({
           title: "Temperature Bleaching Event",
-          message: "Keep the light levels lower to prevent a mass bleaching of your reef.",
+          message: `The water temperature has risen by ${summerTemperatureChange}°C. Keep the light levels lower to prevent a mass bleaching of your reef.`,
           centered: true,
           bleaching: true,
         });
@@ -97,7 +98,7 @@ function App() {
         setEventNotice((current) => current?.bleaching ? null : current);
       }
     }
-  }, [scene, season, yearsElapsed, simEnd]);
+  }, [scene, season, yearsElapsed, simEnd, summerTemperatureChange]);
 
   useEffect(() => {
     if (!simEnd) return;
@@ -131,6 +132,7 @@ function App() {
       setStressValue(stats.stress)
       setLightValue(stats.light)
       setTemperatureValue(stats.temperature)
+      setSummerTemperatureChange(stats.summerTemperatureChange ?? 0)
       setPollutionValue(stats.pollution)
       setYearsElapsed(stats.yearsElapsed)
       setSeason(stats.season)
@@ -231,6 +233,7 @@ function App() {
     setScore(0);
     setHistory(EMPTY_HISTORY);
     setEventNotice(null);
+    setSummerTemperatureChange(0);
     noticedSeason.current = null;
   }
 
