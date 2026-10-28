@@ -93,16 +93,18 @@ function App() {
           centered: true,
           bleaching: true,
         });
+      } else if (season === "winter") {
+        setEventNotice((current) => current?.bleaching ? null : current);
       }
     }
   }, [scene, season]);
 
   useEffect(() => {
-    if (!eventNotice || eventNotice.persistent) return;
+    if (!eventNotice) return;
 
     const timeoutId = window.setTimeout(() => {
       setEventNotice(null);
-    }, 5000);
+    }, eventNotice.bleaching ? 7000 : 5000);
 
     return () => window.clearTimeout(timeoutId);
   }, [eventNotice]);
@@ -138,11 +140,11 @@ function App() {
 
     // The scene sends the selected event's title and message when the event bubble is collected.
     const onRandomEvent = ({ title, message }) => {
-      setEventNotice((current) => current?.persistent ? current : { title, message });
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : { title, message });
     };
 
     const onReefWarning = (warning) => {
-      setEventNotice((current) => current?.persistent && !warning.persistent ? current : warning);
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : warning);
     };
 
     const onReefWarningCleared = (id) => {
@@ -150,14 +152,14 @@ function App() {
     };
 
     const onPredatorAppeared = () => {
-      setEventNotice((current) => current?.persistent ? current : {
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : {
         title: 'Predator Alert',
         message: 'A predator has appeared in the reef!',
       });
     };
 
     const onPredatorLeft = () => {
-      setEventNotice((current) => current?.persistent ? current : {
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : {
         title: 'All Clear',
         message: 'The predator has left. You can come out now!',
       });
