@@ -43,7 +43,7 @@ const STARTING_POLLUTION = 1;
 const MAX_POLLUTION = 5;
 const MAX_POLLUTION_STRESS_MULTIPLIER = 1.75;
 // Heat alone should raise stress gradually; light amplifies this rate through LIGHT_STRESS_WEIGHT.
-const HEAT_STRESS_POINTS_PER_YEAR = 75;
+const HEAT_STRESS_POINTS_PER_YEAR = 120;
 // Reef stress follows a proportional recovery curve throughout winter and reaches zero naturally.
 const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
 const HEART_SPACING = 36;
