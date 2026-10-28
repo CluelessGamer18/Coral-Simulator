@@ -139,6 +139,9 @@ export class EventManager {
     // Choose what event is picked
     pickEvent() {
         const s = this.scene;
+        // Winter recovery is automatic; keep positive event definitions available for future use.
+        if (s.season !== "summer") return null;
+
         const r = {
             temperature: risk(s.temperature, this.th.temperature),
             light: risk(s.lightLevel, this.th.light),

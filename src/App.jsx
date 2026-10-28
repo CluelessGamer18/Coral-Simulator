@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './styles/App.css'
 
 import RangeSlider from './RangeSlider.jsx'
@@ -44,7 +44,7 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
 
   const [eventNotice, setEventNotice] = useState(null);
-
+  const noticedSeason = useRef(null);
 
   let initialValue;
   if (scene){
@@ -80,6 +80,22 @@ function App() {
   const dismissEventNotice = () => {
     setEventNotice(null);
   };
+
+  useEffect(() => {
+    if (!scene || scene.scene.key !== "TestScene") return;
+
+    if (noticedSeason.current !== season) {
+      noticedSeason.current = season;
+      if (season === "summer") {
+        setEventNotice({
+          title: "Temperature Bleaching Event",
+          message: "Keep the light levels lower to prevent a mass bleaching of your reef.",
+          centered: true,
+          bleaching: true,
+        });
+      }
+    }
+  }, [scene, season]);
 
   useEffect(() => {
     if (!eventNotice || eventNotice.persistent) return;
@@ -208,6 +224,7 @@ function App() {
     setScore(0);
     setHistory(EMPTY_HISTORY);
     setEventNotice(null);
+    noticedSeason.current = null;
   }
 
   // "Restart Sim" on the end screen: the game keeps running, so restart the scene as well
@@ -231,10 +248,11 @@ function App() {
             fishDead={fishDead}
           ></SimEndPopUp>) : null}
         {eventNotice ? (
-          <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}`} role={eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
+          <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
+              <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
+              {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
               <div className="EventNoticeHeading">
               <h2 id="event-notice-title">{eventNotice.title}</h2>
-              <button type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
               </div>
               <p>{eventNotice.message}</p>
           </aside>
