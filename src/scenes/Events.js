@@ -86,8 +86,9 @@ export class EventManager {
     update(delta, frameScale) {
         const s = this.scene;
 
-        // Nothing happens during the tutorial, popups or the end screen
-        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen) return;
+        // Nothing happens during the tutorial, popups, the end screen, or the first year.
+        // This gives players time to learn the reef before event bubbles begin appearing.
+        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen || s.yearsElapsed < 1) return;
 
         if (this.season !== s.season) {
             this.clear();
