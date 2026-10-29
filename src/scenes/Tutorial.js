@@ -2,8 +2,12 @@ import Phaser from "phaser";
 import { createBleachStages, getBleachStage, getCoralInfo } from "./CoralManager.js";
 import { EVENTS } from "./Events.js";
 import { createHome, addPiece, updateHomeControls } from "./HomeBuilding.js";
+import { addGlow, removeGlow } from "./Glow.js";
 import {
     FOOD_GROWTH,
+    FOOD_GLOW_COLOR,
+    FOOD_SCALE,
+    FOOD_MAX_Y,
     PREDATOR_SPEED,
     REEF_HIDE_DISTANCE,
     PREDATOR_ESCAPE_MARGIN,
@@ -54,9 +58,9 @@ const STEPS = [
     {
         id: "food",
         title: "Eat to Grow",
-        text: "Swim into the algae orb to eat it. Food refills the hearts above your fish and helps it grow bigger.",
-        image: "tutorial/tutorial_food.png",
-        imageAlt: "A fish swimming toward an algae orb",
+        text: "Triggerfish crack open shellfish like snails and clams that live on the sea floor. Swim down to the glowing shell to eat it. Food refills the hearts above your fish and helps it grow bigger.",
+        image: "tutorial/tutorial_food.svg",
+        imageAlt: "A fish swimming toward a glowing red shell, then growing bigger",
         praise: "Complete!",
     },
     {
@@ -94,7 +98,7 @@ const STEPS = [
     {
         id: "predator",
         title: "Watch Out for Predators",
-        text: "A lionfish is hunting you, and every bite costs half a heart! Swim close to your coral and press E to hide until it swims away. Once you've eaten 3 algae orbs, you're big enough to scare predators off.",
+        text: "A lionfish is hunting you, and every bite costs half a heart! Swim close to your coral and press E to hide until it swims away. Once you've eaten 3 shellfish, you're big enough to scare predators off.",
         image: "tutorial/tutorial_predator.svg",
         imageAlt: "The E key beside a fish hiding in the coral while a lionfish swims past",
         praise: "Complete!",
@@ -307,7 +311,7 @@ class Tutorial extends Phaser.Scene {
         // Goals only count once the fish has swum during the lesson, so one it was already sitting on
         // isn't completed before the player has had a chance to read the banner
         if (this.swamThisStep) {
-            if (this.stepId === "food" && this.touching(this.orb)) {
+            if (this.stepId === "food" && this.touching(this.shellfish)) {
                 this.eatFood();
             } else if (this.stepId === "heat" && !this.heatwave && this.nearCoral(CORAL_VISIT_DISTANCE)) {
                 this.startHeatwave();
@@ -389,23 +393,26 @@ class Tutorial extends Phaser.Scene {
         return { x: this.guide.x < this.scale.width / 2 ? 1050 : 400, y };
     }
 
-    /* Eat to Grow: one algae orb in the middle of the scene */
+    /* Eat to Grow: one glowing shellfish on the sea floor in the middle of the scene, like the main game's food */
 
     startFood() {
-        this.orb = this.add.image(this.scale.width / 2, 450, "algaeOrb").setDepth(8).setScale(1.5);
-        this.bobUpAndDown(this.orb);
+        this.shellfish = this.add.image(this.scale.width / 2, FOOD_MAX_Y - 20, "shellTypes", 0)
+            .setDepth(8)
+            .setScale(FOOD_SCALE * 1.25); // a little bigger than in the main game, so it's easy to spot
+        addGlow(this, this.shellfish, FOOD_GLOW_COLOR);
         this.emitStep();
     }
 
     eatFood() {
-        this.orb.destroy();
-        this.orb = null;
+        removeGlow(this.shellfish);
+        this.shellfish.destroy();
+        this.shellfish = null;
         this.sound.play("bubblePop", { volume: this.sfxVolume });
 
         this.health = Math.min(this.health + 1, MAX_HEARTS * 2);
         this.refreshHeartTextures();
 
-        // Grows the same amount as one orb in the main game
+        // Grows the same amount as one shellfish in the main game
         this.tweens.add({
             targets: this,
             fishGrowth: FOOD_GROWTH,

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { addGlow, removeGlow } from "./Glow.js";
 
 /*
 Home building: the triggerfish collects glowing pieces of rubble from around the
@@ -181,7 +182,7 @@ export function addPiece(scene, x, type, y = Phaser.Math.Between(PIECE_MIN_Y, PI
     const piece = scene.add.image(x, y, PIECE_TYPES[type])
         .setDepth(PIECE_DEPTH)
         .setAngle(Phaser.Math.Between(-20, 20));
-    addGlow(scene, piece);
+    addGlow(scene, piece, PIECE_GLOW_COLOR);
     scene.homePieces.push(piece);
 
     // Fade in so pieces don't pop into existence in front of the player
@@ -197,41 +198,6 @@ function findNearbyPiece(scene) {
         }))
         .filter(({ distance }) => distance <= PICKUP_DISTANCE)
         .sort((a, b) => a.distance - b.distance)[0]?.piece;
-}
-
-// Pulsing green glow. preFX only exists under WebGL, so the Canvas renderer gets a pulsing green tint instead.
-function addGlow(scene, piece) {
-    if (piece.preFX) {
-        piece.glow = piece.preFX.addGlow(PIECE_GLOW_COLOR, 4, 0, false, 0.1, 12);
-        piece.glowTween = scene.tweens.add({
-            targets: piece.glow,
-            outerStrength: { from: 2, to: 6 },
-            duration: 900,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.inOut",
-        });
-    } else {
-        piece.setTint(PIECE_GLOW_COLOR);
-        piece.glowTween = scene.tweens.add({
-            targets: piece,
-            alpha: { from: 1, to: 0.6 },
-            duration: 900,
-            yoyo: true,
-            repeat: -1,
-            ease: "Sine.inOut",
-        });
-    }
-}
-
-function removeGlow(piece) {
-    piece.glowTween?.stop();
-    piece.glowTween = null;
-    if (piece.glow) {
-        piece.preFX.remove(piece.glow);
-        piece.glow = null;
-    }
-    piece.clearTint().setAlpha(1);
 }
 
 function pickUpPiece(scene, piece) {
@@ -265,7 +231,7 @@ function dropPiece(scene) {
         angle: Phaser.Math.Between(-20, 20),
         duration: 700,
         ease: "Sine.out",
-        onComplete: () => addGlow(scene, piece),
+        onComplete: () => addGlow(scene, piece, PIECE_GLOW_COLOR),
     });
 }
 
