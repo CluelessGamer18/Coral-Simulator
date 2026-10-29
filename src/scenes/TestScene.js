@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
 import { createCorals, updateCoralStress, refreshCoralStress, killCorals, resetCorals } from "./CoralManager.js";
 import { EventManager } from "./Events.js";
+import { createHomeBuilding, updateHomeBuilding } from "./HomeBuilding.js";
 
 let oval;
 
@@ -320,6 +321,7 @@ class TestScene extends Phaser.Scene {
         this.updateHistory();
         // this.spawnBubbles();
         this.spawnFood();
+        createHomeBuilding(this);
         this.eventManager = new EventManager(this, THRESHOLDS);
 
         // The tutorial scene starts this one with tutorialComplete set, and a restart keeps it,
@@ -778,6 +780,7 @@ class TestScene extends Phaser.Scene {
         }
 
         this.updateHearts();
+        updateHomeBuilding(this);
     }
 
     // Keeps the hearts centred above the fish

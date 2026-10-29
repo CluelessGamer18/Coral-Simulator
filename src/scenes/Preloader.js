@@ -69,6 +69,13 @@ preload() {
         // food the fish can eat to heal
         this.load.svg("algaeOrb", "food/algae_orb.svg", { width: 30, height: 30 });
 
+        // triggerfish home building: glowing pieces to collect, and the nest crater they go in
+        // (pixel art, so sizes are whole multiples of the SVG grid to keep the pixels crisp)
+        this.load.svg("homePebble", "home/material_pebble.svg", { width: 36, height: 36 });
+        this.load.svg("homeShell", "home/material_shell_fragment.svg", { width: 36, height: 36 });
+        this.load.svg("homeCoralRubble", "home/material_coral_rubble.svg", { width: 36, height: 36 });
+        this.load.svg("homeStage1", "home/home_stage1.svg", { width: 216, height: 90 });
+
         // bubbles
         this.load.image("TempBubble","bubbles/tempBubble.png")
         this.load.image("LightBubble","bubbles/light_levelBubble.png")
