@@ -209,6 +209,23 @@ const coralImgPathsBranch = [ // microscope images of branch coral bleach stages
   asset('microscopes/dead_microscope.png')
 ];
 
+// What the coral info popup shows for a coral of this type with this much stress (0-100)
+export function getCoralInfo(typeName, stress, dead = false) {
+  const type = coralTypes[typeName];
+  const statusStage = dead
+    ? coralStatuses.length - 1
+    : Math.min(Math.floor(stress / 25), coralStatuses.length - 2);
+
+  return {
+    name: type.name,
+    scientificName: type.scientificName,
+    status: coralStatuses[statusStage],
+    statusStage,
+    info: type.info,
+    img: (type.imgType === 'branch' ? coralImgPathsBranch : coralImgPathsTabular)[statusStage],
+  };
+}
+
 // z levels for corals, which determine their y position and rendering depth in the scene
 const depthLevels = [-10, 120, 180];
 const coralSwayAngles = {
@@ -540,14 +557,12 @@ export function updateCoralStress(scene, stressDelta, deltaMs = 0) {
 export function refreshCoralStress(scene) {
   scene.corals.forEach(coral => {
     const type = coralTypes[coral.type];
-    const statusStage = coral.dead
-      ? coralStatuses.length - 1
-      : Math.min(Math.floor(coral.stress / 25), coralStatuses.length - 2);
+    const { statusStage, status, img } = getCoralInfo(coral.type, coral.stress, coral.dead);
     const bleachStage = getBleachStage(coral.stress);
 
     coral.statusStage = statusStage;
-    coral.status = coralStatuses[statusStage];
-    coral.img = (type.imgType === 'branch' ? coralImgPathsBranch : coralImgPathsTabular)[statusStage];
+    coral.status = status;
+    coral.img = img;
 
     if (coral.bleachStage !== bleachStage) {
       coral.bleachStage = bleachStage;

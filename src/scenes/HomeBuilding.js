@@ -37,11 +37,11 @@ const CONDITIONS = {
 };
 const BLEACHING_HEAT_SUPPLY_LOSS = 0.35; // at the worst heat, a bleaching event's supply drops by this much more
 
-const HOME_PIECE_POINTS = 10;
+export const HOME_PIECE_POINTS = 10;
 
 // Each stage is the crater from home_stageN.svg, drawn at 6x. The rim values describe the oval the
 // collected pieces sit on, measured from the bottom-centre of the image.
-const HOME_STAGES = [
+export const HOME_STAGES = [
     { texture: "homeStage1", piecesNeeded: 0, rimRx: 90, rimRy: 30, rimAboveBottom: 48 },
     { texture: "homeStage2", piecesNeeded: 8, rimRx: 120, rimRy: 41, rimAboveBottom: 60 },
     { texture: "homeStage3", piecesNeeded: 20, rimRx: 150, rimRy: 51, rimAboveBottom: 72 },
@@ -71,19 +71,23 @@ const PIECE_DEPTH = 7.5;
 const PIECE_HOME_SCALE = 0.6;   // pieces shrink a little once they're part of the nest
 
 export function createHomeBuilding(scene) {
+    createHome(scene, scene.WORLD_WIDTH / 2);
+    scene.nextHomePieceIn = PIECE_SPAWN_INTERVAL;
+    for (let i = 0; i < STARTING_PIECES; i++) spawnPiece(scene, "calm");
+}
+
+// The nest, the Q key and the prompt, without any pieces. Also used by the tutorial, which places its own pieces.
+export function createHome(scene, x) {
     scene.homePiecesPlaced = 0;
     scene.homeStage = 0;
     scene.carriedPiece = null;
-    scene.nextHomePieceIn = PIECE_SPAWN_INTERVAL;
+    scene.homePieces = [];
 
-    scene.home = scene.add.image(scene.WORLD_WIDTH / 2, HOME_BOTTOM, HOME_STAGES[0].texture)
+    scene.home = scene.add.image(x, HOME_BOTTOM, HOME_STAGES[0].texture)
         .setOrigin(0.5, 1)
         .setDepth(HOME_DEPTH);
 
     scene.homeKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
-
-    scene.homePieces = [];
-    for (let i = 0; i < STARTING_PIECES; i++) spawnPiece(scene, "calm");
 
     // Small "Q" hint above the fish whenever there's something to pick up or drop
     scene.homePrompt = scene.add.text(0, 0, "", {
@@ -101,6 +105,11 @@ export function updateHomeBuilding(scene, delta, clockIsRunning) {
     if (clockIsRunning && !scene.simEnd) updatePieceSupply(scene, delta);
 
     const canAct = scene.tutorialComplete && !scene.bubbleCollision && !scene.coralInfoOpen && !scene.simEnd;
+    updateHomeControls(scene, canAct);
+}
+
+// Q to pick up, drop and place pieces, and the hint above the fish. canAct is false while the fish can't use Q.
+export function updateHomeControls(scene, canAct) {
     const nearbyPiece = scene.carriedPiece ? null : findNearbyPiece(scene);
     const center = getRimCenter(scene);
     const nearHome = Phaser.Math.Distance.Between(scene.guide.x, scene.guide.y, center.x, center.y)
@@ -164,7 +173,12 @@ function spawnPiece(scene, condition) {
         x = Phaser.Math.Between(100, scene.WORLD_WIDTH - 100);
     } while (Math.abs(x - scene.WORLD_WIDTH / 2) < HOME_CLEARANCE);
 
-    const piece = scene.add.image(x, Phaser.Math.Between(PIECE_MIN_Y, PIECE_MAX_Y), PIECE_TYPES[pickPieceType(scene, condition)])
+    addPiece(scene, x, pickPieceType(scene, condition));
+}
+
+// A glowing piece lying on the floor, ready to be picked up. type is a key of PIECE_TYPES.
+export function addPiece(scene, x, type, y = Phaser.Math.Between(PIECE_MIN_Y, PIECE_MAX_Y)) {
+    const piece = scene.add.image(x, y, PIECE_TYPES[type])
         .setDepth(PIECE_DEPTH)
         .setAngle(Phaser.Math.Between(-20, 20));
     addGlow(scene, piece);
