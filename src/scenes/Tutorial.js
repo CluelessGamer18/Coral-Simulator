@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { createBleachStages, getBleachStage, getCoralInfo } from "./CoralManager.js";
+import { createBleachStages, getBleachStage, getCoralInfo, prepareBleachStages } from "./CoralManager.js";
 import { EVENTS } from "./Events.js";
 import { createHome, addPiece, updateHomeControls } from "./HomeBuilding.js";
 import { addGlow, removeGlow } from "./Glow.js";
@@ -18,6 +18,7 @@ const FISH_SCALE = 1.3 / 1.5; // the fish's size in the main game before it grow
 const PRAISE_DURATION = 2000; // ms the "well done" message shows before moving on (keep in sync with TutorialBanner.css)
 const TUTORIAL_PREDATOR_SPEED = PREDATOR_SPEED * 0.6; // slower than the real one, to give time to read the banner
 const CORAL_VISIT_DISTANCE = 200; // how close the fish has to swim to the coral to check on it
+const BLEACH_PREP_MS_PER_FRAME = 6; // time each frame spends making the main game's coral bleach stages in the background
 
 // Hearts above the fish, laid out the same as the main game. Health is counted in half hearts.
 const MAX_HEARTS = 3;
@@ -138,6 +139,10 @@ class Tutorial extends Phaser.Scene {
         this.setupFish();
         this.setupKeys();
         this.setupSkipButton();
+
+        // The main game needs every coral's bleach stages, which take seconds to make all at once.
+        // Making them a few at a time while the player learns means the main game starts without freezing.
+        this.bleachStagePrep = prepareBleachStages(this);
 
         this.stepIndex = -1;
         this.nextStep();
@@ -287,6 +292,8 @@ class Tutorial extends Phaser.Scene {
     }
 
     update(time, delta) {
+        this.continueBleachStagePrep();
+
         // Tuned at 60fps like the main game, and capped so a lag spike doesn't teleport the fish
         const frameScale = Math.min(delta, 50) / (1000 / 60);
 
@@ -328,6 +335,19 @@ class Tutorial extends Phaser.Scene {
 
         this.shadow.clear();
         this.shadow.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10);
+    }
+
+    // Does at least one step of the bleach stages, then more until this frame's time is used up
+    continueBleachStagePrep() {
+        if (!this.bleachStagePrep) return;
+
+        const stopAt = performance.now() + BLEACH_PREP_MS_PER_FRAME;
+        do {
+            if (this.bleachStagePrep.next().done) {
+                this.bleachStagePrep = null;
+                return;
+            }
+        } while (performance.now() < stopAt);
     }
 
     // Same movement as the main game's fish
