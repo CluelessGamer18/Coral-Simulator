@@ -32,14 +32,22 @@ export const PREDATOR_ESCAPE_MARGIN = 50;
 // Health is counted in half hearts, so 3 hearts = 6
 const MAX_HEARTS = 3;
 const YEAR_DURATION_MS = 60_000;
+const SUMMER_FRACTION_OF_YEAR = 0.5;
+const SUMMER_DURATION_MS = YEAR_DURATION_MS * SUMMER_FRACTION_OF_YEAR;
 const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
+const NORMAL_TEMPERATURE = 27;
+const NORMAL_LIGHT_LEVEL = 500;
+const SUMMER_PEAK_LIGHT_LEVEL = 1500;
+const BLEACHING_LIGHT_START = 600;
 const TIME_UI_UPDATE_MS = 250;
 const STARTING_POLLUTION = 1;
 const MAX_POLLUTION = 5;
-const MAX_POLLUTION_STRESS_MULTIPLIER = 2;
-const HEAT_STRESS_POINTS_PER_YEAR = 20;
-const LIGHT_STRESS_WEIGHT = 0.5;
-const STRESS_RECOVERY_PER_YEAR = 10;
+const MAX_POLLUTION_STRESS_MULTIPLIER = 1.75;
+// Heat alone should raise stress gradually; light amplifies this rate through LIGHT_STRESS_WEIGHT.
+const HEAT_STRESS_POINTS_PER_YEAR = 120;
+// Summer bleaching must still reach fatal reef stress under sustained high heat/light.
+const BLEACHING_RATE_SCALE = 1.6;
+// Reef stress follows a proportional recovery curve throughout winter and reaches zero naturally.
 const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
@@ -55,8 +63,8 @@ export function evaluateThreshold(value, { a, b, c, d }) {
     return { poor: stressed ? 30 : 0, dead };
 }
 
-function highRangeSeverity(value, { c, d }) {
-    return value > c ? Phaser.Math.Clamp((value - c) / (d - c), 0, 1) : 0;
+function highRangeSeverity(value, { b, d }) {
+    return value > b ? Phaser.Math.Clamp((value - b) / (d - b), 0, 1) : 0;
 }
 
 class TestScene extends Phaser.Scene {
@@ -77,8 +85,8 @@ class TestScene extends Phaser.Scene {
     }
 
     setupSimulationState() {
-        this.lightLevel = 500; // Default
-        this.temperature = 27; // Default
+        this.lightLevel = NORMAL_LIGHT_LEVEL;
+        this.temperature = NORMAL_TEMPERATURE;
         this.pollutionValue = STARTING_POLLUTION;
         this.stressValue = 0; // Will range from 0 - 100
         // 0 means healthy
@@ -103,6 +111,12 @@ class TestScene extends Phaser.Scene {
         this.simEnd = false;
         this.elapsedSimMs = 0;
         this.yearsElapsed = 0;
+        this.season = "summer";
+        this.lastSeason = "summer";
+        this.summerTemperatureChange = 0;
+        this.summerLightOffset = 0;
+        this.winterClimateStart = null;
+        this.winterClimateYear = null;
         this.timeUiElapsedMs = 0;
         this.bubbleCollision = false;
         this.coralInfoOpen = false;
@@ -328,6 +342,8 @@ class TestScene extends Phaser.Scene {
             temperature: this.temperature,
             pollution: this.pollutionValue,
             yearsElapsed: this.yearsElapsed,
+            season: this.season,
+            summerTemperatureChange: this.summerTemperatureChange,
             bubbleCollision: this.bubbleCollision,
             collisionType: this.collisionType,
             simEnd: this.simEnd,
@@ -357,6 +373,10 @@ class TestScene extends Phaser.Scene {
 
     setSfxVolume(value) {
         this.sfxVolume = value;
+    }
+
+    playBleachingWarning() {
+        this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.15 });
     }
 
     // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.
@@ -491,6 +511,12 @@ class TestScene extends Phaser.Scene {
                 SIMULATION_DURATION_MS
             );
             this.yearsElapsed = this.elapsedSimMs / YEAR_DURATION_MS;
+            this.season = this.elapsedSimMs % YEAR_DURATION_MS < SUMMER_DURATION_MS
+                ? "summer"
+                : "winter";
+            this.applySummerTemperatureEvent();
+            this.applySummerLightRamp(this.elapsedSimMs);
+            this.normalizeWinterClimate(this.elapsedSimMs);
             const simulationProgress = this.elapsedSimMs / SIMULATION_DURATION_MS;
             this.pollutionValue = STARTING_POLLUTION
                 + (MAX_POLLUTION - STARTING_POLLUTION) * simulationProgress;
@@ -525,6 +551,7 @@ class TestScene extends Phaser.Scene {
             this.timeUiElapsedMs += delta;
             if (this.timeUiElapsedMs >= TIME_UI_UPDATE_MS) {
                 this.timeUiElapsedMs %= TIME_UI_UPDATE_MS;
+                this.refreshVisuals();
                 refreshCoralStress(this);
                 this.emitStats();
             }
@@ -818,15 +845,77 @@ class TestScene extends Phaser.Scene {
         resetCorals(this);
     }
 
+    applySummerTemperatureEvent() {
+        if (this.season === this.lastSeason) return;
+
+        if (this.season === "summer") {
+            this.summerLightOffset = 0;
+        }
+
+        if (this.season === "winter") {
+            this.summerTemperatureChange = 0;
+            // Living coral recovers gradually throughout winter; do not reset the reef stress meter instantly.
+        } else if (this.season === "summer" && this.yearsElapsed >= 1 && this.elapsedSimMs < SIMULATION_DURATION_MS) {
+            this.summerTemperatureChange = Phaser.Math.Between(2, 8);
+            this.temperature = Math.min(35, this.temperature + this.summerTemperatureChange);
+            this.tempStressSeverity = highRangeSeverity(this.temperature, THRESHOLDS.temperature);
+        }
+
+        this.lastSeason = this.season;
+        refreshCoralStress(this);
+        this.emitStats();
+    }
+
     updateTemperature(temp, advanceYear = true) {
+        this.adjustWinterClimateStart("temperature", temp);
         this.temperature = temp;
         this.tempStressSeverity = highRangeSeverity(temp, THRESHOLDS.temperature);
         this.updateStress(advanceYear);
         this.emitStats();
     }
 
+    getNaturalSummerLight() {
+        const summerProgress = Phaser.Math.Clamp(
+            (this.elapsedSimMs % YEAR_DURATION_MS) / SUMMER_DURATION_MS,
+            0,
+            1
+        );
+        // Ease toward the peak so light rises gently at both ends of the summer.
+        const easedProgress = summerProgress * summerProgress * (3 - 2 * summerProgress);
+        return NORMAL_LIGHT_LEVEL
+            + (SUMMER_PEAK_LIGHT_LEVEL - NORMAL_LIGHT_LEVEL) * easedProgress;
+    }
+
+    applySummerLightRamp() {
+        if (this.season !== "summer") return;
+
+        if (this.yearsElapsed < 1) {
+            this.lightLevel = NORMAL_LIGHT_LEVEL;
+            this.lightStressSeverity = 0;
+            return;
+        }
+
+        if (this.season !== this.lastSeason && this.lastSeason !== "summer") {
+            this.summerLightOffset = 0;
+        }
+
+        const naturalLight = this.getNaturalSummerLight();
+        this.lightLevel = Phaser.Math.Clamp(
+            Math.round(naturalLight + this.summerLightOffset),
+            THRESHOLDS.light.a,
+            THRESHOLDS.light.d
+        );
+        this.lightStressSeverity = highRangeSeverity(this.lightLevel, THRESHOLDS.light);
+    }
+
     updateLight(light, advanceYear = true) {
-        this.lightLevel = light;
+        this.adjustWinterClimateStart("light", light);
+        if (this.season === "summer") {
+            this.summerLightOffset = light - this.getNaturalSummerLight();
+            this.lightLevel = Phaser.Math.Clamp(Math.round(light), THRESHOLDS.light.a, THRESHOLDS.light.d);
+        } else {
+            this.lightLevel = light;
+        }
         this.lightStressSeverity = highRangeSeverity(light, THRESHOLDS.light);
         this.updateStress(advanceYear);
         this.emitStats();
@@ -864,18 +953,87 @@ class TestScene extends Phaser.Scene {
         return bothLow || bothHigh;
     }
 
+    adjustWinterClimateStart(variable, value) {
+        const currentYear = Math.floor(this.elapsedSimMs / YEAR_DURATION_MS);
+        if (this.season !== "winter" || this.winterClimateYear !== currentYear) return;
+
+        const property = variable === "temperature" ? "temperature" : "light";
+        const currentValue = variable === "temperature" ? this.temperature : this.lightLevel;
+        this.winterClimateStart[property] += value - currentValue;
+    }
+
+    normalizeWinterClimate(elapsedMs) {
+        const currentYear = Math.floor(elapsedMs / YEAR_DURATION_MS);
+        if (this.season !== "winter") {
+            this.winterClimateStart = null;
+            this.winterClimateYear = null;
+        } else if (this.winterClimateYear !== currentYear) {
+            this.winterClimateYear = currentYear;
+            this.winterClimateStart = {
+                temperature: this.temperature,
+                light: this.lightLevel,
+            };
+        }
+
+        if (this.season === "winter") {
+            const yearProgress = elapsedMs % YEAR_DURATION_MS;
+            const winterProgress = Phaser.Math.Clamp(
+                (yearProgress - SUMMER_DURATION_MS)
+                    / (YEAR_DURATION_MS - SUMMER_DURATION_MS),
+                0,
+                1
+            );
+            this.temperature = Math.round(
+                (this.winterClimateStart.temperature
+                    + (NORMAL_TEMPERATURE - this.winterClimateStart.temperature) * winterProgress) * 10
+            ) / 10;
+            this.lightLevel = Math.round(
+                (this.winterClimateStart.light
+                    + (NORMAL_LIGHT_LEVEL - this.winterClimateStart.light) * winterProgress) / 10
+            ) * 10;
+        }
+
+        this.tempStressSeverity = highRangeSeverity(this.temperature, THRESHOLDS.temperature);
+        this.lightStressSeverity = highRangeSeverity(this.lightLevel, THRESHOLDS.light);
+    }
+
     advanceStress(delta) {
         const pollutionMultiplier = 1
             + (this.pollutionValue - STARTING_POLLUTION)
             / (MAX_POLLUTION - STARTING_POLLUTION)
             * (MAX_POLLUTION_STRESS_MULTIPLIER - 1);
-        const lightFactor = 1 + LIGHT_STRESS_WEIGHT * this.lightStressSeverity;
-        const stressRate = this.tempStressSeverity > 0
-            ? HEAT_STRESS_POINTS_PER_YEAR
-                * this.tempStressSeverity
-                * lightFactor
-                * pollutionMultiplier
-            : -STRESS_RECOVERY_PER_YEAR;
+        const lightBleachingSeverity = this.lightLevel > BLEACHING_LIGHT_START
+            ? Phaser.Math.Clamp(
+                (this.lightLevel - BLEACHING_LIGHT_START)
+                    / (THRESHOLDS.light.d - BLEACHING_LIGHT_START),
+                0,
+                1
+            )
+            : 0;
+        const combinedClimateSeverity = this.tempStressSeverity > 0 && lightBleachingSeverity > 0
+            ? Math.sqrt(this.tempStressSeverity * lightBleachingSeverity)
+            : 0;
+        let stressRate = 0;
+        if (this.season === "summer") {
+            if (combinedClimateSeverity > 0) {
+                stressRate = HEAT_STRESS_POINTS_PER_YEAR / SUMMER_FRACTION_OF_YEAR
+                    * combinedClimateSeverity
+                    * pollutionMultiplier
+                    * BLEACHING_RATE_SCALE;
+            }
+            // Temperature alone cannot bleach coral. When light is back in the healthy range,
+            // summer stress stays flat until winter recovery begins.
+        } else if (this.season === "winter") {
+            const winterProgress = Phaser.Math.Clamp(
+                ((this.elapsedSimMs % YEAR_DURATION_MS) - SUMMER_DURATION_MS)
+                    / (YEAR_DURATION_MS - SUMMER_DURATION_MS),
+                0,
+                1
+            );
+            const remainingWinterFraction = Math.max(1 - winterProgress, 0.001);
+            stressRate = -this.stressValue / remainingWinterFraction
+                / (YEAR_DURATION_MS - SUMMER_DURATION_MS) * YEAR_DURATION_MS;
+        }
 
         const stressDelta = stressRate * delta / YEAR_DURATION_MS;
         this.stressValue = Phaser.Math.Clamp(
@@ -883,7 +1041,7 @@ class TestScene extends Phaser.Scene {
             0,
             100
         );
-        updateCoralStress(this, stressDelta);
+        updateCoralStress(this, stressDelta, delta);
 
         if (this.stressValue >= 100) {
             this.reefDeadStress = true;
@@ -908,19 +1066,20 @@ class TestScene extends Phaser.Scene {
                 {
                     warning: true,
                     title: "Coral Stress Building",
-                    message: "Heat is building stress over time. Lowering the temperature slows bleaching; high light and pollution make stress build faster.",
+                    message: "Summer heat builds coral stress. Lowering the temperature slows bleaching; high light and pollution make it build faster.",
                 },
                 {
                     warning: true,
                     title: "Serious Bleaching Risk",
-                    message: "Coral stress is high. Reduce the heat, and lower light if it is elevated, to slow further damage.",
+                    message: "Coral stress is high. Reduce the heat before summer ends; lower light if it is elevated to slow further damage.",
                 },
                 {
                     warning: true,
                     title: "Critical Reef Stress",
-                    message: "The reef is close to collapse. Lower the temperature now; reducing elevated light can also slow bleaching.",
+                    message: "The reef is close to collapse. Lower the temperature now; reducing elevated light can also slow summer bleaching.",
                 },
             ][nextWarningLevel];
+            this.playBleachingWarning();
             this.game.events.emit("reef-warning", warning);
         }
         this.stressWarningLevel = nextWarningLevel;
@@ -932,6 +1091,7 @@ class TestScene extends Phaser.Scene {
 
         this.fatalClimateWarningActive = isFatalClimate;
         if (isFatalClimate) {
+            this.playBleachingWarning();
             this.game.events.emit("reef-warning", {
                 id: "fatal-climate",
                 persistent: true,

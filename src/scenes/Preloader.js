@@ -125,6 +125,7 @@ preload() {
 
         // audio
         this.load.audio('bubblePop', ['audio/BubblePOP.mp3']);
+        this.load.audio('bleachingWarning', ['audio/BleachingWarning.wav']);
         this.load.audio('background_music', ['audio/Background.mp3']);
     }
 

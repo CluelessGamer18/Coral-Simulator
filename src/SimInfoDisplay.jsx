@@ -14,7 +14,8 @@ function getTemperatureColor(temp) {
     return `#${channel(0)}${channel(1)}${channel(2)}`;
 }
 
-function SimInfoDisplay({yearsElapsed,light,temp,stress=0,poll,score=0}){
+function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,score=0}){
+    const showSeasonIndicator = yearsElapsed >= 1;
     yearsElapsed = 2*yearsElapsed
     const displayedPollution = Math.round(poll * 2) / 2
     const temperatureColor = getTemperatureColor(temp);
@@ -38,6 +39,11 @@ function SimInfoDisplay({yearsElapsed,light,temp,stress=0,poll,score=0}){
                 <img className="hoverPreview" src={asset("tooltips/tooltip_stress.png")} alt="The dial begins on the left and slowly moves right. If it reaches the right, the corals die and the simulation ends." />
             </div>
             <div className="SimInfoTimeline">
+            {showSeasonIndicator ? (
+            <span className={`SeasonIndicator ${season}`} aria-label={season === "summer" ? "Summer bleaching season" : "Winter recovery season"}>
+                {season === "summer" ? "Summer: bleaching season" : "Winter: reef recovery"}
+            </span>
+            ) : null}
             <span className="SimInfoText">2026</span>
 
             <div className="TimelineTrack">

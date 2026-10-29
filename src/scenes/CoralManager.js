@@ -513,12 +513,23 @@ export function getBleachStage(stressAmount) {
 }
 
 /* Apply the reef's stress change to each coral using its susceptibility percentage. */
-export function updateCoralStress(scene, stressDelta) {
+export function updateCoralStress(scene, stressDelta, deltaMs = 0) {
   scene.corals.forEach(coral => {
     if (!coral.dead) {
-      const scaledDelta = stressDelta > 0
-        ? stressDelta * coral.bleachRate / 100
-        : stressDelta;
+      let scaledDelta;
+      if (stressDelta > 0) {
+        scaledDelta = stressDelta * coral.bleachRate / 100;
+      } else if (scene.season === "winter") {
+        const winterProgress = Phaser.Math.Clamp(
+          ((scene.elapsedSimMs % 60_000) - 30_000) / 30_000,
+          0,
+          1
+        );
+        const remainingWinterFraction = Math.max(1 - winterProgress, 0.001);
+        scaledDelta = -coral.stress / remainingWinterFraction * deltaMs / 30_000;
+      } else {
+        scaledDelta = stressDelta;
+      }
       coral.stress = Phaser.Math.Clamp(coral.stress + scaledDelta, 0, 100);
       if (coral.stress >= 100) coral.dead = true;
     }
@@ -547,6 +558,24 @@ export function refreshCoralStress(scene) {
       }
     }
   });
+}
+
+export function recoverLivingCorals(scene) {
+  scene.corals.forEach(coral => {
+    if (!coral.dead) {
+      coral.stress = 0;
+      coral.bleachStage = 0;
+      coral.statusStage = 0;
+      coral.status = coralStatuses[0];
+      const type = coralTypes[coral.type];
+      if (type.generatedStages) {
+        coral.setTexture(type.generatedStages[0]);
+      } else {
+        coral.setFrame(0);
+      }
+    }
+  });
+  refreshCoralStress(scene);
 }
 
 export function killCorals(scene) {

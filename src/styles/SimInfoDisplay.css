@@ -29,6 +29,27 @@
     padding-right: 20px;
 }
 
+.SeasonIndicator {
+    position: absolute;
+    top: -19px;
+    right: 18px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    color: #fff;
+    z-index: 1;
+}
+
+.SeasonIndicator.summer {
+    background: #c65c25;
+}
+
+.SeasonIndicator.winter {
+    background: #247c91;
+}
+
 .TimelineDotLarge{
     width: 5px;
     height: 5px;

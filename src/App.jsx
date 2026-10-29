@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './styles/App.css'
 
 import RangeSlider from './RangeSlider.jsx'
@@ -22,6 +22,7 @@ function App() {
   const [pollutionValue, setPollutionValue] = useState(1);
   const [stressValue, setStressValue] = useState(0);
   const [yearsElapsed, setYearsElapsed] = useState(0);
+  const [season, setSeason] = useState("summer");
 
   const [bubbleCollision, setBubbleCollision] = useState(false);
   const [collisionType, setCollisionType] = useState("None");
@@ -43,7 +44,8 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
 
   const [eventNotice, setEventNotice] = useState(null);
-
+  const [summerTemperatureChange, setSummerTemperatureChange] = useState(0);
+  const noticedSeason = useRef(null);
 
   let initialValue;
   if (scene){
@@ -81,11 +83,34 @@ function App() {
   };
 
   useEffect(() => {
-    if (!eventNotice || eventNotice.persistent) return;
+    if (!scene || scene.scene.key !== "TestScene" || yearsElapsed < 1 || simEnd) return;
+
+    if (noticedSeason.current !== season) {
+      noticedSeason.current = season;
+      if (season === "summer") {
+        setEventNotice({
+          title: "Temperature Bleaching Event",
+          message: `The water temperature has risen by ${summerTemperatureChange}°C. Keep the light levels lower to prevent a mass bleaching of your reef.`,
+          centered: true,
+          bleaching: true,
+        });
+      } else if (season === "winter") {
+        setEventNotice((current) => current?.bleaching ? null : current);
+      }
+    }
+  }, [scene, season, yearsElapsed, simEnd, summerTemperatureChange]);
+
+  useEffect(() => {
+    if (!simEnd) return;
+    setEventNotice((current) => current?.bleaching ? null : current);
+  }, [simEnd]);
+
+  useEffect(() => {
+    if (!eventNotice) return;
 
     const timeoutId = window.setTimeout(() => {
       setEventNotice(null);
-    }, 5000);
+    }, eventNotice.bleaching ? 7000 : 5000);
 
     return () => window.clearTimeout(timeoutId);
   }, [eventNotice]);
@@ -107,8 +132,10 @@ function App() {
       setStressValue(stats.stress)
       setLightValue(stats.light)
       setTemperatureValue(stats.temperature)
+      setSummerTemperatureChange(stats.summerTemperatureChange ?? 0)
       setPollutionValue(stats.pollution)
       setYearsElapsed(stats.yearsElapsed)
+      setSeason(stats.season)
       setBubbleCollision(stats.bubbleCollision)
       setCollisionType(stats.collisionType)
       setSimEnd(stats.simEnd)
@@ -120,11 +147,11 @@ function App() {
 
     // The scene sends the selected event's title and message when the event bubble is collected.
     const onRandomEvent = ({ title, message }) => {
-      setEventNotice((current) => current?.persistent ? current : { title, message });
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : { title, message });
     };
 
     const onReefWarning = (warning) => {
-      setEventNotice((current) => current?.persistent && !warning.persistent ? current : warning);
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : warning);
     };
 
     const onReefWarningCleared = (id) => {
@@ -132,14 +159,14 @@ function App() {
     };
 
     const onPredatorAppeared = () => {
-      setEventNotice((current) => current?.persistent ? current : {
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : {
         title: 'Predator Alert',
         message: 'A predator has appeared in the reef!',
       });
     };
 
     const onPredatorLeft = () => {
-      setEventNotice((current) => current?.persistent ? current : {
+      setEventNotice((current) => current?.bleaching || current?.persistent ? current : {
         title: 'All Clear',
         message: 'The predator has left. You can come out now!',
       });
@@ -198,6 +225,7 @@ function App() {
     setPollutionValue(1);
     setStressValue(0);
     setYearsElapsed(0);
+    setSeason("summer");
     setBubbleCollision(false);
     setSimEnd(false);
     setReefDead(false);
@@ -205,6 +233,8 @@ function App() {
     setScore(0);
     setHistory(EMPTY_HISTORY);
     setEventNotice(null);
+    setSummerTemperatureChange(0);
+    noticedSeason.current = null;
   }
 
   // "Restart Sim" on the end screen: the game keeps running, so restart the scene as well
@@ -228,10 +258,11 @@ function App() {
             fishDead={fishDead}
           ></SimEndPopUp>) : null}
         {eventNotice ? (
-          <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}`} role={eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
+          <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
+              <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
+              {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
               <div className="EventNoticeHeading">
               <h2 id="event-notice-title">{eventNotice.title}</h2>
-              <button type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
               </div>
               <p>{eventNotice.message}</p>
           </aside>
@@ -240,7 +271,7 @@ function App() {
         initialValue={initialValue}
         onApply={applyBubble}
         onCancel={cancelBubble} /> : null}
-        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay yearsElapsed={yearsElapsed} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
+        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay yearsElapsed={yearsElapsed} season={season} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           setShowTitleScreen={setShowTitleScreen}

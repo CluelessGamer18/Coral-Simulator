@@ -10,9 +10,11 @@ const CONFIG = {
     positiveBubbleLifetime: 45000, 
     aggroRadius: 700, // if the player is within this distance the bubbles will chase the player
     minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
+    positiveMinSpawnDistance: 150, // keep helpful bubbles clear of the player's position
     baseChaseSpeed: 1.2,
     chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
     eventsCanKill: true, // when false, negative events cannot push conditions into fatal ranges
+    negativeBubblesEnabled: false, // Temporarily disable negative bubbles until they receive their updated behavior
     negativeHitDamage: 0, // half a heart lost by interacting with event bubble
 };
 
@@ -78,6 +80,7 @@ export class EventManager {
         this.scene = scene;
         this.th = thresholds;
         this.active = [];
+        this.season = scene.season;
         this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
     }
 
@@ -85,8 +88,15 @@ export class EventManager {
     update(delta, frameScale) {
         const s = this.scene;
 
-        // Nothing happens during the tutorial, popups or the end screen
-        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen) return;
+        // Nothing happens during the tutorial, popups, the end screen, or the first year.
+        // This gives players time to learn the reef before event bubbles begin appearing.
+        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen || s.yearsElapsed < 1) return;
+
+        if (this.season !== s.season) {
+            this.clear();
+            this.season = s.season;
+            this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
+        }
 
         this.nextSpawnIn -= delta;
         if (this.nextSpawnIn <= 0) {
@@ -100,6 +110,12 @@ export class EventManager {
 
     // Check if bubbles can spawn
     canSpawn(def) {
+        if (def.type === "negative" && !CONFIG.negativeBubblesEnabled) return false;
+
+        const isSummer = this.scene.season === "summer";
+        if (!isSummer) return false;
+        if (def.type === "positive" && def.variable !== "light") return false;
+
         const variable = VARIABLES[def.variable];
         const threshold = this.th[def.variable];
         const value = this.scene[variable.prop];
@@ -129,6 +145,9 @@ export class EventManager {
     // Choose what event is picked
     pickEvent() {
         const s = this.scene;
+        // Positive bubbles are available only during summer; winter recovery is automatic.
+        if (s.season !== "summer") return null;
+
         const r = {
             temperature: risk(s.temperature, this.th.temperature),
             light: risk(s.lightLevel, this.th.light),
@@ -156,14 +175,46 @@ export class EventManager {
 
         const s = this.scene;
         const change = randomEventChange(def.variable);
-        const minDist = def.type === "negative" ? CONFIG.minSpawnDistance: 300;
+        const minDist = def.type === "negative"
+            ? CONFIG.minSpawnDistance
+            : CONFIG.positiveMinSpawnDistance;
         let x, y, tries = 0;
 
         do {
-            // Only spawn in the same areas that the fish can reach
-            x = Phaser.Math.Between(100, s.WORLD_WIDTH - 100);
-            y = Phaser.Math.Between(120, 850);
-        } while (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist && ++tries < 20);
+            if (def.type === "positive") {
+                // Keep helpful bubbles near the center of the reef for easy collection.
+                x = Phaser.Math.Between(
+                    Math.max(100, s.guide.x - 200),
+                    Math.min(s.WORLD_WIDTH - 100, s.guide.x + 200)
+                );
+                y = Phaser.Math.Between(
+                    Math.max(120, s.guide.y - 200),
+                    Math.min(850, s.guide.y + 200)
+                );
+            } else {
+                // Only spawn in the same areas that the fish can reach.
+                x = Phaser.Math.Between(100, s.WORLD_WIDTH - 100);
+                y = Phaser.Math.Between(120, 850);
+            }
+        } while (
+            Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist
+            && ++tries < 20
+        );
+
+        // If a constrained positive spawn has exhausted its retries, place it at the
+        // nearest guaranteed valid point instead of using a candidate on top of the player.
+        if (def.type === "positive"
+            && Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist) {
+            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            x = Phaser.Math.Clamp(s.guide.x + Math.cos(angle) * minDist, 100, s.WORLD_WIDTH - 100);
+            y = Phaser.Math.Clamp(s.guide.y + Math.sin(angle) * minDist, 120, 850);
+            // If clamping moved this fallback inside the exclusion radius, try the
+            // opposite axis, then center it in the nearest safe in-bounds area.
+            if (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist) {
+                x = Phaser.Math.Clamp(s.guide.x, 100 + minDist, s.WORLD_WIDTH - 100 - minDist);
+                y = Phaser.Math.Clamp(s.guide.y + minDist, 120 + minDist, 850 - minDist);
+            }
+        }
 
         const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
         const changeSign = def.type === "negative" ? "+" : "−";
