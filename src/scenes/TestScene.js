@@ -780,7 +780,7 @@ class TestScene extends Phaser.Scene {
         }
 
         this.updateHearts();
-        updateHomeBuilding(this);
+        updateHomeBuilding(this, delta, clockIsRunning);
     }
 
     // Keeps the hearts centred above the fish

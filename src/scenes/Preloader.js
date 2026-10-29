@@ -75,6 +75,8 @@ preload() {
         this.load.svg("homeShell", "home/material_shell_fragment.svg", { width: 36, height: 36 });
         this.load.svg("homeCoralRubble", "home/material_coral_rubble.svg", { width: 36, height: 36 });
         this.load.svg("homeStage1", "home/home_stage1.svg", { width: 216, height: 90 });
+        this.load.svg("homeStage2", "home/home_stage2.svg", { width: 288, height: 120 });
+        this.load.svg("homeStage3", "home/home_stage3.svg", { width: 360, height: 156 });
 
         // bubbles
         this.load.image("TempBubble","bubbles/tempBubble.png")
