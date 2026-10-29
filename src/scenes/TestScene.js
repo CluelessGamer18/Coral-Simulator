@@ -2,6 +2,8 @@ import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
 import { createCorals, updateCoralStress, refreshCoralStress, killCorals, resetCorals } from "./CoralManager.js";
 import { EventManager } from "./Events.js";
+import { createHomeBuilding, updateHomeBuilding } from "./HomeBuilding.js";
+import { addGlow, removeGlow } from "./Glow.js";
 
 let oval;
 
@@ -54,8 +56,16 @@ const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
 const PREDATOR_BITE_INTERVAL = 1000; // ms of touching the predator per half heart lost
 
-const FOOD_COUNT = 5; // algae orbs sprinkled around the map at the start of each game
-export const FOOD_GROWTH = 1.1; // each orb eaten makes the fish 10% bigger
+// Food is shellfish (snails and clams, frames of the "shellTypes" sheet), which triggerfish crack open with their strong jaws.
+// They live on the sea floor, so they're scattered along the band of sand the fish can still reach (it's clamped to y <= 850).
+const FOOD_COUNT = 5; // shellfish scattered over the sea floor at the start of each game
+export const FOOD_GROWTH = 1.1; // each shellfish eaten makes the fish 10% bigger
+const FOOD_FRAMES = [0, 1, 2]; // coiled snail, cone snail, clam
+export const FOOD_GLOW_COLOR = 0xff4d4d;
+export const FOOD_SCALE = 0.8;
+const FOOD_MIN_Y = 790;
+export const FOOD_MAX_Y = 845;
+const FOOD_NEST_CLEARANCE = 300; // keep food out of the nest in the middle of the sandbar
 
 export function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
@@ -320,6 +330,7 @@ class TestScene extends Phaser.Scene {
         this.updateHistory();
         // this.spawnBubbles();
         this.spawnFood();
+        createHomeBuilding(this);
         this.eventManager = new EventManager(this, THRESHOLDS);
 
         // The tutorial scene starts this one with tutorialComplete set, and a restart keeps it,
@@ -419,30 +430,38 @@ class TestScene extends Phaser.Scene {
         }
     }
 
-    // Sprinkles algae orbs at random spots the fish can reach. Eaten orbs don't come back.
+    // Scatters shellfish along the sea floor, anywhere but the nest. Eaten shellfish don't come back.
     spawnFood() {
         this.food = this.physics.add.group();
 
         for (let i = 0; i < FOOD_COUNT; i++) {
-            const { x, y } = this.getBubbleSpawnLocation();
-            // Keep it inside the area the fish is clamped to, so every orb can be reached
-            const orb = this.food.create(
-                Phaser.Math.Clamp(x, 100, this.WORLD_WIDTH - 100),
-                Phaser.Math.Clamp(y, 120, 850),
-                "algaeOrb"
-            ).setDepth(7);
-            this.bubbleIdle(orb);
+            let x;
+            do {
+                x = Phaser.Math.Between(100, this.WORLD_WIDTH - 100);
+            } while (Math.abs(x - this.WORLD_WIDTH / 2) < FOOD_NEST_CLEARANCE);
+
+            const shellfish = this.food.create(
+                x,
+                Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y),
+                "shellTypes",
+                Phaser.Utils.Array.GetRandom(FOOD_FRAMES)
+            )
+                .setDepth(7.5) // in front of the corals, like the nest pieces, so it's never hidden behind one
+                .setScale(FOOD_SCALE)
+                .setAngle(Phaser.Math.Between(-15, 15))
+                .setFlipX(Math.random() < 0.5);
+            addGlow(this, shellfish, FOOD_GLOW_COLOR);
         }
 
-        this.physics.add.overlap(this.guide, this.food, (guide, orb) => this.eatFood(orb));
+        this.physics.add.overlap(this.guide, this.food, (guide, shellfish) => this.eatFood(shellfish));
     }
 
-    // Eating always uses up the orb, but only heals when the fish isn't already at full health
-    eatFood(orb) {
+    // Eating always uses up the shellfish, but only heals when the fish isn't already at full health
+    eatFood(shellfish) {
         if (this.simEnd) return;
 
-        this.tweens.killTweensOf(orb);
-        orb.destroy();
+        removeGlow(shellfish); // stops the glow's tween, which would otherwise outlive the shellfish
+        shellfish.destroy();
         this.sound.play('bubblePop', { volume: this.sfxVolume });
 
         if (this.health < MAX_HEARTS * 2) {
@@ -450,7 +469,7 @@ class TestScene extends Phaser.Scene {
             this.refreshHeartTextures();
         }
 
-        // Every orb makes the fish bigger, even at full health. Tweened so it grows smoothly instead of popping.
+        // Every shellfish makes the fish bigger, even at full health. Tweened so it grows smoothly instead of popping.
         this.foodEaten++;
         this.tweens.killTweensOf(this);
         this.tweens.add({
@@ -778,6 +797,7 @@ class TestScene extends Phaser.Scene {
         }
 
         this.updateHearts();
+        updateHomeBuilding(this, delta, clockIsRunning);
     }
 
     // Keeps the hearts centred above the fish

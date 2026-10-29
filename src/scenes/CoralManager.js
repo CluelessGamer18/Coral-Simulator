@@ -209,6 +209,23 @@ const coralImgPathsBranch = [ // microscope images of branch coral bleach stages
   asset('microscopes/dead_microscope.png')
 ];
 
+// What the coral info popup shows for a coral of this type with this much stress (0-100)
+export function getCoralInfo(typeName, stress, dead = false) {
+  const type = coralTypes[typeName];
+  const statusStage = dead
+    ? coralStatuses.length - 1
+    : Math.min(Math.floor(stress / 25), coralStatuses.length - 2);
+
+  return {
+    name: type.name,
+    scientificName: type.scientificName,
+    status: coralStatuses[statusStage],
+    statusStage,
+    info: type.info,
+    img: (type.imgType === 'branch' ? coralImgPathsBranch : coralImgPathsTabular)[statusStage],
+  };
+}
+
 // z levels for corals, which determine their y position and rendering depth in the scene
 const depthLevels = [-10, 120, 180];
 const coralSwayAngles = {
@@ -464,49 +481,115 @@ function coralSway(scene, coral, maxAngle) {
 }
 
 export function createBleachStages(scene, coralType) {
-  const source = scene.textures.get(coralType).getSourceImage();
-  const strengths = Array.from(
-    { length: BLEACH_STAGE_COUNT },
-    (_, index) => (index + 1) / BLEACH_STAGE_COUNT
-  );
+  const stages = generateBleachStages(scene, coralType);
+  let step;
+  do {
+    step = stages.next();
+  } while (!step.done);
+  return step.value;
+}
+
+// Makes the bleach stages for every coral type ahead of time, a little per next() call, so a scene can spread
+// the work over many frames. A stage is only added once it's finished, so stopping part way leaves nothing half made. The tutorial runs this in the background so the main game doesn't freeze while
+// createCorals() makes them all at once. Textures belong to the whole game, so the main game reuses them.
+export function* prepareBleachStages(scene) {
+  for (const type of Object.values(coralTypes)) {
+    type.generatedStages = yield* generateBleachStages(scene, type.key);
+  }
+}
+
+// Each stage is a copy of the coral's texture that is more washed out and whiter than the last. Yields often (after
+// reading the source, after every few rows, and after each stage is uploaded) so the work can be spread over frames,
+// and returns every stage's texture key, the original first. Stages that already exist are skipped.
+function* generateBleachStages(scene, coralType) {
   const keys = [coralType];
+  const source = scene.textures.get(coralType).getSourceImage();
+  const { width, height } = source;
+  let original, gray; // the source's pixels, only read if a stage still needs making
 
-  strengths.forEach((strength, index) => {
-    const key = `${coralType}-bleach-${index + 1}`;
+  for (let stage = 1; stage <= BLEACH_STAGE_COUNT; stage++) {
+    const key = `${coralType}-bleach-${stage}`;
+    keys.push(key);
+    if (scene.textures.exists(key)) continue;
 
-    if (!scene.textures.exists(key)) {
-      const texture = scene.textures.createCanvas(key, source.width, source.height);
-      const context = texture.getContext();
-      context.drawImage(source, 0, 0);
-
-      const image = context.getImageData(0, 0, source.width, source.height);
-      const pixels = image.data;
-
-      for (let i = 0; i < pixels.length; i += 4) {
-        const red = pixels[i];
-        const green = pixels[i + 1];
-        const blue = pixels[i + 2];
-        const gray = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-
-        for (let channel = 0; channel < 3; channel++) {
-          const original = pixels[i + channel];
-          const desaturated = gray + (original - gray) * (1 - strength);
-          pixels[i + channel] = Math.round(
-            desaturated + (255 - desaturated) * strength * 0.45
-          );
-        }
-      }
-
-      context.putImageData(image, 0, 0);
-      texture.refresh();
+    // Read once for all of this coral's stages, rather than drawing and reading it back for every stage
+    if (!original) {
+      ({ original, gray } = readPixels(source));
+      yield;
     }
 
-    keys.push(key);
-  });
+    const canvas = createPixelCanvas(width, height);
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const image = context.createImageData(width, height);
+
+    for (let row = 0; row < height; row += BLEACH_ROWS_PER_STEP) {
+      const lastRow = Math.min(row + BLEACH_ROWS_PER_STEP, height);
+      bleachPixels(original, gray, image.data, stage / BLEACH_STAGE_COUNT, row * width, lastRow * width);
+      yield;
+    }
+
+    // Added once it's finished, so it's only uploaded to the GPU once
+    context.putImageData(image, 0, 0);
+    scene.textures.addCanvas(key, canvas);
+    yield;
+  }
 
   return keys;
 }
-  
+
+const BLEACH_ROWS_PER_STEP = 100; // rows of a stage to make between yields
+
+// A canvas kept in ordinary memory rather than on the GPU, like Phaser's own canvas textures. Reading and writing
+// pixels is quicker there, and faint edge pixels come out exactly as they did before.
+function createPixelCanvas(width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
+// The source image's pixels, and the brightness of each one
+function readPixels(source) {
+  const canvas = createPixelCanvas(source.width, source.height);
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(source, 0, 0);
+  const original = context.getImageData(0, 0, source.width, source.height).data;
+
+  const gray = new Float64Array(source.width * source.height);
+  for (let i = 0, p = 0; i < original.length; i += 4, p++) {
+    gray[p] = 0.2126 * original[i] + 0.7152 * original[i + 1] + 0.0722 * original[i + 2];
+  }
+  return { original, gray };
+}
+
+// Writes a washed-out, whitened copy of pixels first to last - 1 of the original into pixels (which starts fully
+// transparent). For each colour channel that's
+//   desaturated = gray + (channel - gray) * (1 - strength)
+//   result = round(desaturated + (255 - desaturated) * strength * 0.45)
+// rearranged so each channel is a single multiply-add, and each pixel is read and written as one 32-bit value
+// (byte order RGBA in memory, so red is the lowest byte on the little-endian machines browsers run on).
+// Kept out of the generator above, because V8 optimizes a hot loop in a plain function much better.
+function bleachPixels(original, gray, pixels, strength, first, last) {
+  const whitening = strength * 0.45;
+  const grayWeight = strength * (1 - whitening);
+  const colourWeight = (1 - strength) * (1 - whitening);
+  const offset = 255 * whitening + 0.5; // + 0.5 so truncating with | 0 rounds like Math.round
+
+  const source = new Uint32Array(original.buffer, original.byteOffset, original.length / 4);
+  const result = new Uint32Array(pixels.buffer, pixels.byteOffset, pixels.length / 4);
+
+  for (let p = first; p < last; p++) {
+    const rgba = source[p];
+    const alpha = rgba >>> 24;
+    if (alpha === 0) continue; // invisible, so leave it transparent
+
+    const base = gray[p] * grayWeight + offset;
+    const red = (base + (rgba & 255) * colourWeight) | 0;
+    const green = (base + ((rgba >>> 8) & 255) * colourWeight) | 0;
+    const blue = (base + ((rgba >>> 16) & 255) * colourWeight) | 0;
+    result[p] = ((alpha << 24) | (blue << 16) | (green << 8) | red) >>> 0;
+  }
+}
 
 export function getBleachStage(stressAmount) {
   return Math.floor(Phaser.Math.Clamp(stressAmount, 0, 100) / 100 * BLEACH_STAGE_COUNT);
@@ -540,14 +623,12 @@ export function updateCoralStress(scene, stressDelta, deltaMs = 0) {
 export function refreshCoralStress(scene) {
   scene.corals.forEach(coral => {
     const type = coralTypes[coral.type];
-    const statusStage = coral.dead
-      ? coralStatuses.length - 1
-      : Math.min(Math.floor(coral.stress / 25), coralStatuses.length - 2);
+    const { statusStage, status, img } = getCoralInfo(coral.type, coral.stress, coral.dead);
     const bleachStage = getBleachStage(coral.stress);
 
     coral.statusStage = statusStage;
-    coral.status = coralStatuses[statusStage];
-    coral.img = (type.imgType === 'branch' ? coralImgPathsBranch : coralImgPathsTabular)[statusStage];
+    coral.status = status;
+    coral.img = img;
 
     if (coral.bleachStage !== bleachStage) {
       coral.bleachStage = bleachStage;

@@ -66,15 +66,25 @@ preload() {
         this.load.svg("heartHalf", "health/heart_half.svg", { width: 33, height: 30 });
         this.load.svg("heartDead", "health/heart_dead.svg", { width: 33, height: 30 });
 
-        // food the fish can eat to heal
+        // the old algae orb food, no longer used now that the fish eats shellfish (see "shellTypes" below)
         this.load.svg("algaeOrb", "food/algae_orb.svg", { width: 30, height: 30 });
+
+        // triggerfish home building: glowing pieces to collect, and the nest crater they go in
+        // (pixel art, so sizes are whole multiples of the SVG grid to keep the pixels crisp)
+        this.load.svg("homePebble", "home/material_pebble.svg", { width: 36, height: 36 });
+        this.load.svg("homeShell", "home/material_shell_fragment.svg", { width: 36, height: 36 });
+        this.load.svg("homeCoralRubble", "home/material_coral_rubble.svg", { width: 36, height: 36 });
+        this.load.svg("homeStage1", "home/home_stage1.svg", { width: 216, height: 90 });
+        this.load.svg("homeStage2", "home/home_stage2.svg", { width: 288, height: 120 });
+        this.load.svg("homeStage3", "home/home_stage3.svg", { width: 360, height: 156 });
 
         // bubbles
         this.load.image("TempBubble","bubbles/tempBubble.png")
         this.load.image("LightBubble","bubbles/light_levelBubble.png")
 
-        // spritesheets for fishes and shells
+        // spritesheet for the fish schools
         this.load.spritesheet('fishTypes', 'fish/fishSpriteSheet.png', { frameWidth: 239, frameHeight: 239 });
+        // food: shellfish the fish can eat to heal and grow (coiled snail, cone snail, clam)
         this.load.spritesheet('shellTypes', 'shells/shellSpriteSheet.png', { frameWidth: 55, frameHeight: 55 });
 
         // corals
@@ -85,14 +95,6 @@ preload() {
         this.load.spritesheet("montipora", "corals/montipora.png", { frameWidth: 180, frameHeight: 190 });
         this.load.spritesheet("staghorn1", "corals/staghorn1.png", { frameWidth: 180, frameHeight: 190 });
         this.load.spritesheet("staghorn2", "corals/staghorn2.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.image("columnarColourful", "corals/ColumnarColour.png");
-        this.load.image("columnarBlue", "corals/ColumnarBlue.png");
-        this.load.image("digitateBlue", "corals/DigitateBlue.png");
-        this.load.image("digitatePurple", "corals/DigitatePurple.png");
-        this.load.image("foliosBrown", "corals/FoliosBrown.png");
-        this.load.image("foliosOrange", "corals/FoliosOrange.png");
-        this.load.image("tabularBlue", "corals/TabularBlue.png");
-        this.load.image("tabularGreen", "corals/TabularGreen.png");
 
         this.load.image("Columnar-1", "corals/Columnar-1.png");
         this.load.image("Columnar-2", "corals/Columnar-2.png");

@@ -98,7 +98,8 @@ function TestGame({onSceneReady}){
                     coral={selectedCoral} 
                     onClose={() => {
                         setSelectedCoral(null);
-                        sceneRef.current?.scene.getScene("TestScene").closeCoralPopup();
+                        // the tutorial has a coral to click too, so tell whichever scene is running
+                        sceneRef.current?.scene.getScenes(true).forEach(scene => scene.closeCoralPopup?.());
                     }}
                 />
             </div>
