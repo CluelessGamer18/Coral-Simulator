@@ -33,6 +33,7 @@ export const PREDATOR_ESCAPE_MARGIN = 50;
 
 // Health is counted in half hearts, so 3 hearts = 6
 const MAX_HEARTS = 3;
+const LOW_HEALTH_PULSE_THRESHOLD = 2;
 const YEAR_DURATION_MS = 60_000;
 const SUMMER_FRACTION_OF_YEAR = 0.5;
 const SUMMER_DURATION_MS = YEAR_DURATION_MS * SUMMER_FRACTION_OF_YEAR;
@@ -244,9 +245,17 @@ class TestScene extends Phaser.Scene {
 
         // Hearts float above the fish and follow it around (positioned every frame in updateHearts())
         this.hearts = [];
+        this.heartOutlines = [];
         for (let i = 0; i < MAX_HEARTS; i++) {
+            this.heartOutlines.push(
+                this.add.image(0, 0, "heartFull")
+                    .setTintFill(0xff3333)
+                    .setDepth(9999.4)
+                    .setVisible(false)
+            );
             this.hearts.push(this.add.image(0, 0, "heartFull").setDepth(9999.5));
         }
+        this.lowHealthPulseActive = false;
         this.updateHearts();
 
         // Predator is hidden until the timer runs out, then it appears and starts chasing the fish.
@@ -804,7 +813,11 @@ class TestScene extends Phaser.Scene {
     updateHearts() {
         const y = this.guide.y - this.guide.displayHeight / 2 - HEART_OFFSET_Y;
         const startX = this.guide.x - ((this.hearts.length - 1) * HEART_SPACING) / 2;
-        this.hearts.forEach((heart, i) => heart.setPosition(startX + i * HEART_SPACING, y));
+        this.hearts.forEach((heart, i) => {
+            const x = startX + i * HEART_SPACING;
+            heart.setPosition(x, y);
+            this.heartOutlines[i].setPosition(x, y);
+        });
     }
 
     // Shows full, half or empty hearts to match this.health
@@ -813,6 +826,42 @@ class TestScene extends Phaser.Scene {
             const halves = Phaser.Math.Clamp(this.health - i * 2, 0, 2);
             heart.setTexture(["heartDead", "heartHalf", "heartFull"][halves]);
         });
+        this.updateLowHealthPulse();
+    }
+
+    updateLowHealthPulse() {
+        const shouldPulse = this.health > 0 && this.health <= LOW_HEALTH_PULSE_THRESHOLD;
+        if (shouldPulse === this.lowHealthPulseActive) return;
+
+        this.lowHealthPulseActive = shouldPulse;
+        this.hearts.forEach(heart => this.tweens.killTweensOf(heart));
+        this.heartOutlines.forEach(outline => this.tweens.killTweensOf(outline));
+
+        if (shouldPulse) {
+            this.heartOutlines.forEach(outline => outline.setVisible(true));
+            this.tweens.add({
+                targets: this.hearts,
+                scale: 1.2,
+                duration: 450,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.easeInOut"
+            });
+            this.tweens.add({
+                targets: this.heartOutlines,
+                scale: 1.38,
+                duration: 450,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.easeInOut"
+            });
+        } else {
+            this.hearts.forEach(heart => heart.setScale(1));
+            this.heartOutlines.forEach(outline => {
+                outline.setScale(1.15);
+                outline.setVisible(false);
+            });
+        }
     }
 
     loseHalfHeart() {
