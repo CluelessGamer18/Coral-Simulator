@@ -1,12 +1,10 @@
 import "./TitleScreen.css";
 
-import { useNavigate } from "react-router";
-
 function OptionsDialog({
     setShowOptions,
-    setShowTitleScreen = null,
-    resetSimState = null,
-    setScene = null,
+    goToTutorial,
+    returnToTitle,
+    goToResources,
     musicVolume,
     setMusicVolume,
     musicMuted,
@@ -17,9 +15,6 @@ function OptionsDialog({
     setSfxMuted
     }) {
 
-    const navigate = useNavigate();
-
-
     const handleMusicChange = (e) => {
         setMusicVolume(Number(e.target.value));
     };
@@ -28,22 +23,8 @@ function OptionsDialog({
         setSfxVolume(Number(e.target.value));
     };
 
-    const returnToTitle = () => {
-        setShowOptions(false);
-        if(setShowTitleScreen && setScene){
-            setShowTitleScreen(true);
-            setScene(null)
-            resetSimState();
-        }
-    }
-    const goToResources = () => {
-        setShowOptions(false);
-        navigate("/about");
-        if(setShowTitleScreen && setScene){
-            setShowTitleScreen(true);
-            setScene(null)
-            resetSimState();
-        }
+    const openResources = () => {
+        goToResources();
     };
 
     return(
@@ -101,7 +82,8 @@ function OptionsDialog({
         
             {/* <button className="OptionsDialogButton">Settings</button> */}
             <button className="OptionsDialogButton" onClick={returnToTitle}>Return to Title</button>
-            <button className="OptionsDialogButton" onClick={goToResources}>Resources</button>
+            <button className="OptionsDialogButton" onClick={goToTutorial}>Go to Tutorial</button>
+            <button className="OptionsDialogButton" onClick={openResources}>Resources</button>
         </div>
 
         </>

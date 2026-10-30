@@ -14,11 +14,28 @@ function getTemperatureColor(temp) {
     return `#${channel(0)}${channel(1)}${channel(2)}`;
 }
 
+function getLightColor(light) {
+    const value = Number(light);
+    const baseline = 500;
+    const isAboveBaseline = value > baseline;
+    const startColor = isAboveBaseline ? [255, 255, 255] : [55, 62, 67];
+    const endColor = isAboveBaseline ? [255, 213, 74] : [255, 255, 255];
+    const rangeStart = isAboveBaseline ? baseline : 141;
+    const rangeEnd = isAboveBaseline ? 1500 : baseline;
+    const amount = Math.min(Math.max((value - rangeStart) / (rangeEnd - rangeStart), 0), 1);
+    const channel = (index) => Math.round(
+        startColor[index] + (endColor[index] - startColor[index]) * amount
+    ).toString(16).padStart(2, "0");
+
+    return `#${channel(0)}${channel(1)}${channel(2)}`;
+}
+
 function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,score=0}){
     const showSeasonIndicator = yearsElapsed >= 1;
     yearsElapsed = 2*yearsElapsed
     const displayedPollution = Math.round(poll * 2) / 2
     const temperatureColor = getTemperatureColor(temp);
+    const lightColor = getLightColor(light);
     const dots = [ 
         "large", "small", 
         "large", "small", 
@@ -87,8 +104,16 @@ function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,s
                     <img className="hoverPreview" src={asset("tooltips/tooltip_temperature.png")} alt="Temperature, in degrees Celsius." />
                 </div>
                 <div className="statusGroup">
-                    <img className="SimInfoIcon" src={asset("light_level.svg")} alt="Light level" />
-                    <span className="SimInfoText">{light}</span>
+                    <span
+                        className="LightIcon"
+                        aria-hidden="true"
+                        style={{
+                            backgroundColor: lightColor,
+                            maskImage: `url(${asset("light_level.svg")})`,
+                            WebkitMaskImage: `url(${asset("light_level.svg")})`
+                        }}
+                    />
+                    <span className="SimInfoText LightValue" style={{ color: lightColor }}>{light}</span>
                     <img className="hoverPreview" src={asset("tooltips/tooltip_light_level.png")} alt="Light level, in µMol/m² per second: a measure of light intensity for growth and photosynthesis." />
                 </div>
                 <div className="statusGroup">

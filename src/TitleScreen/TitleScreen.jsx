@@ -4,7 +4,7 @@ import "./TitleScreen.css";
 import { useNavigate } from 'react-router';
 // import OptionsDialog from "./OptionsDialog.jsx";
 
-function TitleScreen({setShowTitleScreen}){
+function TitleScreen({hasExistingGame, onStartNewGame, onResume}){
     const navigate = useNavigate();
     // const [showOptions, setShowOptions] = useState(false);
 
@@ -14,7 +14,14 @@ function TitleScreen({setShowTitleScreen}){
 
             <div className="waveWrapper"><div className="backgroundWave"></div></div>
             <h1 className="CoralSimTitle">CORAL LIFE WATCH</h1>
-            <button className="StartButton" onClick={() => setShowTitleScreen(false)}>Start</button>
+            {hasExistingGame ? (
+                <>
+                    <button className="StartButton" onClick={onResume}>Resume Game</button>
+                    <button className="OptionsButton" onClick={onStartNewGame}>Start New Game</button>
+                </>
+            ) : (
+                <button className="StartButton" onClick={onStartNewGame}>Start</button>
+            )}
             <button className="OptionsButton" onClick={() => navigate("/about")}>About</button>
         </div>
         

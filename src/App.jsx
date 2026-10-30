@@ -10,13 +10,16 @@ import SimInfoDisplay from './SimInfoDisplay.jsx'
 import SimBubblePopUp from './SimBubblePopUp.jsx'
 import SimEndPopUp from './SimEndPopUp.jsx'
 
-import { Routes, Route } from 'react-router'
+import { Routes, Route, useLocation, useNavigate } from 'react-router'
 import About from './About.jsx'
 import { asset } from './assetUrl';
 
 const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
 
 function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isAboutPage = location.pathname === "/about";
   const [temperatureValue, setTemperatureValue] = useState(27);
   const [lightValue, setLightValue] = useState(500);
   const [pollutionValue, setPollutionValue] = useState(1);
@@ -36,6 +39,7 @@ function App() {
   const [history, setHistory] = useState(EMPTY_HISTORY);
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
+  const [hasStartedGame, setHasStartedGame] = useState(false);
 
   const [musicVolume, setMusicVolume] = useState(0.5);
   const [sfxVolume, setSfxVolume] = useState(1.0);
@@ -46,6 +50,9 @@ function App() {
   const [eventNotice, setEventNotice] = useState(null);
   const [summerTemperatureChange, setSummerTemperatureChange] = useState(0);
   const noticedSeason = useRef(null);
+  const skipSceneResume = useRef(false);
+  const resumeAfterAbout = useRef(false);
+  const [aboutBackLabel, setAboutBackLabel] = useState("Back to Title");
 
   let initialValue;
   if (scene){
@@ -195,8 +202,12 @@ function App() {
     scene.scene.pause();
 
     return () => {
-      // "Return to Title" closes the dialog while the game is being torn down, so skip a scene that is no longer paused or already destroyed.
-      // Resuming one that is about to be destroyed is harmless: Phaser destroys the game before the scene's next update.
+      if (skipSceneResume.current) {
+        skipSceneResume.current = false;
+        return;
+      }
+
+      // Some menu actions intentionally keep the scene paused or queue a scene switch while closing Options.
       if (!scene.sys?.isPaused()) return;
       scene.scene.resume();
     };
@@ -217,8 +228,30 @@ function App() {
     };
   }, [scene, keyboardDialogOpen]);
 
-  // Puts the React side back to a fresh sim. Leaving the game (Return to Title / Resources) only needs this,
-  // because TestGame unmounts and destroys the whole Phaser game, so there is no scene left to restart.
+  useEffect(() => {
+    if (!scene || showTitleScreen || bubbleCollision || simEnd) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !event.repeat) {
+        setShowOptions((isOpen) => !isOpen);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [scene, showTitleScreen, bubbleCollision, simEnd]);
+
+  useEffect(() => {
+    if (isAboutPage) return;
+
+    if (resumeAfterAbout.current) {
+      resumeAfterAbout.current = false;
+      if (scene?.sys?.isPaused()) scene.scene.resume();
+    }
+    setAboutBackLabel("Back to Title");
+  }, [isAboutPage, scene]);
+
+  // Puts the React side back to a fresh sim. Return to Title preserves the scene; this is for a new game or leaving for Resources.
   const resetSimState = () => {
     setTemperatureValue(27);
     setLightValue(500);
@@ -243,12 +276,51 @@ function App() {
     resetSimState();
   }
 
+  const goToTutorial = () => {
+    if (!scene) return;
+
+    skipSceneResume.current = true;
+    setShowOptions(false);
+    resetSimState();
+    scene.scene.start("Tutorial");
+  }
+
+  const returnToTitle = () => {
+    skipSceneResume.current = true;
+    setShowOptions(false);
+    setShowTitleScreen(true);
+  }
+
+  const resumeGame = () => {
+    if (scene?.sys?.isPaused()) scene.scene.resume();
+    setShowTitleScreen(false);
+  }
+
+  const startNewGame = () => {
+    resetSimState();
+    setShowTitleScreen(false);
+    if (scene) {
+      scene.scene.start("Tutorial");
+    } else {
+      setHasStartedGame(true);
+    }
+  }
+
+  const goToResources = () => {
+    skipSceneResume.current = true;
+    resumeAfterAbout.current = true;
+    setAboutBackLabel("Resume Game");
+    setShowOptions(false);
+    navigate("/about#resources");
+  }
+
   return (
-  <Routes>
-    <Route path="/" element={
-      <>
+  <>
+    <Routes>
+      <Route path="/" element={
+        <>
         {/*<RangeSlider onChange={setStressValue}/>*/}
-        {scene && simEnd ? (
+        {!showTitleScreen && scene && simEnd ? (
           <SimEndPopUp stress={history.stress}
             temp={history.temp}
             light={history.light}
@@ -257,7 +329,7 @@ function App() {
             dead={reefDead}
             fishDead={fishDead}
           ></SimEndPopUp>) : null}
-        {eventNotice ? (
+        {!showTitleScreen && eventNotice ? (
           <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
               <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
               {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
@@ -267,16 +339,16 @@ function App() {
               <p>{eventNotice.message}</p>
           </aside>
         ) : null}
-        {scene && bubbleCollision ? <SimBubblePopUp key={collisionType} type={collisionType}
+        {!showTitleScreen && scene && bubbleCollision ? <SimBubblePopUp key={collisionType} type={collisionType}
         initialValue={initialValue}
         onApply={applyBubble}
         onCancel={cancelBubble} /> : null}
-        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay yearsElapsed={yearsElapsed} season={season} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}/> : null}
+        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay yearsElapsed={yearsElapsed} season={season} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}        /> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
-          setShowTitleScreen={setShowTitleScreen}
-          resetSimState={resetSimState}
-          setScene={setScene}
+          goToTutorial={goToTutorial}
+          returnToTitle={returnToTitle}
+          goToResources={goToResources}
           musicVolume={musicVolume}
           setMusicVolume={setMusicVolume}
           musicMuted={musicMuted}
@@ -286,24 +358,34 @@ function App() {
           sfxMuted={sfxMuted}
           setSfxMuted={setSfxMuted}
         /> : null}
-        {showTitleScreen ? <TitleScreen setShowTitleScreen={setShowTitleScreen}/> : (
-        <>
-        <main className="MainContent">
-        {scene ? <button className="OptionsButtonIcon" aria-label="Open settings" onClick={(()=>setShowOptions(true))}><img src={asset("settings.svg")} alt="" width="45" height="45"></img>
-        </button> : null}
-          <div className="GameContainer">
-              <TestGame onSceneReady={setScene} />
-          </div>
+        {showTitleScreen ? <TitleScreen
+          hasExistingGame={hasStartedGame && !!scene}
+          onStartNewGame={startNewGame}
+          onResume={resumeGame}
+        /> : null}
+
+        </>
+      } />
+
+      <Route path="/about" element={<About backLabel={aboutBackLabel} />} />
+    </Routes>
+    {hasStartedGame ? (
+      <main
+        className="MainContent"
+        style={{ visibility: isAboutPage || showTitleScreen ? "hidden" : "visible" }}
+        aria-hidden={isAboutPage || showTitleScreen}
+      >
+        {!showTitleScreen && scene ? (
+          <button className="OptionsButtonIcon" aria-label="Open settings" onClick={() => setShowOptions(true)}>
+            <img src={asset("settings.svg")} alt="" width="45" height="45" />
+          </button>
+        ) : null}
+        <div className="GameContainer">
+          <TestGame onSceneReady={setScene} />
+        </div>
       </main>
-
-      </>
-    )}
-
-    </>
-    } />
-
-    <Route path="/about" element={<About/>} />
-  </Routes>
+    ) : null}
+  </>
 )
 
 }

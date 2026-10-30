@@ -43,6 +43,8 @@ function TestGame({onSceneReady}){
         sceneRef.current = sim;
 
     sim.events.on("scene-ready", (sceneInstance) => {
+      setSelectedCoral(null);
+      setTutorialPraise(null);
       onSceneReadyRef.current(sceneInstance);
     });
 
