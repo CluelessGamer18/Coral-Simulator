@@ -1,9 +1,18 @@
 import "./styles/About.css";
-import { useNavigate } from "react-router";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { asset } from "./assetUrl";
 
-function About() {
+function About({backLabel = "Back to Title"}) {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (!location.hash) return;
+
+        const section = document.getElementById(location.hash.slice(1));
+        section?.scrollIntoView();
+    }, [location.hash]);
 
     const contentItems = [
         {name: "French Angelfish", image: "assets/fish/angelfish.png"},
@@ -44,7 +53,7 @@ function About() {
                 className="BackToTitleButton"
                 onClick={() => navigate("/")}
             >
-                Back to Title
+                {backLabel}
             </button>
 
             {/* Navigation Menu */}
