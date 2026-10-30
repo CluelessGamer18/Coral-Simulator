@@ -132,6 +132,7 @@ class TestScene extends Phaser.Scene {
         this.bubbleCollision = false;
         this.coralInfoOpen = false;
         this.isHiding = false;
+        this.isHidingInHome = false;
         this.predatorFleeing = false;
         this.predatorEscaped = false;
         this.score = 0;
@@ -655,7 +656,7 @@ class TestScene extends Phaser.Scene {
             vertical = 0;
         }
 
-        if (this.predatorSpawned && this.isHiding) {
+        if (this.predatorSpawned && this.isHidingInHome) {
             this.predatorFleeing = true;
         }
 
@@ -881,8 +882,9 @@ class TestScene extends Phaser.Scene {
     checkPredatorContact(delta) {
         // No damage while a popup is open, since the fish can't move away
         const paused = this.bubbleCollision || this.coralInfoOpen;
-        // A hiding fish is safe, even if the predator swims over it on the way out
-        const touching = this.predatorSpawned && !this.predatorFleeing && !paused && !this.isHiding && Phaser.Geom.Intersects.RectangleToRectangle(
+        // Only the homebase protects a hidden fish from predator bites.
+        const touching = this.predatorSpawned && !this.predatorFleeing && !paused &&
+            (!this.isHiding || !this.isHidingInHome) && Phaser.Geom.Intersects.RectangleToRectangle(
             this.guide.getBounds(),
             this.predator.getBounds()
         );
@@ -1271,7 +1273,7 @@ class TestScene extends Phaser.Scene {
 
             this.predatorSpawned = true;
             this.predator.setVisible(true);
-            if (this.isHiding) {
+            if (this.isHidingInHome) {
                 this.startPredatorFlee();
             }
             this.game.events.emit("predator-appeared");
@@ -1293,6 +1295,7 @@ class TestScene extends Phaser.Scene {
             y: Phaser.Math.Clamp(coral.y - coral.displayHeight * 0.45, 120, 850),
             depth: coral.depth,
             distance: Phaser.Math.Distance.Between(this.guide.x, this.guide.y, coral.x, coral.y),
+            isHome: false,
         }));
         if (this.home) {
             const homeHideY = Phaser.Math.Clamp(this.home.y - this.home.displayHeight * 0.45, 120, 850);
@@ -1301,6 +1304,7 @@ class TestScene extends Phaser.Scene {
                 y: homeHideY,
                 depth: this.home.depth,
                 distance: Phaser.Math.Distance.Between(this.guide.x, this.guide.y, this.home.x, homeHideY),
+                isHome: true,
             });
         }
 
@@ -1311,9 +1315,10 @@ class TestScene extends Phaser.Scene {
         if (!nearbyHideTarget) return;
 
         this.isHiding = true;
+        this.isHidingInHome = nearbyHideTarget.isHome;
         this.guide.setPosition(nearbyHideTarget.x, nearbyHideTarget.y);
         this.guide.setDepth(nearbyHideTarget.depth - 0.1);
-        this.startPredatorFlee();
+        if (this.isHidingInHome) this.startPredatorFlee();
     }
 
     startPredatorFlee(awayFromFish = false) {
@@ -1417,6 +1422,7 @@ class TestScene extends Phaser.Scene {
 
     leaveHiding() {
         this.isHiding = false;
+        this.isHidingInHome = false;
         this.guide.setDepth(9999);
 
         if (this.predatorFleeing && !this.predatorEscaped && !this.predatorScared) {
