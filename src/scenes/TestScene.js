@@ -132,6 +132,7 @@ class TestScene extends Phaser.Scene {
         this.bubbleCollision = false;
         this.coralInfoOpen = false;
         this.isHiding = false;
+        this.isHidingInHome = false;
         this.predatorFleeing = false;
         this.predatorEscaped = false;
         this.score = 0;
@@ -266,6 +267,7 @@ class TestScene extends Phaser.Scene {
         this.predatorSpawned = false;
         this.predatorScared = false;
         this.predatorNervous = false;
+        this.predatorRetreatDirection = null;
         this.predatorDashRemaining = 0;
         this.predatorDashCooldown = 0;
         this.predatorDashVelocityX = 0;
@@ -654,7 +656,7 @@ class TestScene extends Phaser.Scene {
             vertical = 0;
         }
 
-        if (this.predatorSpawned && this.isHiding) {
+        if (this.predatorSpawned && this.isHidingInHome) {
             this.predatorFleeing = true;
         }
 
@@ -697,6 +699,7 @@ class TestScene extends Phaser.Scene {
                 predatorDistance <= PREDATOR_NERVOUS_DISTANCE
             ) {
                 this.predatorNervous = true;
+                this.predatorRetreatDirection = null;
                 this.predatorDashRemaining = 0;
             }
 
@@ -705,39 +708,35 @@ class TestScene extends Phaser.Scene {
             } else if (this.predatorNervous && predatorDistance > 0) {
                 const awayX = (this.predator.x - this.guide.x) / predatorDistance;
                 const awayY = (this.predator.y - this.guide.y) / predatorDistance;
-                const retreatDirections = [
-                    { x: awayX, y: awayY },
-                    { x: awayX, y: 0 },
-                    { x: 0, y: awayY },
-                    { x: 1, y: 0 },
-                    { x: -1, y: 0 },
-                    { x: 0, y: 1 },
-                    { x: 0, y: -1 }
-                ];
-                const retreatDirection = retreatDirections
-                    .filter(({ x, y }) => x !== 0 || y !== 0)
-                    .map(({ x, y }) => {
-                        const length = Math.hypot(x, y);
-                        return { x: x / length, y: y / length };
-                    })
-                    .filter(({ x, y }) => {
-                        const nextX = this.predator.x + x * PREDATOR_SPEED * frameScale;
-                        const nextY = this.predator.y + y * PREDATOR_SPEED * frameScale;
-                        return nextX >= this.predator.displayWidth / 2 &&
-                            nextX <= this.WORLD_WIDTH - this.predator.displayWidth / 2 &&
-                            nextY >= this.predator.displayHeight / 2 &&
-                            nextY <= this.WORLD_HEIGHT - this.predator.displayHeight / 2;
-                    })
-                    .sort((a, b) => (b.x * awayX + b.y * awayY) - (a.x * awayX + a.y * awayY))[0];
+                const retreatDirection = this.predatorRetreatDirection;
+                const retreatAlignment = retreatDirection
+                    ? retreatDirection.x * awayX + retreatDirection.y * awayY
+                    : -1;
 
-                if (retreatDirection) {
-                    this.movePredator(
-                        retreatDirection.x,
-                        retreatDirection.y,
-                        PREDATOR_SPEED,
+                if (
+                    !retreatDirection ||
+                    retreatAlignment < -0.35 ||
+                    !this.canPredatorMove(retreatDirection.x, retreatDirection.y, frameScale)
+                ) {
+                    this.predatorRetreatDirection = this.choosePredatorRetreatDirection(
+                        awayX,
+                        awayY,
                         frameScale
                     );
                 }
+
+                const direction = this.predatorRetreatDirection;
+                this.movePredator(direction.x, direction.y, PREDATOR_SPEED, frameScale);
+                this.predator.x = Phaser.Math.Clamp(
+                    this.predator.x,
+                    this.predator.displayWidth / 2,
+                    this.WORLD_WIDTH - this.predator.displayWidth / 2
+                );
+                this.predator.y = Phaser.Math.Clamp(
+                    this.predator.y,
+                    this.predator.displayHeight / 2,
+                    this.WORLD_HEIGHT - this.predator.displayHeight / 2
+                );
             } else if (!this.predatorNervous && predatorDistance > 0) {
                 const frameDelta = Math.min(delta, 50);
                 if (this.predatorDashRemaining > 0) {
@@ -883,8 +882,9 @@ class TestScene extends Phaser.Scene {
     checkPredatorContact(delta) {
         // No damage while a popup is open, since the fish can't move away
         const paused = this.bubbleCollision || this.coralInfoOpen;
-        // A hiding fish is safe, even if the predator swims over it on the way out
-        const touching = this.predatorSpawned && !this.predatorFleeing && !paused && !this.isHiding && Phaser.Geom.Intersects.RectangleToRectangle(
+        // Only the homebase protects a hidden fish from predator bites.
+        const touching = this.predatorSpawned && !this.predatorFleeing && !paused &&
+            (!this.isHiding || !this.isHidingInHome) && Phaser.Geom.Intersects.RectangleToRectangle(
             this.guide.getBounds(),
             this.predator.getBounds()
         );
@@ -1273,7 +1273,7 @@ class TestScene extends Phaser.Scene {
 
             this.predatorSpawned = true;
             this.predator.setVisible(true);
-            if (this.isHiding) {
+            if (this.isHidingInHome) {
                 this.startPredatorFlee();
             }
             this.game.events.emit("predator-appeared");
@@ -1290,23 +1290,35 @@ class TestScene extends Phaser.Scene {
             return;
         }
 
-        const nearbyCoral = this.corals
-            .map(coral => ({
-                coral,
-                distance: Phaser.Math.Distance.Between(this.guide.x, this.guide.y, coral.x, coral.y)
-            }))
-            .filter(({ distance }) => distance <= REEF_HIDE_DISTANCE)
-            .sort((a, b) => a.distance - b.distance)[0]?.coral;
+        const hideTargets = this.corals.map(coral => ({
+            x: coral.x,
+            y: Phaser.Math.Clamp(coral.y - coral.displayHeight * 0.45, 120, 850),
+            depth: coral.depth,
+            distance: Phaser.Math.Distance.Between(this.guide.x, this.guide.y, coral.x, coral.y),
+            isHome: false,
+        }));
+        if (this.home) {
+            const homeHideY = Phaser.Math.Clamp(this.home.y - this.home.displayHeight * 0.45, 120, 850);
+            hideTargets.push({
+                x: this.home.x,
+                y: homeHideY,
+                depth: this.home.depth,
+                distance: Phaser.Math.Distance.Between(this.guide.x, this.guide.y, this.home.x, homeHideY),
+                isHome: true,
+            });
+        }
 
-        if (!nearbyCoral) return;
+        const nearbyHideTarget = hideTargets
+            .filter(({ distance }) => distance <= REEF_HIDE_DISTANCE)
+            .sort((a, b) => a.distance - b.distance)[0];
+
+        if (!nearbyHideTarget) return;
 
         this.isHiding = true;
-        this.guide.setPosition(
-            nearbyCoral.x,
-            Phaser.Math.Clamp(nearbyCoral.y - nearbyCoral.displayHeight * 0.45, 120, 850)
-        );
-        this.guide.setDepth(nearbyCoral.depth - 0.1);
-        this.startPredatorFlee();
+        this.isHidingInHome = nearbyHideTarget.isHome;
+        this.guide.setPosition(nearbyHideTarget.x, nearbyHideTarget.y);
+        this.guide.setDepth(nearbyHideTarget.depth - 0.1);
+        if (this.isHidingInHome) this.startPredatorFlee();
     }
 
     startPredatorFlee(awayFromFish = false) {
@@ -1314,6 +1326,7 @@ class TestScene extends Phaser.Scene {
         if (this.predatorScared && !awayFromFish) return;
 
         this.predatorScared ||= awayFromFish;
+        this.predatorRetreatDirection = null;
         this.predatorFleeing = true;
         this.predatorEscapeDirection = this.predatorScared
             ? (this.predator.x <= this.guide.x ? -1 : 1)
@@ -1366,8 +1379,50 @@ class TestScene extends Phaser.Scene {
         this.facePredatorDirection(normalizedX, normalizedY, frameScale);
     }
 
+    canPredatorMove(directionX, directionY, frameScale) {
+        const directionLength = Math.hypot(directionX, directionY);
+        if (directionLength === 0) return false;
+
+        const normalizedX = directionX / directionLength;
+        const normalizedY = directionY / directionLength;
+        const wiggle = Math.sin(this.time.now * 0.01) * frameScale;
+        const nextX = this.predator.x +
+            normalizedX * PREDATOR_SPEED * frameScale - normalizedY * wiggle;
+        const nextY = this.predator.y +
+            normalizedY * PREDATOR_SPEED * frameScale + normalizedX * wiggle;
+        const halfWidth = this.predator.displayWidth / 2;
+        const halfHeight = this.predator.displayHeight / 2;
+
+        return nextX >= halfWidth &&
+            nextX <= this.WORLD_WIDTH - halfWidth &&
+            nextY >= halfHeight &&
+            nextY <= this.WORLD_HEIGHT - halfHeight;
+    }
+
+    choosePredatorRetreatDirection(awayX, awayY, frameScale) {
+        const candidates = [
+            { x: awayX, y: awayY },
+            { x: awayX, y: 0 },
+            { x: 0, y: awayY },
+            { x: 1, y: 0 },
+            { x: -1, y: 0 },
+            { x: 0, y: 1 },
+            { x: 0, y: -1 },
+        ];
+
+        return candidates
+            .filter(({ x, y }) => x !== 0 || y !== 0)
+            .map(({ x, y }) => {
+                const length = Math.hypot(x, y);
+                return { x: x / length, y: y / length };
+            })
+            .filter(({ x, y }) => this.canPredatorMove(x, y, frameScale))
+            .sort((a, b) => (b.x * awayX + b.y * awayY) - (a.x * awayX + a.y * awayY))[0];
+    }
+
     leaveHiding() {
         this.isHiding = false;
+        this.isHidingInHome = false;
         this.guide.setDepth(9999);
 
         if (this.predatorFleeing && !this.predatorEscaped && !this.predatorScared) {
