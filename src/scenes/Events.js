@@ -5,12 +5,13 @@ const CONFIG = {
     spawnMinTime: 1000, // minimum time between event spawns
     spawnMaxTime: 7000, // maximum time between event spawns
     maxNegativeBubbles: 6, // maximum number of negative bubbles on screen at once
+    maxPositiveBubbles: 3, // maximum number of helpful bubbles on screen at once
     maxTotalBubbles: 10, // maximum number of total bubbles on screen at once
     negativeBubbleLifetime: 30000, // evade negative bubbles for this long and they disappear
     positiveBubbleLifetime: 45000, 
     aggroRadius: 700, // if the player is within this distance the bubbles will chase the player
     minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
-    positiveMinSpawnDistance: 150, // keep helpful bubbles clear of the player's position
+    positiveMinSpawnDistance: 350, // keep helpful bubbles clear of the player's position
     baseChaseSpeed: 1.2,
     chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
     eventsCanKill: true, // when false, negative events cannot push conditions into fatal ranges
@@ -27,10 +28,14 @@ const VARIABLES = {
 const EVENT_CHANGE_RANGES = {
     temperature: {min: 1, max: 5, step: 1},
     light: {min: 100, max: 500, step: 10},
+    positiveLight: {min: 300, max: 700, step: 10},
 };
 
-function randomEventChange(variable) {
-    const { min, max, step } = EVENT_CHANGE_RANGES[variable];
+function randomEventChange(variable, type = "negative") {
+    const rangeName = type === "positive" && variable === "light"
+        ? "positiveLight"
+        : variable;
+    const { min, max, step } = EVENT_CHANGE_RANGES[rangeName];
     return Phaser.Math.Between(min / step, max / step) * step;
 }
 
@@ -153,9 +158,11 @@ export class EventManager {
             light: risk(s.lightLevel, this.th.light),
         };
         const negativeCount = this.active.filter(b => b.def.type === "negative").length;
+        const positiveCount = this.active.filter(b => b.def.type === "positive").length;
 
         const pool = EVENTS
             .filter(e => !(e.type === "negative" && negativeCount >= CONFIG.maxNegativeBubbles))
+            .filter(e => !(e.type === "positive" && positiveCount >= CONFIG.maxPositiveBubbles))
             .filter(e => this.canSpawn(e))
             .map(e => ({e, w: Math.max(0, e.weight(r))}))
             .filter(p => p.w > 0);
@@ -174,7 +181,7 @@ export class EventManager {
         if (!def) return;
 
         const s = this.scene;
-        const change = randomEventChange(def.variable);
+        const change = randomEventChange(def.variable, def.type);
         const minDist = def.type === "negative"
             ? CONFIG.minSpawnDistance
             : CONFIG.positiveMinSpawnDistance;
@@ -184,12 +191,12 @@ export class EventManager {
             if (def.type === "positive") {
                 // Keep helpful bubbles near the center of the reef for easy collection.
                 x = Phaser.Math.Between(
-                    Math.max(100, s.guide.x - 200),
-                    Math.min(s.WORLD_WIDTH - 100, s.guide.x + 200)
+                    Math.max(100, s.guide.x - 400),
+                    Math.min(s.WORLD_WIDTH - 100, s.guide.x + 400)
                 );
                 y = Phaser.Math.Between(
-                    Math.max(120, s.guide.y - 200),
-                    Math.min(850, s.guide.y + 200)
+                    Math.max(120, s.guide.y - 400),
+                    Math.min(850, s.guide.y + 400)
                 );
             } else {
                 // Only spawn in the same areas that the fish can reach.
