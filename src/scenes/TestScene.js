@@ -286,22 +286,30 @@ class TestScene extends Phaser.Scene {
     }
 
     setupCamera(cam) {
-        const cursors = this.input.keyboard.createCursorKeys();
-        this.moveKeys = this.input.keyboard.addKeys({
-            W: Phaser.Input.Keyboard.KeyCodes.W,
-            A: Phaser.Input.Keyboard.KeyCodes.A,
-            S: Phaser.Input.Keyboard.KeyCodes.S,
-            D: Phaser.Input.Keyboard.KeyCodes.D
-        });
+        this.arrowKeys = this.input.keyboard.createCursorKeys();
+        this.wasdKeys = this.input.keyboard.addKeys({ up: "W", left: "A", down: "S", right: "D" });
         this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
+        // Restarting removes the keys, so they're handed out again here. React sets the scheme on a new scene.
+        this.setControlScheme(this.controlScheme ?? "wasd");
+
+        cam.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+    }
+
+    // One set of keys swims and the other moves the camera. Called by App when the choice changes.
+    setControlScheme(scheme) {
+        this.controlScheme = scheme;
+        const usesArrows = scheme === "arrows";
+        this.moveKeys = usesArrows ? this.arrowKeys : this.wasdKeys;
+        const { left, right, up, down } = usesArrows ? this.wasdKeys : this.arrowKeys;
 
         //camera presettings
         const controlConfig = {
             camera: this.cameras.main,
-            left: cursors.left,
-            right: cursors.right,
-            up: cursors.up,
-            down: cursors.down,
+            left,
+            right,
+            up,
+            down,
             //zoomIn: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
             //zoomOut: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
             acceleration: 0.06,
@@ -311,7 +319,8 @@ class TestScene extends Phaser.Scene {
 
         this.controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig);
 
-        cam.setBounds(0, 0, this.WORLD_WIDTH, this.WORLD_HEIGHT);
+        // A key held during the switch would otherwise stay down
+        [...Object.values(this.wasdKeys), ...Object.values(this.arrowKeys)].forEach(key => key.reset());
     }
 
 
@@ -593,8 +602,8 @@ class TestScene extends Phaser.Scene {
         let vertical = 0;
 
         if (this.tutorialComplete && !this.bubbleCollision) {
-            horizontal = (this.moveKeys.D.isDown ? 1 : 0) - (this.moveKeys.A.isDown ? 1 : 0);
-            vertical = (this.moveKeys.S.isDown ? 1 : 0) - (this.moveKeys.W.isDown ? 1 : 0);
+            horizontal = (this.moveKeys.right.isDown ? 1 : 0) - (this.moveKeys.left.isDown ? 1 : 0);
+            vertical = (this.moveKeys.down.isDown ? 1 : 0) - (this.moveKeys.up.isDown ? 1 : 0);
             const movementLength = Math.hypot(horizontal, vertical);
 
             if (this.isHiding && movementLength > 0 && !hidePressed) {

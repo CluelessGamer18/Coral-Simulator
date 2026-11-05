@@ -12,7 +12,9 @@ function OptionsDialog({
     sfxVolume,
     setSfxVolume,
     sfxMuted,
-    setSfxMuted
+    setSfxMuted,
+    controlScheme,
+    setControlScheme
     }) {
 
     const handleMusicChange = (e) => {
@@ -74,6 +76,28 @@ function OptionsDialog({
                         onClick={() => setSfxMuted(!sfxMuted)}
                     >
                         {sfxMuted ? "Unmute" : "Mute"}
+                    </button>
+                </div>
+            </div>
+
+            <div className="OptionsSliderGroup" role="group" aria-labelledby="options-movement-keys">
+                <span id="options-movement-keys">Movement Keys</span>
+                <div className="OptionsSliderControls">
+                    <button
+                        type="button"
+                        className="OptionsKeysButton"
+                        aria-pressed={controlScheme === "wasd"}
+                        onClick={() => setControlScheme("wasd")}
+                    >
+                        WASD
+                    </button>
+                    <button
+                        type="button"
+                        className="OptionsKeysButton"
+                        aria-pressed={controlScheme === "arrows"}
+                        onClick={() => setControlScheme("arrows")}
+                    >
+                        Arrow Keys
                     </button>
                 </div>
             </div>

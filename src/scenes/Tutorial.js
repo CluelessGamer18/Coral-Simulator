@@ -17,7 +17,7 @@ const FISH_SPEED = 6.75; // same as the main game
 const FISH_SCALE = 1.3 / 1.5; // the fish's size in the main game before it grows
 const PRAISE_DURATION = 2000; // ms the "well done" message shows before moving on (keep in sync with TutorialBanner.css)
 const TUTORIAL_PREDATOR_SPEED = PREDATOR_SPEED * 0.6; // slower than the real one, to give time to read the banner
-const SWIM_KEY_TIME = 400; // ms each of W, A, S and D has to be held to finish the first lesson
+const SWIM_KEY_TIME = 400; // ms each direction has to be held to finish the first lesson
 const BLEACH_PREP_MS_PER_FRAME = 6; // time each frame spends making the main game's coral bleach stages in the background
 
 // Hearts above the fish, laid out the same as the main game. Health is counted in half hearts.
@@ -46,15 +46,29 @@ const WINTER_RECOVERY_PER_SECOND = 30;
 const CLOUDY_EVENT = EVENTS.find(event => event.id === "shade");
 const HEAT_NOTICE_ID = "tutorial-heat";
 
+// How the lessons talk about the keys for each control scheme. The other set of keys moves the camera.
+const CONTROL_TEXT = {
+    wasd: {
+        swimKeys: "W, A, S and D keys",
+        lookKeys: "arrow keys",
+        image: "tutorial/tutorial_wasd.png",
+        imageAlt: "The W, A, S and D keys beside a fish swimming toward the coral reef",
+    },
+    arrows: {
+        swimKeys: "arrow keys",
+        lookKeys: "W, A, S and D keys",
+        image: "tutorial/tutorial_arrows.svg",
+        imageAlt: "The four arrow keys beside a fish swimming toward the coral reef",
+    },
+};
+
 // The lessons React shows in the banner at the top of the screen, in the order the player meets them.
 // Each one is started by start<Id>() below (if it has one) and completed by doing what it says.
 const STEPS = [
     {
         id: "swim",
         title: "Swim Around",
-        // text is filled in by emitSwimStep() so it can show how many directions are done
-        image: "tutorial/tutorial_wasd.png",
-        imageAlt: "The W, A, S and D keys beside a fish swimming toward the coral reef",
+        // text and image are filled in by emitSwimStep() so they can show the player's keys and how many directions are done
         praise: "Great swimming!",
     },
     {
@@ -108,7 +122,7 @@ const STEPS = [
     {
         id: "done",
         title: "Let's Get Started!",
-        text: "Look after your reef for 10 years. Keep your fish fed and safe, build your nest, pop Cloudy bubbles during heatwaves, and use the arrow keys to look around the reef. Have fun exploring!",
+        // text is filled in by emitDoneStep() so it can name the keys that move the camera
         image: "tutorial/tutorial_4.png",
         imageAlt: "A fish ready to explore the reef",
         buttonLabel: "Let's Go!",
@@ -127,6 +141,7 @@ class Tutorial extends Phaser.Scene {
 
     create() {
         this.finished = false;
+        this.stepIndex = -1;
         this.fishGrowth = 1;
         this.health = MAX_HEARTS * 2 - 1; // half a heart short, so eating shows the hearts filling up
         this.temperature = 27;
@@ -146,7 +161,6 @@ class Tutorial extends Phaser.Scene {
         // Making them a few at a time while the player learns means the main game starts without freezing.
         this.bleachStagePrep = prepareBleachStages(this);
 
-        this.stepIndex = -1;
         this.nextStep();
 
         window.gameScene = this;
@@ -195,10 +209,26 @@ class Tutorial extends Phaser.Scene {
     }
 
     setupKeys() {
-        // WASD only, the same as the main game (where the arrow keys move the camera).
+        // Only the keys that swim do anything here, as this scene fits on one screen and has no camera to move.
         // Q (nest building) is added by createHome() when the nest lesson starts.
-        this.moveKeys = this.input.keyboard.addKeys("W,A,S,D");
+        this.wasdKeys = this.input.keyboard.addKeys({ up: "W", left: "A", down: "S", right: "D" });
+        this.arrowKeys = this.input.keyboard.addKeys({ up: "UP", left: "LEFT", down: "DOWN", right: "RIGHT" });
         this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
+        // Restarting removes the keys, so they're handed out again here. React sets the scheme on a new scene.
+        this.setControlScheme(this.controlScheme ?? "wasd");
+    }
+
+    // Called by App when the choice changes, which can be part way through a lesson that names the keys
+    setControlScheme(scheme) {
+        this.controlScheme = scheme;
+        this.moveKeys = scheme === "arrows" ? this.arrowKeys : this.wasdKeys;
+
+        // A key held during the switch would otherwise stay down
+        [...Object.values(this.wasdKeys), ...Object.values(this.arrowKeys)].forEach(key => key.reset());
+
+        if (this.stepId === "swim") this.emitSwimStep(this.shownDirectionsDone);
+        if (this.stepId === "done") this.emitDoneStep();
     }
 
     setupSkipButton() {
@@ -267,6 +297,7 @@ class Tutorial extends Phaser.Scene {
             cloudy: () => this.startCloudy(),
             coral: () => this.startCoral(),
             predator: () => this.startPredator(),
+            done: () => this.emitDoneStep(),
         }[this.stepId];
         if (start) {
             start();
@@ -314,8 +345,8 @@ class Tutorial extends Phaser.Scene {
         const hidePressed = Phaser.Input.Keyboard.JustDown(this.hideKey);
         if (hidePressed && this.stepId === "predator") this.hideFish();
 
-        const horizontal = (this.moveKeys.D.isDown ? 1 : 0) - (this.moveKeys.A.isDown ? 1 : 0);
-        const vertical = (this.moveKeys.S.isDown ? 1 : 0) - (this.moveKeys.W.isDown ? 1 : 0);
+        const horizontal = (this.moveKeys.right.isDown ? 1 : 0) - (this.moveKeys.left.isDown ? 1 : 0);
+        const vertical = (this.moveKeys.down.isDown ? 1 : 0) - (this.moveKeys.up.isDown ? 1 : 0);
         const movementLength = Math.hypot(horizontal, vertical);
 
         // Swimming away leaves the coral, like in the main game
@@ -425,17 +456,20 @@ class Tutorial extends Phaser.Scene {
         return { x: this.guide.x < this.scale.width / 2 ? 1050 : 400, y };
     }
 
-    /* Swim Around: each of W, A, S and D has to be held for a moment, so the player tries every direction */
+    /* Swim Around: each direction has to be held for a moment, so the player tries them all */
 
     startSwim() {
-        this.swimTimes = { W: 0, A: 0, S: 0, D: 0 };
+        this.swimTimes = { up: 0, left: 0, down: 0, right: 0 };
         this.emitSwimStep(0);
     }
 
     emitSwimStep(directionsDone) {
         this.shownDirectionsDone = directionsDone;
+        const { swimKeys, lookKeys, image, imageAlt } = CONTROL_TEXT[this.controlScheme];
         this.emitStep({
-            text: `You are a triggerfish living on a coral reef. Hold the W, A, S and D keys to swim in every direction. (${directionsDone}/4 directions)`
+            text: `You are a triggerfish living on a coral reef. Hold the ${swimKeys} to swim in every direction. Prefer the ${lookKeys}? You can switch in Options. (${directionsDone}/4 directions)`,
+            image,
+            imageAlt,
         });
     }
 
@@ -448,6 +482,12 @@ class Tutorial extends Phaser.Scene {
         const directionsDone = Object.values(this.swimTimes).filter(time => time >= SWIM_KEY_TIME).length;
         if (directionsDone !== this.shownDirectionsDone) this.emitSwimStep(directionsDone);
         if (directionsDone === 4) this.completeStep();
+    }
+
+    emitDoneStep() {
+        this.emitStep({
+            text: `Look after your reef for 10 years. Keep your fish fed and safe, build your nest, pop Cloudy bubbles during heatwaves, and use the ${CONTROL_TEXT[this.controlScheme].lookKeys} to look around the reef. Have fun exploring!`
+        });
     }
 
     /* Eat to Grow: one glowing shellfish on the sea floor in the middle of the scene, like the main game's food */

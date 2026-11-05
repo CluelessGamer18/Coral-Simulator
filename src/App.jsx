@@ -14,6 +14,7 @@ import SimEndPopUp from './SimEndPopUp.jsx'
 import { Routes, Route, useLocation, useNavigate } from 'react-router'
 import About from './About.jsx'
 import { asset } from './assetUrl';
+import { loadControlScheme, saveControlScheme } from './controlScheme';
 
 const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
 
@@ -47,6 +48,7 @@ function App() {
   const [musicMuted, setMusicMuted] = useState(false);
   const [sfxMuted, setSfxMuted] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [controlScheme, setControlScheme] = useState(loadControlScheme);
 
   const [eventNotice, setEventNotice] = useState(null);
   const [summerTemperatureChange, setSummerTemperatureChange] = useState(0);
@@ -84,6 +86,11 @@ function App() {
   // Called by the bubble popup's Cancel button: frees the fish and puts the bubble back
   const cancelBubble = () => {
     scene.freeFish(true);
+  };
+
+  const changeControlScheme = (scheme) => {
+    setControlScheme(scheme);
+    saveControlScheme(scheme);
   };
 
   const dismissEventNotice = () => {
@@ -132,6 +139,10 @@ function App() {
     scene.setMusicVolume?.(musicMuted ? 0 : musicVolume);
     scene.setSfxVolume?.(sfxMuted ? 0 : sfxVolume);
   }, [scene, musicVolume, musicMuted, sfxVolume, sfxMuted]);
+
+  useEffect(() => {
+    scene?.setControlScheme?.(controlScheme);
+  }, [scene, controlScheme]);
 
   // The scene sends "stats-changed" whenever one of these values changes, so React only updates when something happens
   useEffect(() => {
@@ -364,6 +375,8 @@ function App() {
           setSfxVolume={setSfxVolume}
           sfxMuted={sfxMuted}
           setSfxMuted={setSfxMuted}
+          controlScheme={controlScheme}
+          setControlScheme={changeControlScheme}
         /> : null}
         {showTitleScreen ? <TitleScreen
           hasExistingGame={hasStartedGame && !!scene}
