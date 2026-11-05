@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
 import { createCorals, updateCoralStress, refreshCoralStress, killCorals, resetCorals } from "./CoralManager.js";
 import { EventManager } from "./Events.js";
-import { createHomeBuilding, updateHomeBuilding } from "./HomeBuilding.js";
+import { createHomeBuilding, updateHomeBuilding, updateNestCamera } from "./HomeBuilding.js";
 import { addGlow, removeGlow } from "./Glow.js";
 
 let oval;
@@ -657,7 +657,8 @@ class TestScene extends Phaser.Scene {
         const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
         const edgeScrollSpeed = 6.75; // Keep equal to the fish speed so the camera keeps up with the fish at the screen edges
         const cameraSmoothing = 0.15;
-        const fishScreenX = this.guide.x - this.cameras.main.scrollX;
+        const { scrollX, width, zoom } = this.cameras.main;
+        const fishScreenX = (this.guide.x - scrollX - width / 2) * zoom + width / 2; // the camera zooms around its centre
         const fishAtRightSide = horizontal > 0 && fishScreenX >= this.cameras.main.width - sideWidth;
         const fishAtLeftSide = horizontal < 0 && fishScreenX <= sideWidth;
         let targetCameraSpeed = 0;
@@ -675,10 +676,12 @@ class TestScene extends Phaser.Scene {
             this.WORLD_WIDTH - this.cameras.main.width
         );
 
-        // The arrow keys move the camera, but while the bubble popup is open they belong to its slider
-        if (!this.bubbleCollision) {
+        // The arrow keys move the camera, but while the bubble popup is open they belong to its slider,
+        // and while the fish hides in the nest the camera stays on it
+        if (!this.bubbleCollision && !this.isHidingInHome) {
             this.controls.update(delta);
         }
+        updateNestCamera(this, this.isHidingInHome, frameScale);
 
         oval.clear();
         if (!this.isHiding) {

@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { createBleachStages, getBleachStage, getCoralInfo, prepareBleachStages } from "./CoralManager.js";
 import { EVENTS } from "./Events.js";
-import { createHome, addPiece, updateHomeControls } from "./HomeBuilding.js";
+import { createHome, addPiece, updateHomeControls, updateNestCamera } from "./HomeBuilding.js";
 import { addGlow, removeGlow } from "./Glow.js";
 import {
     FOOD_GROWTH,
@@ -158,6 +158,7 @@ class Tutorial extends Phaser.Scene {
     setupWorld() {
         const { width, height } = this.scale;
         this.cameras.main.setBackgroundColor("#8ACFC9");
+        this.cameras.main.setBounds(0, 0, width, height); // keeps the view on the scene while it zooms in on the nest
 
         // Same layers as the main game, but no coral, schools or pipes
         const addLayer = (key, depth, bottomAligned = true) => {
@@ -201,7 +202,7 @@ class Tutorial extends Phaser.Scene {
     }
 
     setupSkipButton() {
-        this.add.text(this.scale.width - 24, 24, "Skip tutorial", {
+        this.skipButton = this.add.text(this.scale.width - 24, 24, "Skip tutorial", {
             fontFamily: "Arial, sans-serif",
             fontSize: "20px",
             color: "#ffffff",
@@ -219,6 +220,15 @@ class Tutorial extends Phaser.Scene {
                 this.setStyle({ backgroundColor: "#0292A5" });
             })
             .on("pointerdown", () => this.finish());
+    }
+
+    // setScrollFactor(0) stops the camera moving the button, but not zooming it, so this undoes the zoom
+    keepSkipButtonInPlace() {
+        const { width, height } = this.scale;
+        const { zoom } = this.cameras.main;
+        this.skipButton
+            .setScale(1 / zoom)
+            .setPosition(width / 2 + (width / 2 - 24) / zoom, height / 2 + (24 - height / 2) / zoom);
     }
 
     get stepId() {
@@ -335,6 +345,9 @@ class Tutorial extends Phaser.Scene {
         if (this.coral) this.updateCoral(delta);
 
         if (this.predator) this.updatePredator(frameScale);
+
+        updateNestCamera(this, this.isHiding, frameScale);
+        this.keepSkipButtonInPlace();
 
         this.shadow.clear();
         this.shadow.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10);
