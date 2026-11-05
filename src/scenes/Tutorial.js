@@ -451,7 +451,7 @@ class Tutorial extends Phaser.Scene {
         removeGlow(this.shellfish);
         this.shellfish.destroy();
         this.shellfish = null;
-        this.sound.play("bubblePop", { volume: this.sfxVolume });
+        this.sound.play("foodCrunch", { volume: this.sfxVolume });
 
         this.health = Math.min(this.health + 1, MAX_HEARTS * 2);
         this.refreshHeartTextures();

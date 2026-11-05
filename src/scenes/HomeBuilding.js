@@ -204,7 +204,7 @@ function pickUpPiece(scene, piece) {
     scene.tweens.killTweensOf(piece);
     removeGlow(piece);
     scene.carriedPiece = piece;
-    scene.sound.play("bubblePop", { volume: scene.sfxVolume });
+    scene.sound.play("nestPiece", { volume: scene.sfxVolume });
 }
 
 // Keeps the carried piece in the fish's mouth, at the front of whichever way it's facing
@@ -269,7 +269,7 @@ function placePieceInHome(scene) {
         onStart: () => piece.setDepth(HOME_DEPTH + 0.1),
         onComplete: () => growHomeIfReady(scene),
     });
-    scene.sound.play("bubblePop", { volume: scene.sfxVolume });
+    scene.sound.play("nestPiece", { volume: scene.sfxVolume });
 }
 
 function growHomeIfReady(scene) {

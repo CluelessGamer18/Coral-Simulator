@@ -455,7 +455,7 @@ class TestScene extends Phaser.Scene {
 
         removeGlow(shellfish); // stops the glow's tween, which would otherwise outlive the shellfish
         shellfish.destroy();
-        this.sound.play('bubblePop', { volume: this.sfxVolume });
+        this.sound.play('foodCrunch', { volume: this.sfxVolume });
 
         if (this.health < MAX_HEARTS * 2) {
             this.health++;
