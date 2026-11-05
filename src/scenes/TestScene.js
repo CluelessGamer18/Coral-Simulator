@@ -20,7 +20,6 @@ export const THRESHOLDS = {
 };
 
 export const PREDATOR_SPEED = 3.375;
-const PREDATOR_SPAWN_DELAY = 30000;
 const PREDATOR_DASH_SPEED = 10;
 const PREDATOR_DASH_DURATION = 450;
 const PREDATOR_DASH_COOLDOWN = 3000;
@@ -35,6 +34,7 @@ export const PREDATOR_ESCAPE_MARGIN = 50;
 const MAX_HEARTS = 3;
 const LOW_HEALTH_PULSE_THRESHOLD = 2;
 const YEAR_DURATION_MS = 60_000;
+const PREDATOR_SPAWN_YEARS = [2, 4.5, 7, 9.5];
 const SUMMER_FRACTION_OF_YEAR = 0.5;
 const SUMMER_DURATION_MS = YEAR_DURATION_MS * SUMMER_FRACTION_OF_YEAR;
 const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
@@ -133,8 +133,8 @@ class TestScene extends Phaser.Scene {
         this.coralInfoOpen = false;
         this.isHiding = false;
         this.isHidingInHome = false;
-        this.predatorFleeing = false;
-        this.predatorEscaped = false;
+        this.predators = [];
+        this.nextPredatorSpawnIndex = 0;
         this.score = 0;
         this.health = MAX_HEARTS * 2;
         this.fishDead = false;
@@ -259,20 +259,6 @@ class TestScene extends Phaser.Scene {
         this.lowHealthPulseActive = false;
         this.updateHearts();
 
-        // Predator is hidden until the timer runs out, then it appears and starts chasing the fish.
-        this.predator = this.add.image(this.WORLD_WIDTH - 100, 300, "lionfish")
-            .setScale(0.5)
-            .setDepth(9998)
-            .setVisible(false);
-        this.predatorSpawned = false;
-        this.predatorScared = false;
-        this.predatorNervous = false;
-        this.predatorRetreatDirection = null;
-        this.predatorDashRemaining = 0;
-        this.predatorDashCooldown = 0;
-        this.predatorDashVelocityX = 0;
-        this.predatorDashVelocityY = 0;
-
         this.badOutline = this.add.image(-95, -95, "badOutline")
             .setOrigin(0, 0).setDepth(10001).setAlpha(0)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
@@ -343,10 +329,6 @@ class TestScene extends Phaser.Scene {
         this.spawnFood();
         createHomeBuilding(this);
         this.eventManager = new EventManager(this, THRESHOLDS);
-
-        // The tutorial scene starts this one with tutorialComplete set, and a restart keeps it,
-        // so the predator timer starts straight away.
-        if (this.tutorialComplete) this.startPredatorTimer();
 
         window.gameScene = this;
         // Only tell React about the scene once everything above has been set up
@@ -578,6 +560,16 @@ class TestScene extends Phaser.Scene {
         }
 
         if (clockIsRunning) {
+            while (
+                this.nextPredatorSpawnIndex < PREDATOR_SPAWN_YEARS.length &&
+                this.elapsedSimMs >= PREDATOR_SPAWN_YEARS[this.nextPredatorSpawnIndex] * YEAR_DURATION_MS
+            ) {
+                this.spawnPredator();
+                this.nextPredatorSpawnIndex++;
+            }
+        }
+
+        if (clockIsRunning) {
             this.timeUiElapsedMs += delta;
             if (this.timeUiElapsedMs >= TIME_UI_UPDATE_MS) {
                 this.timeUiElapsedMs %= TIME_UI_UPDATE_MS;
@@ -656,119 +648,8 @@ class TestScene extends Phaser.Scene {
             vertical = 0;
         }
 
-        if (this.predatorSpawned && this.isHidingInHome) {
-            this.predatorFleeing = true;
-        }
-
-        if (this.predatorSpawned && this.predatorFleeing) {
-            const escapeDirection = this.predatorEscapeDirection;
-            if (this.predatorScared && this.predatorDashRemaining > 0) {
-                this.movePredator(
-                    this.predatorDashVelocityX,
-                    this.predatorDashVelocityY,
-                    PREDATOR_DASH_SPEED,
-                    frameScale
-                );
-                this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - Math.min(delta, 50));
-            } else {
-                this.movePredator(escapeDirection, 0, PREDATOR_SPEED, frameScale);
-            }
-
-            const escaped = escapeDirection < 0
-                ? this.predator.x <= -this.predator.displayWidth / 2 - PREDATOR_ESCAPE_MARGIN
-                : this.predator.x >= this.WORLD_WIDTH + this.predator.displayWidth / 2 + PREDATOR_ESCAPE_MARGIN;
-            if (escaped) {
-                this.predator.setVisible(false);
-                this.predatorSpawned = false;
-                this.predatorEscaped = true;
-                this.predatorFleeing = false;
-                this.game.events.emit("predator-left");
-            }
-        } else if (this.predatorSpawned && !this.bubbleCollision && !this.coralInfoOpen) {
-            // The predator chases the fish unless the fish is hidden or an overlay is open.
-            const predatorDistance = Phaser.Math.Distance.Between(
-                this.predator.x,
-                this.predator.y,
-                this.guide.x,
-                this.guide.y
-            );
-            const canScarePredator = this.foodEaten >= PREDATOR_SCARE_FOOD_COUNT;
-            if (
-                canScarePredator &&
-                !this.predatorNervous &&
-                predatorDistance <= PREDATOR_NERVOUS_DISTANCE
-            ) {
-                this.predatorNervous = true;
-                this.predatorRetreatDirection = null;
-                this.predatorDashRemaining = 0;
-            }
-
-            if (canScarePredator && predatorDistance <= PREDATOR_SCARE_DISTANCE) {
-                this.startPredatorFlee(true);
-            } else if (this.predatorNervous && predatorDistance > 0) {
-                const awayX = (this.predator.x - this.guide.x) / predatorDistance;
-                const awayY = (this.predator.y - this.guide.y) / predatorDistance;
-                const retreatDirection = this.predatorRetreatDirection;
-                const retreatAlignment = retreatDirection
-                    ? retreatDirection.x * awayX + retreatDirection.y * awayY
-                    : -1;
-
-                if (
-                    !retreatDirection ||
-                    retreatAlignment < -0.35 ||
-                    !this.canPredatorMove(retreatDirection.x, retreatDirection.y, frameScale)
-                ) {
-                    this.predatorRetreatDirection = this.choosePredatorRetreatDirection(
-                        awayX,
-                        awayY,
-                        frameScale
-                    );
-                }
-
-                const direction = this.predatorRetreatDirection;
-                this.movePredator(direction.x, direction.y, PREDATOR_SPEED, frameScale);
-                this.predator.x = Phaser.Math.Clamp(
-                    this.predator.x,
-                    this.predator.displayWidth / 2,
-                    this.WORLD_WIDTH - this.predator.displayWidth / 2
-                );
-                this.predator.y = Phaser.Math.Clamp(
-                    this.predator.y,
-                    this.predator.displayHeight / 2,
-                    this.WORLD_HEIGHT - this.predator.displayHeight / 2
-                );
-            } else if (!this.predatorNervous && predatorDistance > 0) {
-                const frameDelta = Math.min(delta, 50);
-                if (this.predatorDashRemaining > 0) {
-                    this.movePredator(
-                        this.predatorDashVelocityX,
-                        this.predatorDashVelocityY,
-                        PREDATOR_DASH_SPEED,
-                        frameScale
-                    );
-                    this.predatorDashRemaining = Math.max(0, this.predatorDashRemaining - frameDelta);
-                } else {
-                    this.predatorDashCooldown = Math.max(0, this.predatorDashCooldown - frameDelta);
-
-                    if (this.predatorDashCooldown === 0 && predatorDistance <= PREDATOR_DASH_RANGE) {
-                        this.predatorDashVelocityX =
-                            ((this.guide.x - this.predator.x) / predatorDistance) * PREDATOR_DASH_SPEED;
-                        this.predatorDashVelocityY =
-                            ((this.guide.y - this.predator.y) / predatorDistance) * PREDATOR_DASH_SPEED;
-                        this.facePredatorDirection(
-                            this.predatorDashVelocityX,
-                            this.predatorDashVelocityY,
-                            frameScale
-                        );
-                        this.predatorDashRemaining = PREDATOR_DASH_DURATION;
-                        this.predatorDashCooldown = PREDATOR_DASH_COOLDOWN;
-                    } else {
-                        const directionX = (this.guide.x - this.predator.x) / predatorDistance;
-                        const directionY = (this.guide.y - this.predator.y) / predatorDistance;
-                        this.movePredator(directionX, directionY, PREDATOR_SPEED, frameScale);
-                    }
-                }
-            }
+        for (const predator of this.predators) {
+            this.updatePredator(predator, delta, frameScale);
         }
 
         this.checkPredatorContact(delta);
@@ -883,11 +764,13 @@ class TestScene extends Phaser.Scene {
         // No damage while a popup is open, since the fish can't move away
         const paused = this.bubbleCollision || this.coralInfoOpen;
         // Only the homebase protects a hidden fish from predator bites.
-        const touching = this.predatorSpawned && !this.predatorFleeing && !paused &&
-            (!this.isHiding || !this.isHidingInHome) && Phaser.Geom.Intersects.RectangleToRectangle(
-            this.guide.getBounds(),
-            this.predator.getBounds()
-        );
+        const touching = !paused && (!this.isHiding || !this.isHidingInHome) &&
+            this.predators.some(({ sprite, spawned, fleeing }) =>
+                spawned && !fleeing && Phaser.Geom.Intersects.RectangleToRectangle(
+                    this.guide.getBounds(),
+                    sprite.getBounds()
+                )
+            );
 
         if (!touching) {
             if (!paused) this.touchingPredator = false;
@@ -1267,17 +1150,161 @@ class TestScene extends Phaser.Scene {
         });
 
     }
-    startPredatorTimer() {
-        this.time.delayedCall(PREDATOR_SPAWN_DELAY, () => {
-            if (this.simEnd) return;
+    spawnPredator() {
+        const sprite = this.add.image(
+            this.WORLD_WIDTH - 100,
+            300 + (this.predators.length % 3) * 120,
+            "lionfish"
+        )
+            .setScale(0.5)
+            .setDepth(9998)
+            .setVisible(true);
+        const predator = {
+            sprite,
+            spawned: true,
+            fleeing: false,
+            escaped: false,
+            scared: false,
+            nervous: false,
+            retreatDirection: null,
+            dashRemaining: 0,
+            dashCooldown: 0,
+            dashVelocityX: 0,
+            dashVelocityY: 0,
+            escapeDirection: 0,
+        };
+        this.predators.push(predator);
 
-            this.predatorSpawned = true;
-            this.predator.setVisible(true);
-            if (this.isHidingInHome) {
-                this.startPredatorFlee();
+        if (this.isHidingInHome) this.startPredatorFlee(predator);
+        this.game.events.emit("predator-appeared");
+    }
+
+    updatePredator(predator, delta, frameScale) {
+        if (!predator.spawned) return;
+
+        if (this.isHidingInHome && !predator.fleeing) {
+            this.startPredatorFlee(predator);
+        }
+
+        if (predator.fleeing) {
+            if (predator.scared && predator.dashRemaining > 0) {
+                this.movePredator(
+                    predator,
+                    predator.dashVelocityX,
+                    predator.dashVelocityY,
+                    PREDATOR_DASH_SPEED,
+                    frameScale
+                );
+                predator.dashRemaining = Math.max(0, predator.dashRemaining - Math.min(delta, 50));
+            } else {
+                this.movePredator(predator, predator.escapeDirection, 0, PREDATOR_SPEED, frameScale);
             }
-            this.game.events.emit("predator-appeared");
-        });
+
+            const escaped = predator.escapeDirection < 0
+                ? predator.sprite.x <= -predator.sprite.displayWidth / 2 - PREDATOR_ESCAPE_MARGIN
+                : predator.sprite.x >= this.WORLD_WIDTH + predator.sprite.displayWidth / 2 + PREDATOR_ESCAPE_MARGIN;
+            if (escaped) {
+                predator.sprite.destroy();
+                predator.spawned = false;
+                predator.escaped = true;
+                predator.fleeing = false;
+                if (!this.predators.some(({ spawned }) => spawned)) {
+                    this.game.events.emit("predator-left");
+                }
+            }
+        } else if (!this.bubbleCollision && !this.coralInfoOpen) {
+            // The predator chases the fish unless the fish is hidden or an overlay is open.
+            const predatorDistance = Phaser.Math.Distance.Between(
+                predator.sprite.x,
+                predator.sprite.y,
+                this.guide.x,
+                this.guide.y
+            );
+            const canScarePredator = this.foodEaten >= PREDATOR_SCARE_FOOD_COUNT;
+            const scareDistance = PREDATOR_SCARE_DISTANCE / this.fishGrowth;
+            const nervousDistance = PREDATOR_NERVOUS_DISTANCE / this.fishGrowth;
+            if (
+                canScarePredator &&
+                !predator.nervous &&
+                predatorDistance <= nervousDistance
+            ) {
+                predator.nervous = true;
+                predator.retreatDirection = null;
+                predator.dashRemaining = 0;
+            }
+
+            if (canScarePredator && predatorDistance <= scareDistance) {
+                this.startPredatorFlee(predator, true);
+            } else if (predator.nervous && predatorDistance > 0) {
+                const awayX = (predator.sprite.x - this.guide.x) / predatorDistance;
+                const awayY = (predator.sprite.y - this.guide.y) / predatorDistance;
+                const retreatDirection = predator.retreatDirection;
+                const retreatAlignment = retreatDirection
+                    ? retreatDirection.x * awayX + retreatDirection.y * awayY
+                    : -1;
+
+                if (
+                    !retreatDirection ||
+                    retreatAlignment < -0.35 ||
+                    !this.canPredatorMove(predator, retreatDirection.x, retreatDirection.y, frameScale)
+                ) {
+                    predator.retreatDirection = this.choosePredatorRetreatDirection(
+                        predator,
+                        awayX,
+                        awayY,
+                        frameScale
+                    );
+                }
+
+                const direction = predator.retreatDirection;
+                if (direction) {
+                    this.movePredator(predator, direction.x, direction.y, PREDATOR_SPEED, frameScale);
+                }
+                predator.sprite.x = Phaser.Math.Clamp(
+                    predator.sprite.x,
+                    predator.sprite.displayWidth / 2,
+                    this.WORLD_WIDTH - predator.sprite.displayWidth / 2
+                );
+                predator.sprite.y = Phaser.Math.Clamp(
+                    predator.sprite.y,
+                    predator.sprite.displayHeight / 2,
+                    this.WORLD_HEIGHT - predator.sprite.displayHeight / 2
+                );
+            } else if (!predator.nervous && predatorDistance > 0) {
+                const frameDelta = Math.min(delta, 50);
+                if (predator.dashRemaining > 0) {
+                    this.movePredator(
+                        predator,
+                        predator.dashVelocityX,
+                        predator.dashVelocityY,
+                        PREDATOR_DASH_SPEED,
+                        frameScale
+                    );
+                    predator.dashRemaining = Math.max(0, predator.dashRemaining - frameDelta);
+                } else {
+                    predator.dashCooldown = Math.max(0, predator.dashCooldown - frameDelta);
+
+                    if (predator.dashCooldown === 0 && predatorDistance <= PREDATOR_DASH_RANGE) {
+                        predator.dashVelocityX =
+                            ((this.guide.x - predator.sprite.x) / predatorDistance) * PREDATOR_DASH_SPEED;
+                        predator.dashVelocityY =
+                            ((this.guide.y - predator.sprite.y) / predatorDistance) * PREDATOR_DASH_SPEED;
+                        this.facePredatorDirection(
+                            predator,
+                            predator.dashVelocityX,
+                            predator.dashVelocityY,
+                            frameScale
+                        );
+                        predator.dashRemaining = PREDATOR_DASH_DURATION;
+                        predator.dashCooldown = PREDATOR_DASH_COOLDOWN;
+                    } else {
+                        const directionX = (this.guide.x - predator.sprite.x) / predatorDistance;
+                        const directionY = (this.guide.y - predator.sprite.y) / predatorDistance;
+                        this.movePredator(predator, directionX, directionY, PREDATOR_SPEED, frameScale);
+                    }
+                }
+            }
+        }
     }
 
     hideFish() {
@@ -1318,50 +1345,50 @@ class TestScene extends Phaser.Scene {
         this.isHidingInHome = nearbyHideTarget.isHome;
         this.guide.setPosition(nearbyHideTarget.x, nearbyHideTarget.y);
         this.guide.setDepth(nearbyHideTarget.depth - 0.1);
-        if (this.isHidingInHome) this.startPredatorFlee();
+        if (this.isHidingInHome) {
+            this.predators.forEach(predator => this.startPredatorFlee(predator));
+        }
     }
 
-    startPredatorFlee(awayFromFish = false) {
-        if (!this.predatorSpawned || this.predatorEscaped) return;
-        if (this.predatorScared && !awayFromFish) return;
+    startPredatorFlee(predator, awayFromFish = false) {
+        if (!predator.spawned || predator.escaped) return;
+        if (predator.scared && !awayFromFish) return;
 
-        this.predatorScared ||= awayFromFish;
-        this.predatorRetreatDirection = null;
-        this.predatorFleeing = true;
-        this.predatorEscapeDirection = this.predatorScared
-            ? (this.predator.x <= this.guide.x ? -1 : 1)
-            : (this.predator.x <= this.WORLD_WIDTH / 2 ? -1 : 1);
+        predator.scared ||= awayFromFish;
+        predator.retreatDirection = null;
+        predator.fleeing = true;
+        predator.escapeDirection = predator.sprite.x <= this.WORLD_WIDTH / 2 ? -1 : 1;
         if (awayFromFish) {
             const distance = Phaser.Math.Distance.Between(
-                this.predator.x,
-                this.predator.y,
+                predator.sprite.x,
+                predator.sprite.y,
                 this.guide.x,
                 this.guide.y
             );
-            this.predatorDashVelocityX = distance > 0
-                ? ((this.predator.x - this.guide.x) / distance) * PREDATOR_DASH_SPEED
-                : this.predatorEscapeDirection * PREDATOR_DASH_SPEED;
-            this.predatorDashVelocityY = distance > 0
-                ? ((this.predator.y - this.guide.y) / distance) * PREDATOR_DASH_SPEED
+            predator.dashVelocityX = distance > 0
+                ? ((predator.sprite.x - this.guide.x) / distance) * PREDATOR_DASH_SPEED
+                : predator.escapeDirection * PREDATOR_DASH_SPEED;
+            predator.dashVelocityY = distance > 0
+                ? ((predator.sprite.y - this.guide.y) / distance) * PREDATOR_DASH_SPEED
                 : 0;
-            this.predatorDashRemaining = PREDATOR_DASH_DURATION;
+            predator.dashRemaining = PREDATOR_DASH_DURATION;
         }
-        this.predator.clearTint();
+        predator.sprite.clearTint();
     }
 
-    facePredatorDirection(directionX, directionY, frameScale) {
+    facePredatorDirection(predator, directionX, directionY, frameScale) {
         // The lionfish artwork faces left, so mirror horizontally to face right.
-        const flip = directionX === 0 ? this.predator.flipX : directionX > 0;
-        this.predator.setFlipX(flip);
+        const flip = directionX === 0 ? predator.sprite.flipX : directionX > 0;
+        predator.sprite.setFlipX(flip);
         const targetAngle = Math.atan2(directionY, directionX) - (flip ? 0 : Math.PI);
-        this.predator.rotation = Phaser.Math.Angle.RotateTo(
-            this.predator.rotation,
+        predator.sprite.rotation = Phaser.Math.Angle.RotateTo(
+            predator.sprite.rotation,
             targetAngle,
             0.5 * frameScale
         );
     }
 
-    movePredator(directionX, directionY, speed, frameScale) {
+    movePredator(predator, directionX, directionY, speed, frameScale) {
         const directionLength = Math.hypot(directionX, directionY);
         if (directionLength === 0) return;
 
@@ -1369,29 +1396,29 @@ class TestScene extends Phaser.Scene {
         const normalizedY = directionY / directionLength;
         const wiggle = Math.sin(this.time.now * 0.01) * frameScale;
 
-        this.predator.x += normalizedX * speed * frameScale - normalizedY * wiggle;
-        this.predator.y += normalizedY * speed * frameScale + normalizedX * wiggle;
-        this.predator.y = Phaser.Math.Clamp(
-            this.predator.y,
-            this.predator.displayHeight / 2,
-            this.WORLD_HEIGHT - this.predator.displayHeight / 2
+        predator.sprite.x += normalizedX * speed * frameScale - normalizedY * wiggle;
+        predator.sprite.y += normalizedY * speed * frameScale + normalizedX * wiggle;
+        predator.sprite.y = Phaser.Math.Clamp(
+            predator.sprite.y,
+            predator.sprite.displayHeight / 2,
+            this.WORLD_HEIGHT - predator.sprite.displayHeight / 2
         );
-        this.facePredatorDirection(normalizedX, normalizedY, frameScale);
+        this.facePredatorDirection(predator, normalizedX, normalizedY, frameScale);
     }
 
-    canPredatorMove(directionX, directionY, frameScale) {
+    canPredatorMove(predator, directionX, directionY, frameScale) {
         const directionLength = Math.hypot(directionX, directionY);
         if (directionLength === 0) return false;
 
         const normalizedX = directionX / directionLength;
         const normalizedY = directionY / directionLength;
         const wiggle = Math.sin(this.time.now * 0.01) * frameScale;
-        const nextX = this.predator.x +
+        const nextX = predator.sprite.x +
             normalizedX * PREDATOR_SPEED * frameScale - normalizedY * wiggle;
-        const nextY = this.predator.y +
+        const nextY = predator.sprite.y +
             normalizedY * PREDATOR_SPEED * frameScale + normalizedX * wiggle;
-        const halfWidth = this.predator.displayWidth / 2;
-        const halfHeight = this.predator.displayHeight / 2;
+        const halfWidth = predator.sprite.displayWidth / 2;
+        const halfHeight = predator.sprite.displayHeight / 2;
 
         return nextX >= halfWidth &&
             nextX <= this.WORLD_WIDTH - halfWidth &&
@@ -1399,7 +1426,7 @@ class TestScene extends Phaser.Scene {
             nextY <= this.WORLD_HEIGHT - halfHeight;
     }
 
-    choosePredatorRetreatDirection(awayX, awayY, frameScale) {
+    choosePredatorRetreatDirection(predator, awayX, awayY, frameScale) {
         const candidates = [
             { x: awayX, y: awayY },
             { x: awayX, y: 0 },
@@ -1416,7 +1443,7 @@ class TestScene extends Phaser.Scene {
                 const length = Math.hypot(x, y);
                 return { x: x / length, y: y / length };
             })
-            .filter(({ x, y }) => this.canPredatorMove(x, y, frameScale))
+            .filter(({ x, y }) => this.canPredatorMove(predator, x, y, frameScale))
             .sort((a, b) => (b.x * awayX + b.y * awayY) - (a.x * awayX + a.y * awayY))[0];
     }
 
@@ -1425,9 +1452,11 @@ class TestScene extends Phaser.Scene {
         this.isHidingInHome = false;
         this.guide.setDepth(9999);
 
-        if (this.predatorFleeing && !this.predatorEscaped && !this.predatorScared) {
-            this.predatorFleeing = false;
-        }
+        this.predators.forEach(predator => {
+            if (predator.fleeing && !predator.escaped && !predator.scared) {
+                predator.fleeing = false;
+            }
+        });
     }
 
     closeCoralPopup() {
