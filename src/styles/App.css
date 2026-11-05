@@ -247,9 +247,11 @@
   z-index: 1;
 }
 
-/* Below the tutorial banner, so it doesn't cover the banner's button */
+/* Sits in the slot under the tutorial banner, so it follows the banner instead of the window */
 .EventNoticeTutorial {
-  top: 210px;
+  position: static;
+  box-sizing: border-box;
+  width: min(520px, 100%);
 }
 
 .EventNoticeWarning {

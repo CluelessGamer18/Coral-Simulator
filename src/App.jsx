@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import './styles/App.css'
 
 import RangeSlider from './RangeSlider.jsx'
@@ -87,6 +88,7 @@ function App() {
 
   const dismissEventNotice = () => {
     setEventNotice(null);
+    scene?.eventNoticeClosed?.();
   };
 
   useEffect(() => {
@@ -113,14 +115,15 @@ function App() {
   }, [simEnd]);
 
   useEffect(() => {
-    if (!eventNotice) return;
+    if (!eventNotice || eventNotice.persistent) return;
 
+    // Longer in the tutorial, where the notices are being read for the first time
     const timeoutId = window.setTimeout(() => {
       setEventNotice(null);
-    }, eventNotice.bleaching ? 7000 : 5000);
+    }, eventNotice.bleaching ? 7000 : inTutorial ? 10000 : 5000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [eventNotice]);
+  }, [eventNotice, inTutorial]);
 
  
   useEffect(() => {
@@ -314,6 +317,19 @@ function App() {
     navigate("/about#resources");
   }
 
+  const eventNoticeBox = eventNotice ? (
+    <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
+        <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
+        {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
+        <div className="EventNoticeHeading">
+        <h2 id="event-notice-title">{eventNotice.title}</h2>
+        </div>
+        <p>{eventNotice.message}</p>
+    </aside>
+  ) : null;
+  // In the tutorial the notice sits under the banner, inside the game, however tall the banner is
+  const tutorialNoticeSlot = inTutorial ? document.getElementById("tutorialNoticeSlot") : null;
+
   return (
   <>
     <Routes>
@@ -329,16 +345,7 @@ function App() {
             dead={reefDead}
             fishDead={fishDead}
           ></SimEndPopUp>) : null}
-        {!showTitleScreen && eventNotice ? (
-          <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
-              <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
-              {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
-              <div className="EventNoticeHeading">
-              <h2 id="event-notice-title">{eventNotice.title}</h2>
-              </div>
-              <p>{eventNotice.message}</p>
-          </aside>
-        ) : null}
+        {!showTitleScreen && eventNotice ? (tutorialNoticeSlot ? createPortal(eventNoticeBox, tutorialNoticeSlot) : eventNoticeBox) : null}
         {!showTitleScreen && scene && bubbleCollision ? <SimBubblePopUp key={collisionType} type={collisionType}
         initialValue={initialValue}
         onApply={applyBubble}
