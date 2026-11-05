@@ -41,8 +41,8 @@ function App() {
   const [showTitleScreen, setShowTitleScreen] = useState(true);
   const [hasStartedGame, setHasStartedGame] = useState(false);
 
-  const [musicVolume, setMusicVolume] = useState(0.5);
-  const [sfxVolume, setSfxVolume] = useState(1.0);
+  const [musicVolume, setMusicVolume] = useState(0.25);
+  const [sfxVolume, setSfxVolume] = useState(0.5);
   const [musicMuted, setMusicMuted] = useState(false);
   const [sfxMuted, setSfxMuted] = useState(false);
   const [showOptions, setShowOptions] = useState(false);

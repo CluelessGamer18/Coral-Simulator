@@ -220,7 +220,8 @@ class TestScene extends Phaser.Scene {
 
     setupAudio() {
         // Only default the volume on the first run: a restart reuses this scene, and React won't send the volume again
-        this.musicVolume ??= 0.15;
+        this.musicVolume ??= 0.075;
+        this.sfxVolume ??= 0.5;
 
         this.bgMusic = this.sound.add('background_music', {
             loop: true,
@@ -380,7 +381,7 @@ class TestScene extends Phaser.Scene {
     }
 
     playBleachingWarning() {
-        this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.15 });
+        this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.5 });
     }
 
     // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.

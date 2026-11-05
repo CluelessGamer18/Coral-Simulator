@@ -133,7 +133,7 @@ class Tutorial extends Phaser.Scene {
         this.score = 0;
         this.isHiding = false;
         this.coralInfoOpen = false;
-        this.sfxVolume ??= 1;
+        this.sfxVolume ??= 0.5;
 
         this.setupWorld();
         this.setupFish();
