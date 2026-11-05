@@ -34,7 +34,7 @@ export const PREDATOR_ESCAPE_MARGIN = 50;
 const MAX_HEARTS = 3;
 const LOW_HEALTH_PULSE_THRESHOLD = 2;
 const YEAR_DURATION_MS = 60_000;
-const PREDATOR_SPAWN_YEARS = [2, 5, 8];
+const PREDATOR_SPAWN_YEARS = [2, 4.5, 7, 9.5];
 const SUMMER_FRACTION_OF_YEAR = 0.5;
 const SUMMER_DURATION_MS = YEAR_DURATION_MS * SUMMER_FRACTION_OF_YEAR;
 const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
@@ -1221,17 +1221,19 @@ class TestScene extends Phaser.Scene {
                 this.guide.y
             );
             const canScarePredator = this.foodEaten >= PREDATOR_SCARE_FOOD_COUNT;
+            const scareDistance = PREDATOR_SCARE_DISTANCE / this.fishGrowth;
+            const nervousDistance = PREDATOR_NERVOUS_DISTANCE / this.fishGrowth;
             if (
                 canScarePredator &&
                 !predator.nervous &&
-                predatorDistance <= PREDATOR_NERVOUS_DISTANCE
+                predatorDistance <= nervousDistance
             ) {
                 predator.nervous = true;
                 predator.retreatDirection = null;
                 predator.dashRemaining = 0;
             }
 
-            if (canScarePredator && predatorDistance <= PREDATOR_SCARE_DISTANCE) {
+            if (canScarePredator && predatorDistance <= scareDistance) {
                 this.startPredatorFlee(predator, true);
             } else if (predator.nervous && predatorDistance > 0) {
                 const awayX = (predator.sprite.x - this.guide.x) / predatorDistance;
