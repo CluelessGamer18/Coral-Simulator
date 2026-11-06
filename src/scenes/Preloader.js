@@ -59,7 +59,7 @@ preload() {
 
         // cursor-following fish
         this.load.image("Guide","fish/fish.png")
-        this.load.image("lionfish", "fish/lionfish.png");
+        this.load.image("grouper", "fish/grouper.png");
 
         // health hearts shown above the fish
         this.load.svg("heartFull", "health/heart_full.svg", { width: 33, height: 30 });

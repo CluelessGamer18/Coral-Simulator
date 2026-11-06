@@ -24,7 +24,6 @@ const PREDATOR_DASH_SPEED = 10;
 const PREDATOR_DASH_DURATION = 450;
 const PREDATOR_DASH_COOLDOWN = 3000;
 const PREDATOR_DASH_RANGE = 400;
-const PREDATOR_SCARE_FOOD_COUNT = 3;
 const PREDATOR_NERVOUS_DISTANCE = 500;
 const PREDATOR_SCARE_DISTANCE = 250;
 export const REEF_HIDE_DISTANCE = 150;
@@ -220,7 +219,8 @@ class TestScene extends Phaser.Scene {
 
     setupAudio() {
         // Only default the volume on the first run: a restart reuses this scene, and React won't send the volume again
-        this.musicVolume ??= 0.15;
+        this.musicVolume ??= 0.075;
+        this.sfxVolume ??= 0.5;
 
         this.bgMusic = this.sound.add('background_music', {
             loop: true,
@@ -389,7 +389,7 @@ class TestScene extends Phaser.Scene {
     }
 
     playBleachingWarning() {
-        this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.15 });
+        this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.5 });
     }
 
     // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.
@@ -1166,9 +1166,9 @@ class TestScene extends Phaser.Scene {
         const sprite = this.add.image(
             this.WORLD_WIDTH - 100,
             300 + (this.predators.length % 3) * 120,
-            "lionfish"
+            "grouper"
         )
-            .setScale(0.5)
+            .setScale(0.4)
             .setDepth(9998)
             .setVisible(true);
         const predator = {
@@ -1232,7 +1232,7 @@ class TestScene extends Phaser.Scene {
                 this.guide.x,
                 this.guide.y
             );
-            const canScarePredator = this.foodEaten >= PREDATOR_SCARE_FOOD_COUNT;
+            const canScarePredator = this.foodEaten >= FOOD_COUNT;
             const scareDistance = PREDATOR_SCARE_DISTANCE / this.fishGrowth;
             const nervousDistance = PREDATOR_NERVOUS_DISTANCE / this.fishGrowth;
             if (
@@ -1389,7 +1389,7 @@ class TestScene extends Phaser.Scene {
     }
 
     facePredatorDirection(predator, directionX, directionY, frameScale) {
-        // The lionfish artwork faces left, so mirror horizontally to face right.
+        // The grouper artwork faces left, so mirror horizontally to face right.
         const flip = directionX === 0 ? predator.sprite.flipX : directionX > 0;
         predator.sprite.setFlipX(flip);
         const targetAngle = Math.atan2(directionY, directionX) - (flip ? 0 : Math.PI);
