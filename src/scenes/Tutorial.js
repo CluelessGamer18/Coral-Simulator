@@ -17,6 +17,8 @@ const FISH_SPEED = 6.75; // same as the main game
 const FISH_SCALE = 1.3 / 1.5; // the fish's size in the main game before it grows
 const PRAISE_DURATION = 2000; // ms the "well done" message shows before moving on (keep in sync with TutorialBanner.css)
 const TUTORIAL_PREDATOR_SPEED = PREDATOR_SPEED * 0.6; // slower than the real one, to give time to read the banner
+const TUTORIAL_BITE_INTERVAL = 2000; // ms between bites, half as often as the main game, as the player may still be reading
+const TUTORIAL_MIN_HEALTH = 2; // bites stop at one full heart, so the fish can't die in the tutorial
 const SWIM_KEY_TIME = 400; // ms each direction has to be held to finish the first lesson
 const BLEACH_PREP_MS_PER_FRAME = 6; // time each frame spends making the main game's coral bleach stages in the background
 
@@ -44,7 +46,7 @@ const HEATWAVE_MAX_STRESS = 85; // "Bleached", but never dead
 const HEAT_STEP_STRESS = 40; // how far the coral bleaches before the Cloudy bubble shows up
 const WINTER_RECOVERY_PER_SECOND = 30;
 const CLOUDY_EVENT = EVENTS.find(event => event.id === "shade");
-const HEAT_NOTICE_ID = "tutorial-heat";
+const LESSON_NOTICE_ID = "tutorial-lesson"; // the notices that stay until closed, as the lesson waits for them
 
 // How the lessons talk about the keys for each control scheme. The other set of keys moves the camera.
 const CONTROL_TEXT = {
@@ -114,7 +116,7 @@ const STEPS = [
     {
         id: "predator",
         title: "Watch Out for Predators",
-        text: "A grouper is hunting you, and every bite costs half a heart! Swim to your nest and press E to hide. Stay hidden until the All Clear message appears, or it will turn back and chase you. Once you've eaten all the shellfish and reached your maximum size, you're big enough to scare predators off.",
+        text: "A grouper is hunting you! Swim to your nest and press E to hide. Stay there until the All Clear message appears.",
         image: "tutorial/tutorial_predator.svg",
         imageAlt: "The E key beside a fish hiding in its nest while a grouper swims past",
         praise: "Complete!",
@@ -133,7 +135,7 @@ const STEPS = [
 // React shows the current lesson with "tutorial-step" and the praise message with "tutorial-praise".
 // The nest, coral popup, notices and predator alert are the main game's, so this scene answers to the same
 // calls and events (closeCoralPopup(), eventNoticeClosed(), "stats-changed", "coralInfo", "reef-warning", "random-event",
-// "predator-appeared"/"predator-left").
+// "predator-appeared").
 class Tutorial extends Phaser.Scene {
     constructor() {
         super("Tutorial");
@@ -311,7 +313,7 @@ class Tutorial extends Phaser.Scene {
         if (this.finished) return;
         this.finished = true;
         this.game.events.emit("tutorial-step", null);
-        this.game.events.emit("reef-warning-cleared", HEAT_NOTICE_ID); // it stays until closed, so Skip has to clear it
+        this.game.events.emit("reef-warning-cleared", LESSON_NOTICE_ID); // Skip can leave one open
         this.scene.start("TestScene", { tutorialComplete: true });
     }
 
@@ -581,7 +583,7 @@ class Tutorial extends Phaser.Scene {
         this.sound.play("bleachingWarning", { volume: this.sfxVolume });
         // Stays until it's closed, and the lesson waits for that, so there's time to read it
         this.game.events.emit("reef-warning", {
-            id: HEAT_NOTICE_ID,
+            id: LESSON_NOTICE_ID,
             persistent: true,
             warning: true,
             title: "Temperature Bleaching Event",
@@ -591,9 +593,10 @@ class Tutorial extends Phaser.Scene {
         this.emitStats();
     }
 
-    // Called by App when the notice's Close button is clicked
+    // Called by App when a notice's Close button is clicked
     eventNoticeClosed() {
         this.heatNoticeClosed = true;
+        if (this.stepId === "predator" && !this.predator) this.completeStep();
     }
 
     updateCoral(delta) {
@@ -700,6 +703,7 @@ class Tutorial extends Phaser.Scene {
             .setScale(0.4)
             .setDepth(9998);
         this.predatorFleeing = false;
+        this.nextBiteAt = 0;
         this.game.events.emit("predator-appeared");
         this.emitStep();
     }
@@ -715,8 +719,7 @@ class Tutorial extends Phaser.Scene {
             if (this.predator.x <= -margin || this.predator.x >= this.scale.width + margin) {
                 this.predator.destroy();
                 this.predator = null;
-                this.game.events.emit("predator-left");
-                this.completeStep();
+                this.showAllClear();
             }
             return;
         }
@@ -731,12 +734,33 @@ class Tutorial extends Phaser.Scene {
             this.facePredator(directionX, directionY, frameScale);
         }
 
-        // The fish can't get hurt in the tutorial, but flashes red while the predator is on it
+        // Flashes red while the predator is on it, and loses half a heart with each bite
         if (this.touching(this.predator)) {
             this.guide.setTint(0xff6666);
+            if (this.time.now >= this.nextBiteAt) this.bite();
         } else {
             this.guide.clearTint();
         }
+    }
+
+    bite() {
+        this.nextBiteAt = this.time.now + TUTORIAL_BITE_INTERVAL;
+        this.health = Math.max(this.health - 1, TUTORIAL_MIN_HEALTH);
+        this.refreshHeartTextures();
+    }
+
+    // Worded the same as the main game's notice, but it stays until closed, and the lesson waits for that,
+    // so the player reads one message at a time
+    showAllClear() {
+        this.game.events.emit("reef-warning", {
+            id: LESSON_NOTICE_ID,
+            persistent: true,
+            title: "All Clear",
+            message: "The predator has left. You can come out now!",
+        });
+        this.emitStep({
+            text: "The grouper has gone! Once your fish reaches its maximum size, it can scare predators off. Click Close to continue."
+        });
     }
 
     // Same as the main game: the grouper artwork faces left, so mirror it to face right
