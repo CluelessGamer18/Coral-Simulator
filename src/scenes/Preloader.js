@@ -134,6 +134,24 @@ preload() {
         this.load.audio('nestPiece', ['audio/NestPiece.mp3']);
         this.load.audio('bleachingWarning', ['audio/BleachingWarning.wav']);
         this.load.audio('background_music', ['audio/Background.mp3']);
+
+        // Ocean Sounds mode (see OceanSounds.js). Ogg first for the loops: it loops without a gap, and Safari falls back to the mp3
+        this.load.audio('oceanReefHealthy', ['audio/ocean/reef_healthy.ogg', 'audio/ocean/reef_healthy.mp3']);
+        this.load.audio('oceanReefDegraded', ['audio/ocean/reef_degraded.ogg', 'audio/ocean/reef_degraded.mp3']);
+        this.load.audio('oceanWaves', ['audio/ocean/surface_waves.ogg', 'audio/ocean/surface_waves.mp3']);
+        this.load.audio('fishDuck', ['audio/ocean/fish_duck.mp3']);
+        this.load.audio('fishFalling', ['audio/ocean/fish_falling.mp3']);
+        this.load.audio('fishFlutey', ['audio/ocean/fish_flutey.mp3']);
+        this.load.audio('fishLow', ['audio/ocean/fish_low.mp3']);
+        this.load.audio('fishPurr', ['audio/ocean/fish_purr.mp3']);
+        this.load.audio('fishPurrs', ['audio/ocean/fish_purrs.mp3']);
+        this.load.audio('fishPulses', ['audio/ocean/fish_pulses.mp3']);
+        this.load.audio('fishShrill', ['audio/ocean/fish_shrill.mp3']);
+        this.load.audio('fishWoop', ['audio/ocean/fish_woop.mp3']);
+        this.load.audio('triggerfishPicasso', ['audio/ocean/triggerfish_picasso.mp3']);
+        this.load.audio('triggerfishWedge', ['audio/ocean/triggerfish_wedge.mp3']);
+        this.load.audio('triggerfishOrange', ['audio/ocean/triggerfish_orange.mp3']);
+        this.load.audio('whaleWhoop', ['audio/ocean/whale_whoop.mp3']);
     }
 
     create() {
