@@ -1,4 +1,5 @@
 .SimInfoDisplayContainer{
+    --hud-panel-background: rgba(2, 146, 165, 0.82);
     width: 500px;
     height: 170px;
     /*background-color: red;*/
@@ -17,7 +18,7 @@
     position: relative;
     width: 500px;
     height: 50px;
-    background: #0292A5;
+    background: var(--hud-panel-background);
     border-radius: 30px;
     display: flex;
     align-items: center;
@@ -137,25 +138,47 @@
     border-top-right-radius: 60px;
     margin: 0;
     /* background: linear-gradient(to right,#0292A5,#a2f0f9); */
-    background: conic-gradient(from 90deg at 47.52% 100.00%, #78A018 201deg, white 338deg, #564B35 360deg);
+    background: conic-gradient(from 90deg at 47.52% 100.00%, rgba(120, 160, 24, 0.82) 201deg, rgba(255, 255, 255, 0.82) 338deg, rgba(86, 75, 53, 0.82) 360deg);
     border-style: solid;
     border-width: 5px;
-    border-color: #0292A5;
+    border-color: var(--hud-panel-background);
     padding: 0;
     position: relative;
 }
 
 .SimInfoDialIcon{
     position: absolute;
-    width: 40px; 
+    width: 40px;
+    aspect-ratio: 45 / 43;
     bottom: -20%;
     left: 50%;
-    padding: 0;
-    margin: 0;
     transform: translateX(-50%);
     z-index: 20;
 }
 
+.SimInfoDialIcon svg{
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.SimInfoDialIconWarning{
+    animation: coralStressPulse 900ms ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes coralStressPulse{
+    50%{
+        transform: scale(1.2);
+        filter: brightness(1.6);
+    }
+}
+
+@media (prefers-reduced-motion: reduce){
+    .SimInfoDialIcon .SimInfoDialIconWarning{
+        animation: none;
+    }
+}
 
 .SimInfoDialPin{
     position: absolute;
@@ -177,7 +200,7 @@
     padding-left: 30px;
     padding-right: 30px;
     gap: 20px;
-    background: #0292A5;
+    background: var(--hud-panel-background);
     border-bottom-left-radius: 30px; 
     border-bottom-right-radius: 30px;
     margin: 0;

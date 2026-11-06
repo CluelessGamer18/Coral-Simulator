@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import './styles/App.css'
 
 import RangeSlider from './RangeSlider.jsx'
@@ -14,6 +15,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router'
 import About from './About.jsx'
 import { asset } from './assetUrl';
 import { isBleachingYear } from './scenes/BleachingSchedule.js';
+import { loadControlScheme, saveControlScheme } from './controlScheme';
 
 const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
 
@@ -42,11 +44,12 @@ function App() {
   const [showTitleScreen, setShowTitleScreen] = useState(true);
   const [hasStartedGame, setHasStartedGame] = useState(false);
 
-  const [musicVolume, setMusicVolume] = useState(0.5);
-  const [sfxVolume, setSfxVolume] = useState(1.0);
+  const [musicVolume, setMusicVolume] = useState(0.25);
+  const [sfxVolume, setSfxVolume] = useState(0.5);
   const [musicMuted, setMusicMuted] = useState(false);
   const [sfxMuted, setSfxMuted] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [controlScheme, setControlScheme] = useState(loadControlScheme);
 
   const [eventNotice, setEventNotice] = useState(null);
   const [summerTemperatureChange, setSummerTemperatureChange] = useState(0);
@@ -86,8 +89,14 @@ function App() {
     scene.freeFish(true);
   };
 
+  const changeControlScheme = (scheme) => {
+    setControlScheme(scheme);
+    saveControlScheme(scheme);
+  };
+
   const dismissEventNotice = () => {
     setEventNotice(null);
+    scene?.eventNoticeClosed?.();
   };
 
   useEffect(() => {
@@ -114,14 +123,15 @@ function App() {
   }, [simEnd]);
 
   useEffect(() => {
-    if (!eventNotice) return;
+    if (!eventNotice || eventNotice.persistent) return;
 
+    // Longer in the tutorial, where the notices are being read for the first time
     const timeoutId = window.setTimeout(() => {
       setEventNotice(null);
-    }, eventNotice.bleaching ? 7000 : 5000);
+    }, eventNotice.bleaching ? 7000 : inTutorial ? 10000 : 5000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [eventNotice]);
+  }, [eventNotice, inTutorial]);
 
  
   useEffect(() => {
@@ -130,6 +140,10 @@ function App() {
     scene.setMusicVolume?.(musicMuted ? 0 : musicVolume);
     scene.setSfxVolume?.(sfxMuted ? 0 : sfxVolume);
   }, [scene, musicVolume, musicMuted, sfxVolume, sfxMuted]);
+
+  useEffect(() => {
+    scene?.setControlScheme?.(controlScheme);
+  }, [scene, controlScheme]);
 
   // The scene sends "stats-changed" whenever one of these values changes, so React only updates when something happens
   useEffect(() => {
@@ -315,6 +329,19 @@ function App() {
     navigate("/about#resources");
   }
 
+  const eventNoticeBox = eventNotice ? (
+    <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
+        <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
+        {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
+        <div className="EventNoticeHeading">
+        <h2 id="event-notice-title">{eventNotice.title}</h2>
+        </div>
+        <p>{eventNotice.message}</p>
+    </aside>
+  ) : null;
+  // In the tutorial the notice sits under the banner, inside the game, however tall the banner is
+  const tutorialNoticeSlot = inTutorial ? document.getElementById("tutorialNoticeSlot") : null;
+
   return (
   <>
     <Routes>
@@ -330,16 +357,7 @@ function App() {
             dead={reefDead}
             fishDead={fishDead}
           ></SimEndPopUp>) : null}
-        {!showTitleScreen && eventNotice ? (
-          <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
-              <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
-              {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
-              <div className="EventNoticeHeading">
-              <h2 id="event-notice-title">{eventNotice.title}</h2>
-              </div>
-              <p>{eventNotice.message}</p>
-          </aside>
-        ) : null}
+        {!showTitleScreen && eventNotice ? (tutorialNoticeSlot ? createPortal(eventNoticeBox, tutorialNoticeSlot) : eventNoticeBox) : null}
         {!showTitleScreen && scene && bubbleCollision ? <SimBubblePopUp key={collisionType} type={collisionType}
         initialValue={initialValue}
         onApply={applyBubble}
@@ -358,6 +376,8 @@ function App() {
           setSfxVolume={setSfxVolume}
           sfxMuted={sfxMuted}
           setSfxMuted={setSfxMuted}
+          controlScheme={controlScheme}
+          setControlScheme={changeControlScheme}
         /> : null}
         {showTitleScreen ? <TitleScreen
           hasExistingGame={hasStartedGame && !!scene}

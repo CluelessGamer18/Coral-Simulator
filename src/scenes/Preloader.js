@@ -59,7 +59,7 @@ preload() {
 
         // cursor-following fish
         this.load.image("Guide","fish/fish.png")
-        this.load.image("lionfish", "fish/lionfish.png");
+        this.load.image("grouper", "fish/grouper.png");
 
         // health hearts shown above the fish
         this.load.svg("heartFull", "health/heart_full.svg", { width: 33, height: 30 });
@@ -71,9 +71,9 @@ preload() {
 
         // triggerfish home building: glowing pieces to collect, and the nest crater they go in
         // (pixel art, so sizes are whole multiples of the SVG grid to keep the pixels crisp)
-        this.load.svg("homePebble", "home/material_pebble.svg", { width: 36, height: 36 });
-        this.load.svg("homeShell", "home/material_shell_fragment.svg", { width: 36, height: 36 });
-        this.load.svg("homeCoralRubble", "home/material_coral_rubble.svg", { width: 36, height: 36 });
+        this.load.svg("homePebble", "home/material_pebble.svg", { width: 48, height: 48 });
+        this.load.svg("homeShell", "home/material_shell_fragment.svg", { width: 48, height: 48 });
+        this.load.svg("homeCoralRubble", "home/material_coral_rubble.svg", { width: 48, height: 48 });
         this.load.svg("homeStage1", "home/home_stage1.svg", { width: 216, height: 90 });
         this.load.svg("homeStage2", "home/home_stage2.svg", { width: 288, height: 120 });
         this.load.svg("homeStage3", "home/home_stage3.svg", { width: 360, height: 156 });
@@ -127,6 +127,8 @@ preload() {
 
         // audio
         this.load.audio('bubblePop', ['audio/BubblePOP.mp3']);
+        this.load.audio('foodCrunch', ['audio/FoodCrunch.mp3']);
+        this.load.audio('nestPiece', ['audio/NestPiece.mp3']);
         this.load.audio('bleachingWarning', ['audio/BleachingWarning.wav']);
         this.load.audio('background_music', ['audio/Background.mp3']);
     }

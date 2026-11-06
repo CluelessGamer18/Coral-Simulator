@@ -31,9 +31,22 @@ function getLightColor(light) {
     return `#${channel(0)}${channel(1)}${channel(2)}`;
 }
 
+function getCoralStressColor(stress) {
+    const progress = Math.min(Math.max((stress - 60) / 20, 0), 1);
+    const start = [2, 146, 165];
+    const end = [229, 57, 53];
+    const channel = (index) => Math.round(start[index] + (end[index] - start[index]) * progress)
+        .toString(16)
+        .padStart(2, "0");
+
+    return `#${channel(0)}${channel(1)}${channel(2)}`;
+}
+
 function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,score=0}){
     const showSeasonIndicator = yearsElapsed >= 1;
     const summerIsBleaching = isBleachingYear(yearsElapsed);
+    const coralStressIsHigh = stress >= 80;
+    const coralStressColor = getCoralStressColor(stress);
     yearsElapsed = 2*yearsElapsed
     const displayedPollution = Math.round(poll * 2) / 2
     const temperatureColor = getTemperatureColor(temp);
@@ -53,7 +66,17 @@ function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,s
     return(
         <div className="SimInfoDisplayContainer">
             <div className="SimInfoDial">
-                <img className="SimInfoDialIcon" src={asset("stress_level.svg")} alt="Coral stress level" />
+                <div className="SimInfoDialIcon">
+                    <svg
+                        className={coralStressIsHigh ? "SimInfoDialIconWarning" : ""}
+                        viewBox="0 0 45 43"
+                        role="img"
+                        aria-label="Coral stress level"
+                    >
+                        <rect x="1" y="1" width="43" height="41" rx="20.5" fill={coralStressColor} stroke="white" strokeWidth="2" />
+                        <path fillRule="evenodd" clipRule="evenodd" d="M24.3604 12.1099C26.4109 10.3276 29.8524 8.45812 32.9991 12.0337C37.743 17.4251 33.8455 29.7183 23.4532 35.5044L26.0215 25.2124L22.0782 21.8931L24.3604 12.1099ZM12 12.0337C15.7698 7.74966 19.9617 11.2837 21.6787 13.1177L18.627 21.8931L23.3106 27.4253L21.2608 35.2798C11.0827 29.4338 7.29979 17.3749 12 12.0337Z" fill="white" />
+                    </svg>
+                </div>
                 <img className="SimInfoDialPin" src={asset("SimInfoDialPin.svg")} alt={`${Math.round(stress)} out of 100`} style={{ transform: `rotate(${stress * 1.8 - 90}deg)` }} />
                 <img className="hoverPreview" src={asset("tooltips/tooltip_stress.png")} alt="The dial begins on the left and slowly moves right. If it reaches the right, the corals die and the simulation ends." />
             </div>
