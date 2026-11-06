@@ -70,6 +70,8 @@ const HOME_BOTTOM = 860;        // the nest sits on the sand band the fish swims
 const HOME_DEPTH = 6.5;         // above the sand layers (depth 5 and 6), below the corals in front
 const PIECE_DEPTH = 7.5;
 const PIECE_HOME_SCALE = 0.6;   // pieces shrink a little once they're part of the nest
+const HIDE_ZOOM = 1.35;         // how far the camera zooms in on the nest while the fish hides in it
+const HIDE_CAMERA_SMOOTHING = 0.08;
 
 export function createHomeBuilding(scene) {
     createHome(scene, scene.WORLD_WIDTH / 2);
@@ -98,6 +100,25 @@ export function createHome(scene, x) {
         backgroundColor: "#1f3b4dcc",
         padding: { x: 6, y: 3 },
     }).setOrigin(0.5, 1).setDepth(10002).setVisible(false);
+}
+
+// Eases the camera in on the nest while the fish hides in it, and back out once it leaves.
+// The scene's camera bounds keep the view on the world, so it settles against the sea floor.
+export function updateNestCamera(scene, hiding, frameScale) {
+    const cam = scene.cameras.main;
+    if (!hiding && cam.zoom === 1) return;
+
+    const ease = 1 - Math.pow(1 - HIDE_CAMERA_SMOOTHING, frameScale);
+    const targetZoom = hiding ? HIDE_ZOOM : 1;
+    const zoom = Phaser.Math.Linear(cam.zoom, targetZoom, ease);
+    cam.setZoom(Math.abs(zoom - targetZoom) < 0.001 ? targetZoom : zoom); // Linear never quite arrives
+
+    if (hiding) {
+        cam.scrollX = Phaser.Math.Linear(cam.scrollX, scene.home.x - cam.width / 2, ease);
+        cam.scrollY = Phaser.Math.Linear(cam.scrollY, scene.home.y - cam.height / 2, ease);
+    } else {
+        cam.scrollY = Phaser.Math.Linear(cam.scrollY, 0, ease);
+    }
 }
 
 // Called every frame from TestScene.update(). clockIsRunning is false during the tutorial and popups,
@@ -204,7 +225,7 @@ function pickUpPiece(scene, piece) {
     scene.tweens.killTweensOf(piece);
     removeGlow(piece);
     scene.carriedPiece = piece;
-    scene.sound.play("bubblePop", { volume: scene.sfxVolume });
+    scene.sound.play("nestPiece", { volume: scene.sfxVolume });
 }
 
 // Keeps the carried piece in the fish's mouth, at the front of whichever way it's facing
@@ -269,7 +290,7 @@ function placePieceInHome(scene) {
         onStart: () => piece.setDepth(HOME_DEPTH + 0.1),
         onComplete: () => growHomeIfReady(scene),
     });
-    scene.sound.play("bubblePop", { volume: scene.sfxVolume });
+    scene.sound.play("nestPiece", { volume: scene.sfxVolume });
 }
 
 function growHomeIfReady(scene) {

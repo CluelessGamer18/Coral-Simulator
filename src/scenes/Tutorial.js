@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { createBleachStages, getBleachStage, getCoralInfo, prepareBleachStages } from "./CoralManager.js";
 import { EVENTS } from "./Events.js";
-import { createHome, addPiece, updateHomeControls } from "./HomeBuilding.js";
+import { createHome, addPiece, updateHomeControls, updateNestCamera } from "./HomeBuilding.js";
 import { addGlow, removeGlow } from "./Glow.js";
 import {
     FOOD_GROWTH,
@@ -17,7 +17,7 @@ const FISH_SPEED = 6.75; // same as the main game
 const FISH_SCALE = 1.3 / 1.5; // the fish's size in the main game before it grows
 const PRAISE_DURATION = 2000; // ms the "well done" message shows before moving on (keep in sync with TutorialBanner.css)
 const TUTORIAL_PREDATOR_SPEED = PREDATOR_SPEED * 0.6; // slower than the real one, to give time to read the banner
-const CORAL_VISIT_DISTANCE = 200; // how close the fish has to swim to the coral to check on it
+const SWIM_KEY_TIME = 400; // ms each direction has to be held to finish the first lesson
 const BLEACH_PREP_MS_PER_FRAME = 6; // time each frame spends making the main game's coral bleach stages in the background
 
 // Hearts above the fish, laid out the same as the main game. Health is counted in half hearts.
@@ -44,6 +44,23 @@ const HEATWAVE_MAX_STRESS = 85; // "Bleached", but never dead
 const HEAT_STEP_STRESS = 40; // how far the coral bleaches before the Cloudy bubble shows up
 const WINTER_RECOVERY_PER_SECOND = 30;
 const CLOUDY_EVENT = EVENTS.find(event => event.id === "shade");
+const HEAT_NOTICE_ID = "tutorial-heat";
+
+// How the lessons talk about the keys for each control scheme. The other set of keys moves the camera.
+const CONTROL_TEXT = {
+    wasd: {
+        swimKeys: "W, A, S and D keys",
+        lookKeys: "arrow keys",
+        image: "tutorial/tutorial_wasd.png",
+        imageAlt: "The W, A, S and D keys beside a fish swimming toward the coral reef",
+    },
+    arrows: {
+        swimKeys: "arrow keys",
+        lookKeys: "W, A, S and D keys",
+        image: "tutorial/tutorial_arrows.svg",
+        imageAlt: "The four arrow keys beside a fish swimming toward the coral reef",
+    },
+};
 
 // The lessons React shows in the banner at the top of the screen, in the order the player meets them.
 // Each one is started by start<Id>() below (if it has one) and completed by doing what it says.
@@ -51,9 +68,7 @@ const STEPS = [
     {
         id: "swim",
         title: "Swim Around",
-        text: "You are a triggerfish living on a coral reef. Use the W, A, S and D keys to swim around.",
-        image: "tutorial/tutorial_wasd.png",
-        imageAlt: "The W, A, S and D keys beside a fish swimming toward the coral reef",
+        // text and image are filled in by emitSwimStep() so they can show the player's keys and how many directions are done
         praise: "Great swimming!",
     },
     {
@@ -99,15 +114,15 @@ const STEPS = [
     {
         id: "predator",
         title: "Watch Out for Predators",
-        text: "A lionfish is hunting you, and every bite costs half a heart! Swim close to your coral and press E to hide until it swims away. Once you've eaten 3 shellfish, you're big enough to scare predators off.",
+        text: "A lionfish is hunting you, and every bite costs half a heart! Swim to your nest and press E to hide. Stay hidden until the All Clear message appears, or it will turn back and chase you. Once you've eaten 3 shellfish, you're big enough to scare predators off.",
         image: "tutorial/tutorial_predator.svg",
-        imageAlt: "The E key beside a fish hiding in the coral while a lionfish swims past",
+        imageAlt: "The E key beside a fish hiding in its nest while a lionfish swims past",
         praise: "Complete!",
     },
     {
         id: "done",
         title: "Let's Get Started!",
-        text: "Look after your reef for 10 years. Keep your fish fed and safe, build your nest, pop Cloudy bubbles during heatwaves, and use the arrow keys to look around the reef. Have fun exploring!",
+        // text is filled in by emitDoneStep() so it can name the keys that move the camera
         image: "tutorial/tutorial_4.png",
         imageAlt: "A fish ready to explore the reef",
         buttonLabel: "Let's Go!",
@@ -117,7 +132,7 @@ const STEPS = [
 // An empty stretch of reef (just the sand and background) where the player learns each part of the main game in turn.
 // React shows the current lesson with "tutorial-step" and the praise message with "tutorial-praise".
 // The nest, coral popup, notices and predator alert are the main game's, so this scene answers to the same
-// calls and events (closeCoralPopup(), "stats-changed", "coralInfo", "reef-warning", "random-event",
+// calls and events (closeCoralPopup(), eventNoticeClosed(), "stats-changed", "coralInfo", "reef-warning", "random-event",
 // "predator-appeared"/"predator-left").
 class Tutorial extends Phaser.Scene {
     constructor() {
@@ -126,6 +141,7 @@ class Tutorial extends Phaser.Scene {
 
     create() {
         this.finished = false;
+        this.stepIndex = -1;
         this.fishGrowth = 1;
         this.health = MAX_HEARTS * 2 - 1; // half a heart short, so eating shows the hearts filling up
         this.temperature = 27;
@@ -133,6 +149,7 @@ class Tutorial extends Phaser.Scene {
         this.score = 0;
         this.isHiding = false;
         this.coralInfoOpen = false;
+        this.heatNoticeClosed = false;
         this.sfxVolume ??= 1;
 
         this.setupWorld();
@@ -144,7 +161,6 @@ class Tutorial extends Phaser.Scene {
         // Making them a few at a time while the player learns means the main game starts without freezing.
         this.bleachStagePrep = prepareBleachStages(this);
 
-        this.stepIndex = -1;
         this.nextStep();
 
         window.gameScene = this;
@@ -156,6 +172,7 @@ class Tutorial extends Phaser.Scene {
     setupWorld() {
         const { width, height } = this.scale;
         this.cameras.main.setBackgroundColor("#8ACFC9");
+        this.cameras.main.setBounds(0, 0, width, height); // keeps the view on the scene while it zooms in on the nest
 
         // Same layers as the main game, but no coral, schools or pipes
         const addLayer = (key, depth, bottomAligned = true) => {
@@ -192,14 +209,30 @@ class Tutorial extends Phaser.Scene {
     }
 
     setupKeys() {
-        // WASD only, the same as the main game (where the arrow keys move the camera).
+        // Only the keys that swim do anything here, as this scene fits on one screen and has no camera to move.
         // Q (nest building) is added by createHome() when the nest lesson starts.
-        this.moveKeys = this.input.keyboard.addKeys("W,A,S,D");
+        this.wasdKeys = this.input.keyboard.addKeys({ up: "W", left: "A", down: "S", right: "D" });
+        this.arrowKeys = this.input.keyboard.addKeys({ up: "UP", left: "LEFT", down: "DOWN", right: "RIGHT" });
         this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
+        // Restarting removes the keys, so they're handed out again here. React sets the scheme on a new scene.
+        this.setControlScheme(this.controlScheme ?? "wasd");
+    }
+
+    // Called by App when the choice changes, which can be part way through a lesson that names the keys
+    setControlScheme(scheme) {
+        this.controlScheme = scheme;
+        this.moveKeys = scheme === "arrows" ? this.arrowKeys : this.wasdKeys;
+
+        // A key held during the switch would otherwise stay down
+        [...Object.values(this.wasdKeys), ...Object.values(this.arrowKeys)].forEach(key => key.reset());
+
+        if (this.stepId === "swim") this.emitSwimStep(this.shownDirectionsDone);
+        if (this.stepId === "done") this.emitDoneStep();
     }
 
     setupSkipButton() {
-        this.add.text(this.scale.width - 24, 24, "Skip tutorial", {
+        this.skipButton = this.add.text(this.scale.width - 24, 24, "Skip tutorial", {
             fontFamily: "Arial, sans-serif",
             fontSize: "20px",
             color: "#ffffff",
@@ -217,6 +250,15 @@ class Tutorial extends Phaser.Scene {
                 this.setStyle({ backgroundColor: "#0292A5" });
             })
             .on("pointerdown", () => this.finish());
+    }
+
+    // setScrollFactor(0) stops the camera moving the button, but not zooming it, so this undoes the zoom
+    keepSkipButtonInPlace() {
+        const { width, height } = this.scale;
+        const { zoom } = this.cameras.main;
+        this.skipButton
+            .setScale(1 / zoom)
+            .setPosition(width / 2 + (width / 2 - 24) / zoom, height / 2 + (24 - height / 2) / zoom);
     }
 
     get stepId() {
@@ -248,12 +290,14 @@ class Tutorial extends Phaser.Scene {
         }
 
         const start = {
+            swim: () => this.startSwim(),
             food: () => this.startFood(),
             home: () => this.startHome(),
             heat: () => this.startHeat(),
             cloudy: () => this.startCloudy(),
             coral: () => this.startCoral(),
             predator: () => this.startPredator(),
+            done: () => this.emitDoneStep(),
         }[this.stepId];
         if (start) {
             start();
@@ -267,6 +311,7 @@ class Tutorial extends Phaser.Scene {
         if (this.finished) return;
         this.finished = true;
         this.game.events.emit("tutorial-step", null);
+        this.game.events.emit("reef-warning-cleared", HEAT_NOTICE_ID); // it stays until closed, so Skip has to clear it
         this.scene.start("TestScene", { tutorialComplete: true });
     }
 
@@ -300,8 +345,8 @@ class Tutorial extends Phaser.Scene {
         const hidePressed = Phaser.Input.Keyboard.JustDown(this.hideKey);
         if (hidePressed && this.stepId === "predator") this.hideFish();
 
-        const horizontal = (this.moveKeys.D.isDown ? 1 : 0) - (this.moveKeys.A.isDown ? 1 : 0);
-        const vertical = (this.moveKeys.S.isDown ? 1 : 0) - (this.moveKeys.W.isDown ? 1 : 0);
+        const horizontal = (this.moveKeys.right.isDown ? 1 : 0) - (this.moveKeys.left.isDown ? 1 : 0);
+        const vertical = (this.moveKeys.down.isDown ? 1 : 0) - (this.moveKeys.up.isDown ? 1 : 0);
         const movementLength = Math.hypot(horizontal, vertical);
 
         // Swimming away leaves the coral, like in the main game
@@ -310,7 +355,7 @@ class Tutorial extends Phaser.Scene {
         if (!this.isHiding && movementLength > 0) {
             this.swim(horizontal, vertical, movementLength, frameScale);
             this.swamThisStep = true;
-            if (this.stepId === "swim") this.completeStep();
+            if (this.stepId === "swim") this.trackSwimming(delta);
         }
         this.guide.setScale(FISH_SCALE * this.fishGrowth);
         this.updateHearts();
@@ -320,7 +365,7 @@ class Tutorial extends Phaser.Scene {
         if (this.swamThisStep) {
             if (this.stepId === "food" && this.touching(this.shellfish)) {
                 this.eatFood();
-            } else if (this.stepId === "heat" && !this.heatwave && this.nearCoral(CORAL_VISIT_DISTANCE)) {
+            } else if (this.stepId === "heat" && !this.heatwave && this.touching(this.coral)) {
                 this.startHeatwave();
             } else if (this.stepId === "cloudy" && this.touching(this.cloudBubble)) {
                 this.popCloudBubble();
@@ -330,8 +375,10 @@ class Tutorial extends Phaser.Scene {
         if (this.home) this.updateHome();
         if (this.coral) this.updateCoral(delta);
 
-        // Updated outside the predator lesson too, so it can finish swimming away after the lesson is complete
         if (this.predator) this.updatePredator(frameScale);
+
+        updateNestCamera(this, this.isHiding, frameScale);
+        this.keepSkipButtonInPlace();
 
         this.shadow.clear();
         this.shadow.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10);
@@ -393,10 +440,6 @@ class Tutorial extends Phaser.Scene {
         return target && Phaser.Geom.Intersects.RectangleToRectangle(this.guide.getBounds(), target.getBounds());
     }
 
-    nearCoral(distance) {
-        return Phaser.Math.Distance.Between(this.guide.x, this.guide.y, this.coral.x, this.coral.y) <= distance;
-    }
-
     bobUpAndDown(target) {
         this.tweens.add({
             targets: target,
@@ -413,6 +456,40 @@ class Tutorial extends Phaser.Scene {
         return { x: this.guide.x < this.scale.width / 2 ? 1050 : 400, y };
     }
 
+    /* Swim Around: each direction has to be held for a moment, so the player tries them all */
+
+    startSwim() {
+        this.swimTimes = { up: 0, left: 0, down: 0, right: 0 };
+        this.emitSwimStep(0);
+    }
+
+    emitSwimStep(directionsDone) {
+        this.shownDirectionsDone = directionsDone;
+        const { swimKeys, lookKeys, image, imageAlt } = CONTROL_TEXT[this.controlScheme];
+        this.emitStep({
+            text: `You are a triggerfish living on a coral reef. Hold the ${swimKeys} to swim in every direction. Prefer the ${lookKeys}? You can switch in Options. (${directionsDone}/4 directions)`,
+            image,
+            imageAlt,
+        });
+    }
+
+    // Counts time held rather than distance, so swimming into the edge of the screen still counts
+    trackSwimming(delta) {
+        for (const key in this.swimTimes) {
+            if (this.moveKeys[key].isDown) this.swimTimes[key] += delta;
+        }
+
+        const directionsDone = Object.values(this.swimTimes).filter(time => time >= SWIM_KEY_TIME).length;
+        if (directionsDone !== this.shownDirectionsDone) this.emitSwimStep(directionsDone);
+        if (directionsDone === 4) this.completeStep();
+    }
+
+    emitDoneStep() {
+        this.emitStep({
+            text: `Look after your reef for 10 years. Keep your fish fed and safe, build your nest, pop Cloudy bubbles during heatwaves, and use the ${CONTROL_TEXT[this.controlScheme].lookKeys} to look around the reef. Have fun exploring!`
+        });
+    }
+
     /* Eat to Grow: one glowing shellfish on the sea floor in the middle of the scene, like the main game's food */
 
     startFood() {
@@ -427,7 +504,7 @@ class Tutorial extends Phaser.Scene {
         removeGlow(this.shellfish);
         this.shellfish.destroy();
         this.shellfish = null;
-        this.sound.play("bubblePop", { volume: this.sfxVolume });
+        this.sound.play("foodCrunch", { volume: this.sfxVolume });
 
         this.health = Math.min(this.health + 1, MAX_HEARTS * 2);
         this.refreshHeartTextures();
@@ -502,12 +579,21 @@ class Tutorial extends Phaser.Scene {
 
         // The same warning sound and notice the main game shows when a summer heatwave starts
         this.sound.play("bleachingWarning", { volume: this.sfxVolume });
+        // Stays until it's closed, and the lesson waits for that, so there's time to read it
         this.game.events.emit("reef-warning", {
+            id: HEAT_NOTICE_ID,
+            persistent: true,
             warning: true,
             title: "Temperature Bleaching Event",
             message: `The water temperature has risen by ${HEATWAVE_TEMPERATURE_RISE}°C. Keep the light levels lower to prevent a mass bleaching of your reef.`,
         });
+        this.emitStep({ text: "Your coral is heating up! Read the notice below, then click Close to continue." });
         this.emitStats();
+    }
+
+    // Called by App when the notice's Close button is clicked
+    eventNoticeClosed() {
+        this.heatNoticeClosed = true;
     }
 
     updateCoral(delta) {
@@ -525,7 +611,7 @@ class Tutorial extends Phaser.Scene {
             }
         }
 
-        if (this.stepId === "heat" && this.coralStress >= HEAT_STEP_STRESS) this.completeStep();
+        if (this.stepId === "heat" && this.heatNoticeClosed && this.coralStress >= HEAT_STEP_STRESS) this.completeStep();
     }
 
     /* Shade the Reef: a green Cloudy bubble, the same as the main game's, slows the bleaching */
@@ -606,7 +692,7 @@ class Tutorial extends Phaser.Scene {
         this.completeStep();
     }
 
-    /* Watch Out for Predators: a lionfish chases the fish until it hides in the coral */
+    /* Watch Out for Predators: a lionfish chases the fish, and only leaves for good if it stays hidden in the nest */
 
     startPredator() {
         // the main game's lionfish
@@ -630,6 +716,7 @@ class Tutorial extends Phaser.Scene {
                 this.predator.destroy();
                 this.predator = null;
                 this.game.events.emit("predator-left");
+                this.completeStep();
             }
             return;
         }
@@ -663,25 +750,29 @@ class Tutorial extends Phaser.Scene {
         );
     }
 
-    // Same rule as the main game: close enough to the base of the coral
+    // Same rule as the main game: only the nest is safe, and the predator leaves while the fish stays in it
     hideFish() {
-        if (this.isHiding || !this.nearCoral(REEF_HIDE_DISTANCE)) return;
+        const hideY = Phaser.Math.Clamp(this.home.y - this.home.displayHeight * 0.45, 120, 850);
+        const distance = Phaser.Math.Distance.Between(this.guide.x, this.guide.y, this.home.x, hideY);
+        if (this.isHiding || distance > REEF_HIDE_DISTANCE) return;
 
         this.isHiding = true;
         this.guide.clearTint();
-        this.guide.setPosition(
-            this.coral.x,
-            Phaser.Math.Clamp(this.coral.y - this.coral.displayHeight * 0.45, 120, 850)
-        );
-        this.guide.setDepth(this.coral.depth - 0.1);
+        this.guide.setPosition(this.home.x, hideY);
+        this.guide.setDepth(this.home.depth - 0.1);
 
         this.predatorFleeing = true;
-        this.completeStep();
     }
 
     leaveHiding() {
         this.isHiding = false;
         this.guide.setDepth(9999);
+
+        // Coming out too early makes the predator turn back, like the main game
+        if (this.predator) {
+            this.predatorFleeing = false;
+            this.emitStep({ text: "Too soon! The lionfish turned back. Hide in your nest and wait for the All Clear message." });
+        }
     }
 }
 

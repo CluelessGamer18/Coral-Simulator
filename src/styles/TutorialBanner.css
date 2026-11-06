@@ -1,4 +1,4 @@
-.TutorialBanner {
+.TutorialOverlay {
     position: absolute;
     top: 20px;
     left: 50%;
@@ -6,11 +6,24 @@
     z-index: 9999;
 
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+
+    width: min(900px, 76%); /* leaves room for the Skip tutorial button, which scales with the game */
+}
+
+.TutorialNoticeSlot {
+    display: contents;
+}
+
+.TutorialBanner {
+    display: flex;
     flex-direction: row;
     align-items: center;
     gap: 24px;
 
-    width: min(900px, calc(100% - 200px)); /* leaves room for the settings button in the top left */
+    width: 100%;
     box-sizing: border-box;
     padding: 16px 28px;
 
@@ -73,7 +86,7 @@
 /* Pops in, holds, then fades out. Keep the duration in sync with PRAISE_DURATION in scenes/Tutorial.js */
 .TutorialPraise {
     position: absolute;
-    top: 40%;
+    top: 55%; /* below the banner and any notice under it */
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 9999;
