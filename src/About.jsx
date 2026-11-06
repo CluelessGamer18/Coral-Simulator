@@ -40,7 +40,14 @@ function About({backLabel = "Back to Title"}) {
         {title: "Dr. R. Toonen Research", url: "https://tobolab.org/rob-toonen/"},
         {title: "Dr. R. Shaw Research", url: "https://www.macewan.ca/academics/academic-departments/biological-sciences/our-people/profile/?profileid=shawr"},
     ]
-    
+
+    const soundCredits = [
+        {text: "Reef recordings: Mikul Rai, Coral Reef Bioacoustics (Moreton Bay), CC BY 4.0. Filtered and looped.", url: "https://huggingface.co/datasets/mikulrai/coral-reef-bioacoustics"},
+        {text: "Reef fish and whale calls: Sounds by Shellfegio / Oceane Boulais, CC BY 4.0. Filtered and trimmed."},
+        {text: "Triggerfish drumrolls: Raick X, Lecchini D, Kéver L, Colleye O, Bertucci F, Parmentier É 2018, Journal of Experimental Biology 221(1). Filtered and trimmed.", url: "https://doi.org/10.1242/jeb.168948"},
+        {text: "Waves: Waves_WashingThroughCoral.wav by floating tree, CC0. Filtered and looped.", url: "https://freesound.org/s/253607/"},
+    ]
+
     return (
         <div className="AboutPage AboutContainer">
             {/* background image */}
@@ -107,6 +114,14 @@ function About({backLabel = "Back to Title"}) {
                         </a>
                     ))}
                 </div>
+                <h2>Ocean Sounds Credits</h2>
+                <ul className="SoundCredits">
+                    {soundCredits.map(({ text, url }) => (
+                        <li key={text}>
+                            {url ? <a href={url} target="_blank" rel="noreferrer">{text}</a> : text}
+                        </li>
+                    ))}
+                </ul>
             </section>
 
             {/* The Team Section */}
