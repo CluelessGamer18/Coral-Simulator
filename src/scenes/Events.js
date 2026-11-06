@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { isBleachingYear } from "./BleachingSchedule.js";
 
 // Tweak these values to change how the event bubbles behave
 const CONFIG = {
@@ -93,15 +94,15 @@ export class EventManager {
     update(delta, frameScale) {
         const s = this.scene;
 
-        // Nothing happens during the tutorial, popups, the end screen, or the first year.
-        // This gives players time to learn the reef before event bubbles begin appearing.
-        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen || s.yearsElapsed < 1) return;
-
+        // Event bubbles only appear during scheduled bleaching summers.
         if (this.season !== s.season) {
             this.clear();
             this.season = s.season;
             this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
         }
+
+        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen || s.yearsElapsed < 1) return;
+        if (s.season !== "summer" || !isBleachingYear(s.yearsElapsed)) return;
 
         this.nextSpawnIn -= delta;
         if (this.nextSpawnIn <= 0) {

@@ -4,6 +4,7 @@ import { createCorals, updateCoralStress, refreshCoralStress, killCorals, resetC
 import { EventManager } from "./Events.js";
 import { createHomeBuilding, updateHomeBuilding } from "./HomeBuilding.js";
 import { addGlow, removeGlow } from "./Glow.js";
+import { isBleachingYear } from "./BleachingSchedule.js";
 
 let oval;
 
@@ -924,7 +925,7 @@ class TestScene extends Phaser.Scene {
         if (this.season === "winter") {
             this.summerTemperatureChange = 0;
             // Living coral recovers gradually throughout winter; do not reset the reef stress meter instantly.
-        } else if (this.season === "summer" && this.yearsElapsed >= 1 && this.elapsedSimMs < SIMULATION_DURATION_MS) {
+        } else if (this.season === "summer" && isBleachingYear(this.yearsElapsed) && this.elapsedSimMs < SIMULATION_DURATION_MS) {
             this.summerTemperatureChange = Phaser.Math.Between(2, 8);
             this.temperature = Math.min(35, this.temperature + this.summerTemperatureChange);
             this.tempStressSeverity = highRangeSeverity(this.temperature, THRESHOLDS.temperature);

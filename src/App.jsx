@@ -13,6 +13,7 @@ import SimEndPopUp from './SimEndPopUp.jsx'
 import { Routes, Route, useLocation, useNavigate } from 'react-router'
 import About from './About.jsx'
 import { asset } from './assetUrl';
+import { isBleachingYear } from './scenes/BleachingSchedule.js';
 
 const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
 
@@ -94,7 +95,7 @@ function App() {
 
     if (noticedSeason.current !== season) {
       noticedSeason.current = season;
-      if (season === "summer") {
+      if (season === "summer" && isBleachingYear(yearsElapsed)) {
         setEventNotice({
           title: "Temperature Bleaching Event",
           message: `The water temperature has risen by ${summerTemperatureChange}°C. Keep the light levels lower to prevent a mass bleaching of your reef.`,

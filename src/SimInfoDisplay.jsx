@@ -1,5 +1,6 @@
 import "./styles/SimInfoDisplay.css";
 import { asset } from "./assetUrl";
+import { isBleachingYear } from "./scenes/BleachingSchedule.js";
 
 function getTemperatureColor(temp) {
     const value = Number(temp);
@@ -32,6 +33,7 @@ function getLightColor(light) {
 
 function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,score=0}){
     const showSeasonIndicator = yearsElapsed >= 1;
+    const summerIsBleaching = isBleachingYear(yearsElapsed);
     yearsElapsed = 2*yearsElapsed
     const displayedPollution = Math.round(poll * 2) / 2
     const temperatureColor = getTemperatureColor(temp);
@@ -57,8 +59,8 @@ function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,s
             </div>
             <div className="SimInfoTimeline">
             {showSeasonIndicator ? (
-            <span className={`SeasonIndicator ${season}`} aria-label={season === "summer" ? "Summer bleaching season" : "Winter recovery season"}>
-                {season === "summer" ? "Summer: bleaching season" : "Winter: reef recovery"}
+            <span className={`SeasonIndicator ${season}`} aria-label={season === "summer" ? (summerIsBleaching ? "Summer bleaching season" : "Summer mild season") : "Winter recovery season"}>
+                {season === "summer" ? (summerIsBleaching ? "Summer: bleaching season" : "Summer: mild season") : "Winter: reef recovery"}
             </span>
             ) : null}
             <span className="SimInfoText">2026</span>

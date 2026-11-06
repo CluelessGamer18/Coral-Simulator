@@ -10,7 +10,7 @@ Dropping it anywhere else lets it sink back to the floor.
 New pieces keep turning up over the whole game, but how many (and which kind)
 depends on what the reef is going through:
 - calm water (the first year): full supply
-- bleaching events (every summer after the first year): heat-stressed reef, so fewer pieces
+- summer: the reef is in its warmer season, so supply varies with heat stress
   the hotter it gets. Shellfish suffer in the heat, so fewer shells; dying coral starts to
   break apart, so more coral rubble
 - cooling (winter): the water settles and the reef recovers, but triggerfish nest in warm
@@ -139,7 +139,6 @@ export function updateHomeControls(scene, canAct) {
 // What the reef is going through right now, which decides how many pieces turn up and of which kind
 function getReefCondition(scene) {
     if (scene.season === "winter") return "cooling";
-    // Every summer after the first year brings a heat (bleaching) event
     if (scene.yearsElapsed >= 1) return "bleaching";
     return "calm";
 }

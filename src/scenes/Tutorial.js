@@ -75,7 +75,7 @@ const STEPS = [
     {
         id: "heat",
         title: "Summer Heatwaves",
-        text: "Each year has a summer and a winter. From the second year on, every summer brings a heatwave that stresses your coral, and rising pollution makes it worse. Swim over to your coral to see what happens.",
+        text: "Each year has a summer and a winter. Bleaching heatwaves occur in years 2, 4, 5, 7, 8, and 9, and rising pollution makes them worse. Swim over to your coral to see what happens.",
         image: "tutorial/tutorial_3.png",
         imageAlt: "Corals on the reef",
         praise: "Oh no, it's bleaching!",
