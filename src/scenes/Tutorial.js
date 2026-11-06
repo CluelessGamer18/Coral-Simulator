@@ -114,9 +114,9 @@ const STEPS = [
     {
         id: "predator",
         title: "Watch Out for Predators",
-        text: "A lionfish is hunting you, and every bite costs half a heart! Swim to your nest and press E to hide. Stay hidden until the All Clear message appears, or it will turn back and chase you. Once you've eaten 3 shellfish, you're big enough to scare predators off.",
+        text: "A grouper is hunting you, and every bite costs half a heart! Swim to your nest and press E to hide. Stay hidden until the All Clear message appears, or it will turn back and chase you. Once you've eaten all the shellfish and reached your maximum size, you're big enough to scare predators off.",
         image: "tutorial/tutorial_predator.svg",
-        imageAlt: "The E key beside a fish hiding in its nest while a lionfish swims past",
+        imageAlt: "The E key beside a fish hiding in its nest while a grouper swims past",
         praise: "Complete!",
     },
     {
@@ -692,12 +692,12 @@ class Tutorial extends Phaser.Scene {
         this.completeStep();
     }
 
-    /* Watch Out for Predators: a lionfish chases the fish, and only leaves for good if it stays hidden in the nest */
+    /* Watch Out for Predators: a grouper chases the fish, and only leaves for good if it stays hidden in the nest */
 
     startPredator() {
-        // the main game's lionfish
-        this.predator = this.add.image(this.scale.width + PREDATOR_ESCAPE_MARGIN, 300, "lionfish")
-            .setScale(0.5)
+        // the main game's grouper
+        this.predator = this.add.image(this.scale.width + PREDATOR_ESCAPE_MARGIN, 300, "grouper")
+            .setScale(0.4)
             .setDepth(9998);
         this.predatorFleeing = false;
         this.game.events.emit("predator-appeared");
@@ -739,7 +739,7 @@ class Tutorial extends Phaser.Scene {
         }
     }
 
-    // Same as the main game: the lionfish artwork faces left, so mirror it to face right
+    // Same as the main game: the grouper artwork faces left, so mirror it to face right
     facePredator(directionX, directionY, frameScale) {
         const flip = directionX === 0 ? this.predator.flipX : directionX > 0;
         this.predator.setFlipX(flip);
@@ -771,7 +771,7 @@ class Tutorial extends Phaser.Scene {
         // Coming out too early makes the predator turn back, like the main game
         if (this.predator) {
             this.predatorFleeing = false;
-            this.emitStep({ text: "Too soon! The lionfish turned back. Hide in your nest and wait for the All Clear message." });
+            this.emitStep({ text: "Too soon! The grouper turned back. Hide in your nest and wait for the All Clear message." });
         }
     }
 }
