@@ -6,7 +6,7 @@ import { addGlow, removeGlow } from "./Glow.js";
 import {
     FOOD_GROWTH,
     FOOD_GLOW_COLOR,
-    FOOD_SIZE,
+    FOOD_SCALE,
     FOOD_MAX_Y,
     PREDATOR_SPEED,
     REEF_HIDE_DISTANCE,
@@ -493,9 +493,9 @@ class Tutorial extends Phaser.Scene {
     /* Eat to Grow: one glowing shellfish on the sea floor in the middle of the scene, like the main game's food */
 
     startFood() {
-        this.shellfish = this.add.image(this.scale.width / 2, FOOD_MAX_Y - 20, "fleaCone").setDepth(8);
-        // a little bigger than in the main game, so it's easy to spot
-        this.shellfish.setScale(FOOD_SIZE * 1.25 / Math.sqrt(this.shellfish.width * this.shellfish.height));
+        this.shellfish = this.add.image(this.scale.width / 2, FOOD_MAX_Y - 20, "shellTypes", 0)
+            .setDepth(8)
+            .setScale(FOOD_SCALE * 1.25); // a little bigger than in the main game, so it's easy to spot
         addGlow(this, this.shellfish, FOOD_GLOW_COLOR);
         this.emitStep();
     }

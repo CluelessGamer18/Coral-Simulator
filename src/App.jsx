@@ -15,7 +15,6 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router'
 import About from './About.jsx'
 import { asset } from './assetUrl';
 import { loadControlScheme, saveControlScheme } from './controlScheme';
-import { loadOceanSounds, saveOceanSounds } from './oceanSoundsSetting';
 
 const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
 
@@ -50,7 +49,6 @@ function App() {
   const [sfxMuted, setSfxMuted] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [controlScheme, setControlScheme] = useState(loadControlScheme);
-  const [oceanSounds, setOceanSounds] = useState(loadOceanSounds);
 
   const [eventNotice, setEventNotice] = useState(null);
   const [summerTemperatureChange, setSummerTemperatureChange] = useState(0);
@@ -88,11 +86,6 @@ function App() {
   // Called by the bubble popup's Cancel button: frees the fish and puts the bubble back
   const cancelBubble = () => {
     scene.freeFish(true);
-  };
-
-  const changeOceanSounds = (enabled) => {
-    setOceanSounds(enabled);
-    saveOceanSounds(enabled);
   };
 
   const changeControlScheme = (scheme) => {
@@ -146,10 +139,6 @@ function App() {
     scene.setMusicVolume?.(musicMuted ? 0 : musicVolume);
     scene.setSfxVolume?.(sfxMuted ? 0 : sfxVolume);
   }, [scene, musicVolume, musicMuted, sfxVolume, sfxMuted]);
-
-  useEffect(() => {
-    scene?.setOceanSounds?.(oceanSounds);
-  }, [scene, oceanSounds]);
 
   useEffect(() => {
     scene?.setControlScheme?.(controlScheme);
@@ -386,8 +375,6 @@ function App() {
           setSfxVolume={setSfxVolume}
           sfxMuted={sfxMuted}
           setSfxMuted={setSfxMuted}
-          oceanSounds={oceanSounds}
-          setOceanSounds={changeOceanSounds}
           controlScheme={controlScheme}
           setControlScheme={changeControlScheme}
         /> : null}
