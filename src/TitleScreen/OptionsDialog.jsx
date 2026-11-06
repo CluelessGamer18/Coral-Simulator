@@ -13,6 +13,8 @@ function OptionsDialog({
     setSfxVolume,
     sfxMuted,
     setSfxMuted,
+    oceanSounds,
+    setOceanSounds,
     controlScheme,
     setControlScheme
     }) {
@@ -34,8 +36,30 @@ function OptionsDialog({
         <div className="OptionsBoxContainer">
             <button className="OptionsXButton" aria-label="Close options" onClick={()=>setShowOptions(false)}>X</button>
             <h1 className="OptionsTitle">Options</h1>
+            <div className="OptionsSliderGroup" role="group" aria-labelledby="options-background-sound">
+                <span id="options-background-sound">Background Sound</span>
+                <div className="OptionsSliderControls">
+                    <button
+                        type="button"
+                        className="OptionsKeysButton"
+                        aria-pressed={!oceanSounds}
+                        onClick={() => setOceanSounds(false)}
+                    >
+                        Music
+                    </button>
+                    <button
+                        type="button"
+                        className="OptionsKeysButton"
+                        aria-pressed={oceanSounds}
+                        onClick={() => setOceanSounds(true)}
+                    >
+                        Ocean Sounds
+                    </button>
+                </div>
+            </div>
+
             <div className="OptionsSliderGroup">
-                <label>Music Volume</label>
+                <label>{oceanSounds ? "Ocean Volume" : "Music Volume"}</label>
                 <div className="OptionsSliderControls">
                     <input
                         type="range"
@@ -48,7 +72,7 @@ function OptionsDialog({
                     <button
                         type="button"
                         className="OptionsMuteButton"
-                        aria-label={musicMuted ? "Unmute music" : "Mute music"}
+                        aria-label={`${musicMuted ? "Unmute" : "Mute"} ${oceanSounds ? "ocean sounds" : "music"}`}
                         aria-pressed={musicMuted}
                         onClick={() => setMusicMuted(!musicMuted)}
                     >

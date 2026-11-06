@@ -5,6 +5,8 @@ import { EventManager } from "./Events.js";
 import { createHomeBuilding, updateHomeBuilding, updateNestCamera } from "./HomeBuilding.js";
 import { addGlow, removeGlow } from "./Glow.js";
 import { isBleachingYear } from "./BleachingSchedule.js";
+import { OceanSounds } from "./OceanSounds.js";
+import { loadOceanSounds } from "../oceanSoundsSetting.js";
 
 let oval;
 
@@ -59,13 +61,14 @@ const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
 const PREDATOR_BITE_INTERVAL = 1000; // ms of touching the predator per half heart lost
 
-// Food is shellfish (snails and clams, frames of the "shellTypes" sheet), which triggerfish crack open with their strong jaws.
+// Food is shellfish (snails and clams), which triggerfish crack open with their strong jaws.
 // They live on the sea floor, so they're scattered along the band of sand the fish can still reach (it's clamped to y <= 850).
 const FOOD_COUNT = 5; // shellfish scattered over the sea floor at the start of each game
 export const FOOD_GROWTH = 1.1; // each shellfish eaten makes the fish 10% bigger
-const FOOD_FRAMES = [0, 1, 2]; // coiled snail, cone snail, clam
+const FOOD_SHELLS = ["isabellaCowrie", "honeyCowrie", "fleaCone", "mulberryDrupe"];
+export const FOOD_SIZE = 44; // on-screen size of an average shellfish, as the square root of its area, since the shell images are all different sizes
+const FOOD_SIZE_VARIATION = 0.2; // each shellfish is up to 20% smaller or bigger than that
 export const FOOD_GLOW_COLOR = 0xff4d4d;
-export const FOOD_SCALE = 0.8;
 const FOOD_MIN_Y = 790;
 export const FOOD_MAX_Y = 845;
 const FOOD_NEST_CLEARANCE = 300; // keep food out of the nest in the middle of the sandbar
@@ -233,13 +236,17 @@ class TestScene extends Phaser.Scene {
             volume: this.musicVolume
         });
 
-        this.bgMusic.play();
+        // Read straight from the saved setting: React only sends it once this scene is ready, which would let the music start first
+        this.oceanSounds = new OceanSounds(this, this.musicVolume);
+        this.setOceanSounds(loadOceanSounds());
 
         // The sound manager belongs to the whole game, not this scene, so sounds added here outlive a restart.
         // Destroy the music whenever the scene shuts down (restart or stop) so a new copy isn't left behind each time.
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.bgMusic.destroy();
             this.bgMusic = null;
+            this.oceanSounds.destroy();
+            this.oceanSounds = null;
         });
     }
 
@@ -335,8 +342,8 @@ class TestScene extends Phaser.Scene {
 
         this.setupSimulationState();
         this.setupWorld(cam);
-        this.setupAudio();
         this.setupUI(cam);
+        this.setupAudio(); // after setupUI: Ocean Sounds needs to know where the fish is
         this.setupMouseInput();
         this.setupCamera(cam);
         this.updateHistory();
@@ -387,6 +394,22 @@ class TestScene extends Phaser.Scene {
         this.musicVolume = value;
         if (this.bgMusic) {
             this.bgMusic.setVolume(value);
+        }
+        this.oceanSounds?.setVolume(value);
+    }
+
+    // Ocean Sounds and the music replace each other
+    setOceanSounds(enabled) {
+        if (!this.oceanSounds) return; // React can still reach this scene just after it shuts down
+
+        this.oceanSounds.setEnabled(enabled);
+
+        if (enabled) {
+            this.bgMusic.pause();
+        } else if (this.bgMusic.isPaused) {
+            this.bgMusic.resume();
+        } else if (!this.bgMusic.isPlaying) {
+            this.bgMusic.play();
         }
     }
 
@@ -492,6 +515,7 @@ class TestScene extends Phaser.Scene {
     // Scatters shellfish along the sea floor, anywhere but the nest. Eaten shellfish don't come back.
     spawnFood() {
         this.food = this.physics.add.group();
+        const shells = Phaser.Utils.Array.Shuffle([...FOOD_SHELLS]); // dealt in turn, so every kind appears before any repeats
 
         for (let i = 0; i < FOOD_COUNT; i++) {
             let x;
@@ -499,15 +523,13 @@ class TestScene extends Phaser.Scene {
                 x = Phaser.Math.Between(100, this.WORLD_WIDTH - 100);
             } while (Math.abs(x - this.WORLD_WIDTH / 2) < FOOD_NEST_CLEARANCE);
 
-            const shellfish = this.food.create(
-                x,
-                Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y),
-                "shellTypes",
-                Phaser.Utils.Array.GetRandom(FOOD_FRAMES)
-            )
+            const shellfish = this.food.create(x, Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y), shells[i % shells.length]);
+            const size = FOOD_SIZE * Phaser.Math.FloatBetween(1 - FOOD_SIZE_VARIATION, 1 + FOOD_SIZE_VARIATION);
+
+            shellfish
                 .setDepth(7.5) // in front of the corals, like the nest pieces, so it's never hidden behind one
-                .setScale(FOOD_SCALE)
-                .setAngle(Phaser.Math.Between(-15, 15))
+                .setScale(size / Math.sqrt(shellfish.width * shellfish.height))
+                .setAngle(Phaser.Math.Between(-30, 30))
                 .setFlipX(Math.random() < 0.5);
             addGlow(this, shellfish, FOOD_GLOW_COLOR);
         }
@@ -575,6 +597,8 @@ class TestScene extends Phaser.Scene {
 
 
     update(time, delta) {
+        this.oceanSounds.update(delta); // before the check below, so a dying reef still fades out behind the end screen
+
         // Freeze the fish, camera and timer once the end screen is showing
         if (this.simEnd) return;
 

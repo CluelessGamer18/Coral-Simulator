@@ -1,8 +1,11 @@
 // Pulsing glow that marks something on the sea floor the fish can interact with
 // (green for nest pieces, red for food). preFX only exists under WebGL, so the
 // Canvas renderer gets a pulsing tint in the same colour instead.
+const GLOW_PADDING = 12; // room around the image for the glow, or it gets cut off on images cropped tight to the art
+
 export function addGlow(scene, target, color) {
     if (target.preFX) {
+        target.preFX.setPadding(GLOW_PADDING);
         target.glow = target.preFX.addGlow(color, 4, 0, false, 0.1, 12);
         target.glowTween = scene.tweens.add({
             targets: target.glow,
