@@ -51,7 +51,9 @@ const HEAT_STRESS_POINTS_PER_YEAR = 120;
 // Summer bleaching must still reach fatal reef stress under sustained high heat/light.
 const BLEACHING_RATE_SCALE = 1.6;
 // Reef stress follows a proportional recovery curve throughout winter and reaches zero naturally.
-const STRESS_WARNING_THRESHOLDS = [30, 60, 80];
+const STRESS_WARNING_THRESHOLDS = [40, 60, 80];
+const CRITICAL_STRESS_BEEP_INTERVAL = 1000;
+const SAFE_LIGHT_LEVEL = THRESHOLDS.light.c;
 const HEART_SPACING = 36;
 const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
@@ -118,6 +120,9 @@ class TestScene extends Phaser.Scene {
         this.reefDeadStress = false;
         this.stressWarningLevel = 0;
         this.fatalClimateWarningActive = false;
+        this.criticalStressAlarmActive = false;
+        this.criticalStressAlarm = null;
+        this.currentStressDelta = 0;
 
         this.simEnd = false;
         this.elapsedSimMs = 0;
@@ -391,6 +396,57 @@ class TestScene extends Phaser.Scene {
 
     playBleachingWarning() {
         this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.5 });
+    }
+
+    isCriticalStressAlarmRequired() {
+        return this.stressValue >= 80
+            && this.lightLevel > SAFE_LIGHT_LEVEL
+            && this.currentStressDelta > 0
+            && this.season === "summer"
+            && !this.simEnd;
+    }
+
+    syncCriticalStressAlarm() {
+        const required = this.isCriticalStressAlarmRequired();
+
+        if (required && !this.criticalStressAlarmActive) {
+            this.criticalStressAlarmActive = true;
+            this.game.events.emit("reef-warning", {
+                id: "critical-stress",
+                persistent: true,
+                warning: true,
+                title: "Critical Reef Stress",
+                message: "The reef is in immediate danger. Lower the light to the safe range now to stop coral stress from increasing.",
+            });
+            this.criticalStressAlarm = this.time.addEvent({
+                delay: CRITICAL_STRESS_BEEP_INTERVAL,
+                loop: true,
+                callback: () => {
+                    if (!this.isCriticalStressAlarmRequired()) {
+                        this.syncCriticalStressAlarm();
+                        return;
+                    }
+                    this.playBleachingWarning();
+                },
+            });
+        } else if (!required && this.criticalStressAlarmActive) {
+            this.criticalStressAlarmActive = false;
+            this.criticalStressAlarm?.remove();
+            this.criticalStressAlarm = null;
+            this.game.events.emit("reef-warning-cleared", "critical-stress");
+        } else if (required && this.criticalStressAlarmActive && !this.criticalStressAlarm) {
+            this.criticalStressAlarm = this.time.addEvent({
+                delay: CRITICAL_STRESS_BEEP_INTERVAL,
+                loop: true,
+                callback: () => {
+                    if (!this.isCriticalStressAlarmRequired()) {
+                        this.syncCriticalStressAlarm();
+                        return;
+                    }
+                    this.playBleachingWarning();
+                },
+            });
+        }
     }
 
     // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.
@@ -908,6 +964,7 @@ class TestScene extends Phaser.Scene {
         }
 
         refreshCoralStress(this);
+        this.syncCriticalStressAlarm();
     }
 
     hasFatalClimateCombination() {
@@ -1001,6 +1058,7 @@ class TestScene extends Phaser.Scene {
         }
 
         const stressDelta = stressRate * delta / YEAR_DURATION_MS;
+        this.currentStressDelta = stressDelta;
         this.stressValue = Phaser.Math.Clamp(
             this.stressValue + stressDelta,
             0,
@@ -1048,6 +1106,7 @@ class TestScene extends Phaser.Scene {
             this.game.events.emit("reef-warning", warning);
         }
         this.stressWarningLevel = nextWarningLevel;
+        this.syncCriticalStressAlarm();
     }
 
     updateFatalClimateWarning() {
