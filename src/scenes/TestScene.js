@@ -56,13 +56,14 @@ const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
 
 const PREDATOR_BITE_INTERVAL = 1000; // ms of touching the predator per half heart lost
 
-// Food is shellfish (snails and clams, frames of the "shellTypes" sheet), which triggerfish crack open with their strong jaws.
+// Food is shellfish (snails and clams), which triggerfish crack open with their strong jaws.
 // They live on the sea floor, so they're scattered along the band of sand the fish can still reach (it's clamped to y <= 850).
 const FOOD_COUNT = 5; // shellfish scattered over the sea floor at the start of each game
 export const FOOD_GROWTH = 1.1; // each shellfish eaten makes the fish 10% bigger
-const FOOD_FRAMES = [0, 1, 2]; // coiled snail, cone snail, clam
+const FOOD_SHELLS = ["isabellaCowrie", "honeyCowrie", "fleaCone", "mulberryDrupe"];
+export const FOOD_SIZE = 44; // on-screen size of an average shellfish, as the square root of its area, since the shell images are all different sizes
+const FOOD_SIZE_VARIATION = 0.2; // each shellfish is up to 20% smaller or bigger than that
 export const FOOD_GLOW_COLOR = 0xff4d4d;
-export const FOOD_SCALE = 0.8;
 const FOOD_MIN_Y = 790;
 export const FOOD_MAX_Y = 845;
 const FOOD_NEST_CLEARANCE = 300; // keep food out of the nest in the middle of the sandbar
@@ -435,6 +436,7 @@ class TestScene extends Phaser.Scene {
     // Scatters shellfish along the sea floor, anywhere but the nest. Eaten shellfish don't come back.
     spawnFood() {
         this.food = this.physics.add.group();
+        const shells = Phaser.Utils.Array.Shuffle([...FOOD_SHELLS]); // dealt in turn, so every kind appears before any repeats
 
         for (let i = 0; i < FOOD_COUNT; i++) {
             let x;
@@ -442,15 +444,13 @@ class TestScene extends Phaser.Scene {
                 x = Phaser.Math.Between(100, this.WORLD_WIDTH - 100);
             } while (Math.abs(x - this.WORLD_WIDTH / 2) < FOOD_NEST_CLEARANCE);
 
-            const shellfish = this.food.create(
-                x,
-                Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y),
-                "shellTypes",
-                Phaser.Utils.Array.GetRandom(FOOD_FRAMES)
-            )
+            const shellfish = this.food.create(x, Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y), shells[i % shells.length]);
+            const size = FOOD_SIZE * Phaser.Math.FloatBetween(1 - FOOD_SIZE_VARIATION, 1 + FOOD_SIZE_VARIATION);
+
+            shellfish
                 .setDepth(7.5) // in front of the corals, like the nest pieces, so it's never hidden behind one
-                .setScale(FOOD_SCALE)
-                .setAngle(Phaser.Math.Between(-15, 15))
+                .setScale(size / Math.sqrt(shellfish.width * shellfish.height))
+                .setAngle(Phaser.Math.Between(-30, 30))
                 .setFlipX(Math.random() < 0.5);
             addGlow(this, shellfish, FOOD_GLOW_COLOR);
         }

@@ -66,7 +66,7 @@ preload() {
         this.load.svg("heartHalf", "health/heart_half.svg", { width: 33, height: 30 });
         this.load.svg("heartDead", "health/heart_dead.svg", { width: 33, height: 30 });
 
-        // the old algae orb food, no longer used now that the fish eats shellfish (see "shellTypes" below)
+        // the old algae orb food, no longer used now that the fish eats shellfish (see the shell images below)
         this.load.svg("algaeOrb", "food/algae_orb.svg", { width: 30, height: 30 });
 
         // triggerfish home building: glowing pieces to collect, and the nest crater they go in
@@ -84,8 +84,11 @@ preload() {
 
         // spritesheet for the fish schools
         this.load.spritesheet('fishTypes', 'fish/fishSpriteSheet.png', { frameWidth: 239, frameHeight: 239 });
-        // food: shellfish the fish can eat to heal and grow (coiled snail, cone snail, clam)
-        this.load.spritesheet('shellTypes', 'shells/shellSpriteSheet.png', { frameWidth: 55, frameHeight: 55 });
+        // food: shellfish the fish can eat to heal and grow
+        this.load.image("isabellaCowrie", "shells/Isabella_cowrie.png");
+        this.load.image("honeyCowrie", "shells/honey_cowrie.png");
+        this.load.image("fleaCone", "shells/flea_cone.png");
+        this.load.image("mulberryDrupe", "shells/mulberry_drupe.png");
 
         // corals
         this.load.spritesheet("acropora", "corals/acropora.png", { frameWidth: 180, frameHeight: 190 });
