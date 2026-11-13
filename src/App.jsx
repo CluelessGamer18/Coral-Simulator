@@ -258,14 +258,28 @@ function App() {
     if (!scene || showTitleScreen || bubbleCollision || simEnd) return;
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape" && !event.repeat) {
+      if (event.repeat) return;
+
+      if (event.key === "Escape") {
         setShowOptions((isOpen) => !isOpen);
+        return;
       }
+
+      if (event.key.toLowerCase() !== "m") return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || target.matches("input:not([type='range']), textarea, select"))
+      ) return;
+
+      const muteAll = !(musicMuted && sfxMuted);
+      setMusicMuted(muteAll);
+      setSfxMuted(muteAll);
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [scene, showTitleScreen, bubbleCollision, simEnd]);
+  }, [scene, showTitleScreen, bubbleCollision, simEnd, musicMuted, sfxMuted]);
 
   useEffect(() => {
     if (isAboutPage) return;

@@ -1247,14 +1247,16 @@ class TestScene extends Phaser.Scene {
 
     }
     spawnPredator() {
-        const sprite = this.add.image(
-            this.WORLD_WIDTH - 100,
-            300 + (this.predators.length % 3) * 120,
-            "grouper"
-        )
+        const sprite = this.add.image(0, 0, "grouper")
             .setScale(0.4)
             .setDepth(9998)
             .setVisible(true);
+        const spawnX = this.WORLD_WIDTH - sprite.displayWidth / 2 - PREDATOR_ESCAPE_MARGIN;
+        const spawnY = 300 + (this.predators.length % 3) * 120;
+        sprite.setPosition(
+            Phaser.Math.Clamp(spawnX, sprite.displayWidth / 2, this.WORLD_WIDTH - sprite.displayWidth / 2),
+            Phaser.Math.Clamp(spawnY, sprite.displayHeight / 2, this.WORLD_HEIGHT - sprite.displayHeight / 2)
+        );
         const predator = {
             sprite,
             spawned: true,
@@ -1293,12 +1295,13 @@ class TestScene extends Phaser.Scene {
                 );
                 predator.dashRemaining = Math.max(0, predator.dashRemaining - Math.min(delta, 50));
             } else {
-                this.movePredator(predator, predator.escapeDirection, 0, PREDATOR_SPEED, frameScale);
+                this.movePredator(predator, predator.escapeDirection, 0, PREDATOR_SPEED, frameScale, false);
             }
 
+            const bounds = predator.sprite.getBounds();
             const escaped = predator.escapeDirection < 0
-                ? predator.sprite.x <= -predator.sprite.displayWidth / 2 - PREDATOR_ESCAPE_MARGIN
-                : predator.sprite.x >= this.WORLD_WIDTH + predator.sprite.displayWidth / 2 + PREDATOR_ESCAPE_MARGIN;
+                ? bounds.right <= -PREDATOR_ESCAPE_MARGIN
+                : bounds.left >= this.WORLD_WIDTH + PREDATOR_ESCAPE_MARGIN;
             if (escaped) {
                 predator.sprite.destroy();
                 predator.spawned = false;
@@ -1334,6 +1337,14 @@ class TestScene extends Phaser.Scene {
             } else if (predator.nervous && predatorDistance > 0) {
                 const awayX = (predator.sprite.x - this.guide.x) / predatorDistance;
                 const awayY = (predator.sprite.y - this.guide.y) / predatorDistance;
+                const outOfRoomToRetreat = awayX !== 0 &&
+                    !this.canPredatorMove(predator, Math.sign(awayX), 0, frameScale);
+
+                if (outOfRoomToRetreat) {
+                    this.startPredatorFlee(predator, true);
+                    return;
+                }
+
                 const retreatDirection = predator.retreatDirection;
                 const retreatAlignment = retreatDirection
                     ? retreatDirection.x * awayX + retreatDirection.y * awayY
@@ -1455,18 +1466,8 @@ class TestScene extends Phaser.Scene {
         predator.fleeing = true;
         predator.escapeDirection = predator.sprite.x <= this.WORLD_WIDTH / 2 ? -1 : 1;
         if (awayFromFish) {
-            const distance = Phaser.Math.Distance.Between(
-                predator.sprite.x,
-                predator.sprite.y,
-                this.guide.x,
-                this.guide.y
-            );
-            predator.dashVelocityX = distance > 0
-                ? ((predator.sprite.x - this.guide.x) / distance) * PREDATOR_DASH_SPEED
-                : predator.escapeDirection * PREDATOR_DASH_SPEED;
-            predator.dashVelocityY = distance > 0
-                ? ((predator.sprite.y - this.guide.y) / distance) * PREDATOR_DASH_SPEED
-                : 0;
+            predator.dashVelocityX = predator.escapeDirection * PREDATOR_DASH_SPEED;
+            predator.dashVelocityY = 0;
             predator.dashRemaining = PREDATOR_DASH_DURATION;
         }
         predator.sprite.clearTint();
@@ -1484,22 +1485,20 @@ class TestScene extends Phaser.Scene {
         );
     }
 
-    movePredator(predator, directionX, directionY, speed, frameScale) {
+    movePredator(predator, directionX, directionY, speed, frameScale, addWiggle = true) {
         const directionLength = Math.hypot(directionX, directionY);
         if (directionLength === 0) return;
 
         const normalizedX = directionX / directionLength;
         const normalizedY = directionY / directionLength;
-        const wiggle = Math.sin(this.time.now * 0.01) * frameScale;
+        const wiggle = addWiggle ? Math.sin(this.time.now * 0.01) * frameScale : 0;
 
         predator.sprite.x += normalizedX * speed * frameScale - normalizedY * wiggle;
         predator.sprite.y += normalizedY * speed * frameScale + normalizedX * wiggle;
-        predator.sprite.y = Phaser.Math.Clamp(
-            predator.sprite.y,
-            predator.sprite.displayHeight / 2,
-            this.WORLD_HEIGHT - predator.sprite.displayHeight / 2
-        );
         this.facePredatorDirection(predator, normalizedX, normalizedY, frameScale);
+        const bounds = predator.sprite.getBounds();
+        if (bounds.top < 0) predator.sprite.y -= bounds.top;
+        if (bounds.bottom > this.WORLD_HEIGHT) predator.sprite.y -= bounds.bottom - this.WORLD_HEIGHT;
     }
 
     canPredatorMove(predator, directionX, directionY, frameScale) {
