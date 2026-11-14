@@ -1,0 +1,176 @@
+/* The two lanes of notices (Notices.jsx). The lanes let clicks through; only the notices themselves take them. */
+.Notices {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  pointer-events: none;
+}
+
+.NoticeBannerLane {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.NoticeToastLane {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* In the tutorial both lanes sit in the slot under the lesson banner, so they follow the banner instead of the window */
+.NoticesInSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(520px, 100%);
+}
+
+.NoticesInSlot .EventNotice {
+  width: 100%;
+}
+
+.EventNotice {
+  position: relative;
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 40px));
+  pointer-events: auto;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-left: 5px solid #f86a1c;
+  border-radius: 8px;
+  background: #087e8b;
+  color: #fff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+  font-family: 'Poppins', sans-serif;
+  animation: eventNoticeFadeIn 180ms ease-out;
+}
+
+.EventNoticeBleaching {
+  width: min(620px, calc(100vw - 40px));
+  padding: 22px 58px;
+  overflow: hidden;
+  border: 3px solid #ffd166;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #8f2d1f, #d1492f);
+  box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.18), 0 12px 36px rgba(65, 13, 5, 0.45);
+  text-align: center;
+}
+
+.EventNoticeBleaching::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.EventNoticeBleachingIcon {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+}
+
+.EventNoticeBleaching .EventNoticeHeading {
+  position: relative;
+  justify-content: center;
+}
+
+.EventNoticeBleaching h2 {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.EventNoticeBleaching p {
+  position: relative;
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.EventNoticeBleaching .EventNoticeDismiss {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+}
+
+/* Good news: the nest growing, the coral collection filling up */
+.EventNoticeGood {
+  border-left-color: #7fe3c4;
+}
+
+.EventNoticeWarning {
+  border-color: #ffb000;
+  border-left-color: #ff3b30;
+  background: #762b20;
+}
+
+.EventNoticeHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.EventNotice h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.EventNotice p {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.EventNotice button {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.EventNotice button:hover {
+  background: #f86a1c;
+  color: #fff;
+}
+
+@keyframes eventNoticeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bleachingNoticeEntrance {
+  from { opacity: 0; transform: translateY(-16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.EventNoticeBleaching {
+  animation: bleachingNoticeEntrance 220ms ease-out;
+}
+
+/* Declared after the lane rules above so they win: in the slot the lanes flow under the banner, one after the other */
+.NoticesInSlot .NoticeBannerLane,
+.NoticesInSlot .NoticeToastLane {
+  position: static;
+  transform: none;
+  align-items: stretch;
+}

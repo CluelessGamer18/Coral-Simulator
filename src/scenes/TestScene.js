@@ -1,20 +1,20 @@
 import Phaser from "phaser";
 import { createFishSchools } from "./FishSchools.js";
-import { createCorals, updateCoralStress, refreshCoralStress, killCorals, resetCorals } from "./CoralManager.js";
+import { createCorals, cullCorals, swayCorals, updateCoralStress, killCorals, resetCorals, CORAL_KIND_IDS } from "./CoralManager.js";
 import { EventManager } from "./Events.js";
 import { createHomeBuilding, updateHomeBuilding, updateNestCamera } from "./HomeBuilding.js";
-import { addGlow, removeGlow } from "./Glow.js";
-import { isBleachingYear } from "./BleachingSchedule.js";
+import { addGlow, removeGlow, addShadow } from "./Glow.js";
+import { isBleachingYear, getSummerTemperatureRise } from "./BleachingSchedule.js";
 import { OceanSounds } from "./OceanSounds.js";
+import { MusicPlayer } from "./MusicPlayer.js";
+import { exposeForDebugging } from "./debug.js";
+import { asset } from "../assetUrl.js";
 import { loadOceanSounds } from "../oceanSoundsSetting.js";
-
-let oval;
-
-// One entry per bubble. `type` is the collisionType React reads to decide which popup to show.
-const BUBBLE_TYPES = [
-    { type: 'temp', texture: 'TempBubble', ease: 'Power1' },
-    { type: 'light', texture: 'LightBubble', ease: 'Sine.inOut' },
-];
+import { getEffectiveVolumes } from "../audioSettings.js";
+import {
+    GAME_YEARS, YEAR_DURATION_MS, SUMMER_DURATION_MS, WINTER_DURATION_MS, MAX_FRAME_MS,
+    FISH_SPEED, MAX_HEARTS, HEART_SPACING, HEART_OFFSET_Y,
+} from "./gameConfig.js";
 
 // [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
 export const THRESHOLDS = {
@@ -32,14 +32,10 @@ const PREDATOR_SCARE_DISTANCE = 250;
 export const REEF_HIDE_DISTANCE = 150;
 export const PREDATOR_ESCAPE_MARGIN = 50;
 
-// Health is counted in half hearts, so 3 hearts = 6
-const MAX_HEARTS = 3;
 const LOW_HEALTH_PULSE_THRESHOLD = 2;
-const YEAR_DURATION_MS = 60_000;
 const PREDATOR_SPAWN_YEARS = [2, 4.5, 7, 9.5];
-const SUMMER_FRACTION_OF_YEAR = 0.5;
-const SUMMER_DURATION_MS = YEAR_DURATION_MS * SUMMER_FRACTION_OF_YEAR;
-const SIMULATION_DURATION_MS = 10 * YEAR_DURATION_MS;
+const SUMMER_FRACTION_OF_YEAR = SUMMER_DURATION_MS / YEAR_DURATION_MS;
+const SIMULATION_DURATION_MS = GAME_YEARS * YEAR_DURATION_MS;
 const NORMAL_TEMPERATURE = 27;
 const NORMAL_LIGHT_LEVEL = 500;
 const SUMMER_PEAK_LIGHT_LEVEL = 1500;
@@ -55,11 +51,18 @@ const BLEACHING_RATE_SCALE = 1.6;
 // Reef stress follows a proportional recovery curve throughout winter and reaches zero naturally.
 const STRESS_WARNING_THRESHOLDS = [40, 60, 80];
 const CRITICAL_STRESS_BEEP_INTERVAL = 1000;
-const SAFE_LIGHT_LEVEL = THRESHOLDS.light.c;
-const HEART_SPACING = 36;
-const HEART_OFFSET_Y = 30; // gap between the top of the fish and the hearts
+const CRITICAL_STRESS_BEEPS = 3; // the alarm sounds this many times, then leaves its banner to do the nagging
 
 const PREDATOR_BITE_INTERVAL = 1000; // ms of touching the predator per half heart lost
+// A bite lands when the grouper's mouth reaches the fish's body. Both are circles, so the grouper doesn't get a
+// bigger reach by turning, and the fish isn't easier to bite after it has grown.
+const PREDATOR_MOUTH_OFFSET = 85; // from the middle of the grouper to its mouth, in px on screen
+const PREDATOR_MOUTH_RADIUS = 42;
+const FISH_BODY_RADIUS = 32;
+const PREDATOR_WANDER_SPEED = PREDATOR_SPEED * 0.4; // while it can't find a fish hiding in the coral
+
+const HISTORY_SAMPLES_PER_YEAR = 8; // points per year on the end screen's charts
+const OVERLAY_FADE = 0.06; // how much of the way the light, stress and pollution overlays move to their target each frame
 
 // Food is shellfish (snails and clams), which triggerfish crack open with their strong jaws.
 // They live on the sea floor, so they're scattered along the band of sand the fish can still reach (it's clamped to y <= 850).
@@ -87,9 +90,6 @@ class TestScene extends Phaser.Scene {
     constructor() {
         super("TestScene");
 
-        this.simStart = false;
-
-        this.collisionType = "None";
         this.camVelX = 0;
         this.tutorialComplete = false;
         // If (tutorialComplete)   
@@ -111,18 +111,16 @@ class TestScene extends Phaser.Scene {
         // 90 means bleached
         // 100 means death
 
-        // saved history for end result graphs
-        this.tempHistory = []
-        this.lightHistory = []
-        this.pollutionHistory = []
-        this.stressHistory = []
+        // What the end screen's charts show: one sample HISTORY_SAMPLES_PER_YEAR times a year (see recordHistory)
+        this.history = { years: [], stress: [], temp: [], light: [], poll: [] };
+        this.nextHistorySample = 0; // index of the next sample to take
+        this.peakStress = 0;
 
         //Individual Flags
         this.tempStressSeverity = 0;
         this.lightStressSeverity = 0;
         this.reefDeadStress = false;
         this.stressWarningLevel = 0;
-        this.fatalClimateWarningActive = false;
         this.criticalStressAlarmActive = false;
         this.criticalStressAlarm = null;
         this.currentStressDelta = 0;
@@ -137,13 +135,12 @@ class TestScene extends Phaser.Scene {
         this.winterClimateStart = null;
         this.winterClimateYear = null;
         this.timeUiElapsedMs = 0;
-        this.bubbleCollision = false;
         this.coralInfoOpen = false;
         this.isHiding = false;
         this.isHidingInHome = false;
         this.predators = [];
         this.nextPredatorSpawnIndex = 0;
-        this.score = 0;
+        this.collectedCorals = new Set(); // ids of the kinds of coral the player has opened (see CoralManager.js)
         this.health = MAX_HEARTS * 2;
         this.fishDead = false;
         this.foodEaten = 0;
@@ -227,23 +224,21 @@ class TestScene extends Phaser.Scene {
     }
 
     setupAudio() {
-        // Only default the volume on the first run: a restart reuses this scene, and React won't send the volume again
-        this.musicVolume ??= 0.075;
-        this.sfxVolume ??= 0.5;
+        // Only read the saved volumes on the first run: a restart reuses this scene, and React won't send them again
+        const volumes = getEffectiveVolumes();
+        this.musicVolume ??= volumes.music;
+        this.sfxVolume ??= volumes.sfx;
 
-        this.bgMusic = this.sound.add('background_music', {
-            loop: true,
-            volume: this.musicVolume
-        });
+        // Streamed rather than loaded by Phaser, and stops itself when the scene shuts down (see MusicPlayer.js)
+        this.bgMusic = new MusicPlayer(this, asset("assets/audio/Background.mp3"), this.musicVolume);
 
         // Read straight from the saved setting: React only sends it once this scene is ready, which would let the music start first
         this.oceanSounds = new OceanSounds(this, this.musicVolume);
         this.setOceanSounds(loadOceanSounds());
 
         // The sound manager belongs to the whole game, not this scene, so sounds added here outlive a restart.
-        // Destroy the music whenever the scene shuts down (restart or stop) so a new copy isn't left behind each time.
+        // Destroy them whenever the scene shuts down (restart or stop) so a new copy isn't left behind each time.
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-            this.bgMusic.destroy();
             this.bgMusic = null;
             this.oceanSounds.destroy();
             this.oceanSounds = null;
@@ -251,11 +246,10 @@ class TestScene extends Phaser.Scene {
     }
 
     setupUI(cam) {
-        this.guide = this.physics.add.image(300, 300, "Guide")
+        this.guide = this.add.image(300, 300, "Guide")
         this.guide.setInteractive();
         this.guide.setDepth(9999);
-        // preFX only exists under WebGL; on the Canvas fallback renderer it's null, so skip the shadow there
-        this.guide.preFX?.addShadow(0, -8, 0.009, 1, 0x333333, 5);
+        addShadow(this, this.guide);
 
         // Hearts float above the fish and follow it around (positioned every frame in updateHearts())
         this.hearts = [];
@@ -272,30 +266,25 @@ class TestScene extends Phaser.Scene {
         this.lowHealthPulseActive = false;
         this.updateHearts();
 
+        // A soft blur with no detail, so the image is a quarter of this size and stretched (see scripts/build-art.py)
         this.badOutline = this.add.image(-95, -95, "badOutline")
             .setOrigin(0, 0).setDepth(10001).setAlpha(0)
+            .setDisplaySize(1630, 1214)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
 
         this.lightOverlay = this.add.rectangle(0, 0, 1440, 1024, 0xFFFFFF, 1)
-            .setOrigin(0, 0).setDepth(10000)
+            .setOrigin(0, 0).setDepth(10000).setAlpha(0)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
 
         this.darkOverlay = this.add.rectangle(0, 0, 1440, 1024, 0x000000, 1)
-            .setOrigin(0, 0).setDepth(10000)
+            .setOrigin(0, 0).setDepth(10000).setAlpha(0)
             .setScrollFactor((1440 - cam.width) / (this.WORLD_WIDTH - cam.width), 1);
 
-        // guide shadow
-        oval = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(100000).setAlpha(0.5);
-    }
+        // Where each overlay is heading. They ease towards these every frame (see updateOverlays).
+        this.overlayTargets = { light: 0, dark: 0, outline: 0, pipe: 0 };
 
-    setupMouseInput() {
-        this.isDraggingGuide = false;
-        this.input.on("pointerdown", () => {
-            this.isDraggingGuide = true;
-        });
-        this.input.on("pointerup", () => {
-            this.isDraggingGuide = false;
-        });
+        // the fish's shadow on the sea floor
+        this.floorShadow = this.add.ellipse(this.guide.x, 950, 100, 10, 0x000000, 0.5).setDepth(6);
     }
 
     setupCamera(cam) {
@@ -339,24 +328,25 @@ class TestScene extends Phaser.Scene {
 
     create() {
         const cam = this.cameras.main;
+        cam.fadeIn(600, 0, 0, 0);
 
         this.setupSimulationState();
         this.setupWorld(cam);
         this.setupUI(cam);
         this.setupAudio(); // after setupUI: Ocean Sounds needs to know where the fish is
-        this.setupMouseInput();
         this.setupCamera(cam);
-        this.updateHistory();
-        // this.spawnBubbles();
+        this.recordHistory();
         this.spawnFood();
         createHomeBuilding(this);
         this.eventManager = new EventManager(this, THRESHOLDS);
 
-        window.gameScene = this;
+        exposeForDebugging(this);
         // Only tell React about the scene once everything above has been set up
         this.game.events.emit("scene-ready", this);
         // After a restart React is already listening, so send it the reset values
         this.emitStats();
+        // React shows the "Survive all 10 years!" card at the start of every game
+        if (this.tutorialComplete) this.game.events.emit("goal-reminder");
     }
 
     // The values React shows in the UI. Sent with emitStats() whenever one of them changes,
@@ -369,20 +359,21 @@ class TestScene extends Phaser.Scene {
             pollution: this.pollutionValue,
             yearsElapsed: this.yearsElapsed,
             season: this.season,
-            summerTemperatureChange: this.summerTemperatureChange,
-            bubbleCollision: this.bubbleCollision,
-            collisionType: this.collisionType,
             simEnd: this.simEnd,
             reefDead: this.reefDeadStress,
             fishDead: this.fishDead,
-            score: this.score,
-            // copies, because the scene keeps pushing to its own arrays and React needs a new array to notice a change
-            history: {
-                stress: [...this.stressHistory],
-                temp: [...this.tempHistory],
-                light: [...this.lightHistory],
-                poll: [...this.pollutionHistory],
-            },
+            corals: { collected: [...this.collectedCorals], total: CORAL_KIND_IDS.length },
+            // Only the end screen draws the charts, so the history is only copied out once the game is over
+            history: this.simEnd ? this.getHistory() : null,
+        };
+    }
+
+    // Copies, because the scene keeps its own arrays and React needs new ones to notice a change
+    getHistory() {
+        const { years, stress, temp, light, poll } = this.history;
+        return {
+            years: [...years], stress: [...stress], temp: [...temp], light: [...light], poll: [...poll],
+            peakStress: this.peakStress,
         };
     }
 
@@ -406,8 +397,6 @@ class TestScene extends Phaser.Scene {
 
         if (enabled) {
             this.bgMusic.pause();
-        } else if (this.bgMusic.isPaused) {
-            this.bgMusic.resume();
         } else if (!this.bgMusic.isPlaying) {
             this.bgMusic.play();
         }
@@ -421,9 +410,9 @@ class TestScene extends Phaser.Scene {
         this.sound.play('bleachingWarning', { volume: this.sfxVolume ?? 0.5 });
     }
 
+    // Sounds while stress is high and still climbing, and stops as soon as it levels off
     isCriticalStressAlarmRequired() {
         return this.stressValue >= 80
-            && this.lightLevel > SAFE_LIGHT_LEVEL
             && this.currentStressDelta > 0
             && this.season === "summer"
             && !this.simEnd;
@@ -431,90 +420,34 @@ class TestScene extends Phaser.Scene {
 
     syncCriticalStressAlarm() {
         const required = this.isCriticalStressAlarmRequired();
+        if (required === this.criticalStressAlarmActive) return;
 
-        if (required && !this.criticalStressAlarmActive) {
-            this.criticalStressAlarmActive = true;
+        this.criticalStressAlarmActive = required;
+        if (required) {
             this.game.events.emit("reef-warning", {
                 id: "critical-stress",
                 persistent: true,
                 warning: true,
                 title: "Critical Reef Stress",
-                message: "The reef is in immediate danger. Lower the light to the safe range now to stop coral stress from increasing.",
+                message: "The reef is about to die. Pop green Cloudy bubbles until the stress dial stops climbing.",
             });
-            this.criticalStressAlarm = this.time.addEvent({
-                delay: CRITICAL_STRESS_BEEP_INTERVAL,
-                loop: true,
-                callback: () => {
-                    if (!this.isCriticalStressAlarmRequired()) {
-                        this.syncCriticalStressAlarm();
-                        return;
-                    }
-                    this.playBleachingWarning();
-                },
-            });
-        } else if (!required && this.criticalStressAlarmActive) {
-            this.criticalStressAlarmActive = false;
+            let beeps = 0;
+            const beep = () => {
+                this.playBleachingWarning();
+                if (++beeps >= CRITICAL_STRESS_BEEPS) this.criticalStressAlarm?.remove();
+            };
+            beep();
+            this.criticalStressAlarm = this.time.addEvent({ delay: CRITICAL_STRESS_BEEP_INTERVAL, loop: true, callback: beep });
+        } else {
             this.criticalStressAlarm?.remove();
             this.criticalStressAlarm = null;
             this.game.events.emit("reef-warning-cleared", "critical-stress");
-        } else if (required && this.criticalStressAlarmActive && !this.criticalStressAlarm) {
-            this.criticalStressAlarm = this.time.addEvent({
-                delay: CRITICAL_STRESS_BEEP_INTERVAL,
-                loop: true,
-                callback: () => {
-                    if (!this.isCriticalStressAlarmRequired()) {
-                        this.syncCriticalStressAlarm();
-                        return;
-                    }
-                    this.playBleachingWarning();
-                },
-            });
-        }
-    }
-
-    // A random spot anywhere a bubble can be, at least 300px from the fish so it isn't popped straight away.
-    // Shared by spawnBubbles() and returnBubble() so new and cancelled bubbles use the same area.
-    getBubbleSpawnLocation() {
-        let x;
-        let y;
-        do{
-            x = Phaser.Math.Between(50, this.WORLD_WIDTH - 50);
-            y = Phaser.Math.Between(50, this.WORLD_HEIGHT - 150);
-        } while (Phaser.Math.Distance.Between(x, y, this.guide.x, this.guide.y) < 300);
-
-        return { x, y };
-    }
-
-    spawnBubbles() {
-        // Kept so the overlaps can be removed along with the bubbles in destroyBubbles()
-        this.bubbleColliders = [];
-        this.bubbles = {};
-
-        for (const { type, texture, ease } of BUBBLE_TYPES) {
-            const { x, y } = this.getBubbleSpawnLocation();
-            const bubble = this.physics.add.image(x, y, texture).setDepth(7).setInteractive();
-
-            this.bubbleColliders.push(this.physics.add.overlap(
-                this.guide,
-                bubble,
-                () => {this.handleBubbleCollect(type);},
-            ));
-
-            bubble.on('pointerover', () => {
-                this.tweens.add({ targets: bubble, scale: 1.15, duration: 200, ease });
-            });
-            bubble.on('pointerout', () => {
-                this.tweens.add({ targets: bubble, scale: 1, duration: 200, ease });
-            });
-
-            this.bubbleIdle(bubble);
-            this.bubbles[type] = bubble;
         }
     }
 
     // Scatters shellfish along the sea floor, anywhere but the nest. Eaten shellfish don't come back.
     spawnFood() {
-        this.food = this.physics.add.group();
+        this.food = []; // the shellfish still on the sea floor
         const shells = Phaser.Utils.Array.Shuffle([...FOOD_SHELLS]); // dealt in turn, so every kind appears before any repeats
 
         for (let i = 0; i < FOOD_COUNT; i++) {
@@ -523,7 +456,8 @@ class TestScene extends Phaser.Scene {
                 x = Phaser.Math.Between(100, this.WORLD_WIDTH - 100);
             } while (Math.abs(x - this.WORLD_WIDTH / 2) < FOOD_NEST_CLEARANCE);
 
-            const shellfish = this.food.create(x, Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y), shells[i % shells.length]);
+            const shellfish = this.add.image(x, Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y), shells[i % shells.length]);
+            this.food.push(shellfish);
             const size = FOOD_SIZE * Phaser.Math.FloatBetween(1 - FOOD_SIZE_VARIATION, 1 + FOOD_SIZE_VARIATION);
 
             shellfish
@@ -533,14 +467,25 @@ class TestScene extends Phaser.Scene {
                 .setFlipX(Math.random() < 0.5);
             addGlow(this, shellfish, FOOD_GLOW_COLOR);
         }
+    }
 
-        this.physics.add.overlap(this.guide, this.food, (guide, shellfish) => this.eatFood(shellfish));
+    // The fish eats any shellfish its body reaches. Five distance checks a frame, in place of a physics engine.
+    checkFood() {
+        const reach = this.guide.displayHeight / 2;
+        for (const shellfish of this.food) {
+            const distance = Phaser.Math.Distance.Between(this.guide.x, this.guide.y, shellfish.x, shellfish.y);
+            if (distance <= reach + shellfish.displayWidth / 2) {
+                this.eatFood(shellfish);
+                return; // eatFood changed this.food, and one bite a frame is plenty
+            }
+        }
     }
 
     // Eating always uses up the shellfish, but only heals when the fish isn't already at full health
     eatFood(shellfish) {
         if (this.simEnd) return;
 
+        this.food = this.food.filter(other => other !== shellfish);
         removeGlow(shellfish); // stops the glow's tween, which would otherwise outlive the shellfish
         shellfish.destroy();
         this.sound.play('foodCrunch', { volume: this.sfxVolume });
@@ -561,29 +506,6 @@ class TestScene extends Phaser.Scene {
         });
     }
 
-    destroyBubbles() {
-        // Remove the fish-vs-bubble overlaps too, otherwise the physics world keeps checking them every frame
-        this.bubbleColliders.forEach(collider => collider.destroy());
-        this.bubbleColliders = [];
-
-        Object.values(this.bubbles).forEach(bubble => bubble.destroy());
-    }
-
-    handleBubbleCollect(type) {
-        const bubble = this.bubbles[type];
-        // Ignore other bubbles while a popup is open: the fish is frozen, but idle bubbles can still drift into it,
-        // and that would switch the open popup to another type
-        if (this.simEnd || this.bubbleCollision || !bubble) return;
-
-        // Hide the bubble instead of destroying it, so it can be brought back if the popup is cancelled
-        bubble.disableBody(true, true);
-        this.sound.play('bubblePop', { volume: this.sfxVolume });
-
-        this.bubbleCollision = true;
-        this.collisionType = type;
-        this.emitStats();
-    }
-
     bubbleIdle(bubble) {
         this.tweens.add({
             targets: bubble,
@@ -597,17 +519,18 @@ class TestScene extends Phaser.Scene {
 
 
     update(time, delta) {
+        delta = Math.min(delta, MAX_FRAME_MS); // so the reef never ages faster than the fish can move (see gameConfig.js)
         this.oceanSounds.update(delta); // before the check below, so a dying reef still fades out behind the end screen
+        cullCorals(this);
+        swayCorals(this);
+        this.updateOverlays(delta);
 
         // Freeze the fish, camera and timer once the end screen is showing
         if (this.simEnd) return;
 
-        const clockIsRunning = this.tutorialComplete && !this.bubbleCollision && !this.coralInfoOpen;
-
-        if (this.tutorialComplete) this.updateFatalClimateWarning();
+        const clockIsRunning = this.tutorialComplete && !this.coralInfoOpen;
 
         if (clockIsRunning) {
-            const previousElapsedSimMs = this.elapsedSimMs;
             this.elapsedSimMs = Math.min(
                 this.elapsedSimMs + delta,
                 SIMULATION_DURATION_MS
@@ -624,27 +547,12 @@ class TestScene extends Phaser.Scene {
                 + (MAX_POLLUTION - STARTING_POLLUTION) * simulationProgress;
 
             this.advanceStress(delta);
+            this.recordHistory();
 
-            const previousYear = Math.floor(previousElapsedSimMs / YEAR_DURATION_MS);
-            const currentYear = Math.floor(this.elapsedSimMs / YEAR_DURATION_MS);
-            for (let year = previousYear; year < currentYear && !this.reefDeadStress; year++) {
-                if (this.hasFatalClimateCombination()) {
-                    this.stressValue = 100;
-                    this.reefDeadStress = true;
-                    this.simEnd = true;
-                    killCorals(this);
-                }
-                this.updateHistory();
-            }
+            if (!this.simEnd && this.elapsedSimMs >= SIMULATION_DURATION_MS) this.simEnd = true;
 
             if (this.simEnd) {
-                this.emitStats();
-                return;
-            }
-
-            if (this.elapsedSimMs >= SIMULATION_DURATION_MS) {
-                this.simEnd = true;
-                this.emitStats();
+                this.endSim();
                 return;
             }
         }
@@ -663,15 +571,13 @@ class TestScene extends Phaser.Scene {
             this.timeUiElapsedMs += delta;
             if (this.timeUiElapsedMs >= TIME_UI_UPDATE_MS) {
                 this.timeUiElapsedMs %= TIME_UI_UPDATE_MS;
-                this.refreshVisuals();
-                refreshCoralStress(this);
                 this.emitStats();
             }
         }
 
         // Movement values below were tuned at 60fps, so scale them by how long this frame actually took.
         // Capped so a lag spike or returning to the tab doesn't teleport the fish.
-        const frameScale = Math.min(delta, 50) / (1000 / 60);
+        const frameScale = delta / (1000 / 60);
         this.eventManager.update(delta, frameScale);
 
         const hidePressed = Phaser.Input.Keyboard.JustDown(this.hideKey);
@@ -682,7 +588,7 @@ class TestScene extends Phaser.Scene {
         let horizontal = 0;
         let vertical = 0;
 
-        if (this.tutorialComplete && !this.bubbleCollision) {
+        if (this.tutorialComplete) {
             horizontal = (this.moveKeys.right.isDown ? 1 : 0) - (this.moveKeys.left.isDown ? 1 : 0);
             vertical = (this.moveKeys.down.isDown ? 1 : 0) - (this.moveKeys.up.isDown ? 1 : 0);
             const movementLength = Math.hypot(horizontal, vertical);
@@ -692,7 +598,7 @@ class TestScene extends Phaser.Scene {
             }
 
             if (!this.isHiding && movementLength > 0) {
-                const speed = 6.75 * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
+                const speed = FISH_SPEED * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
@@ -743,9 +649,10 @@ class TestScene extends Phaser.Scene {
         }
 
         this.checkPredatorContact(delta);
+        if (this.tutorialComplete) this.checkFood();
 
         const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
-        const edgeScrollSpeed = 6.75; // Keep equal to the fish speed so the camera keeps up with the fish at the screen edges
+        const edgeScrollSpeed = FISH_SPEED; // the same as the fish, so the camera keeps up with it at the screen edges
         const cameraSmoothing = 0.15;
         const { scrollX, width, zoom } = this.cameras.main;
         const fishScreenX = (this.guide.x - scrollX - width / 2) * zoom + width / 2; // the camera zooms around its centre
@@ -766,17 +673,16 @@ class TestScene extends Phaser.Scene {
             this.WORLD_WIDTH - this.cameras.main.width
         );
 
-        // The arrow keys move the camera, but while the bubble popup is open they belong to its slider,
-        // and while the fish hides in the nest the camera stays on it
-        if (!this.bubbleCollision && !this.isHidingInHome) {
+        // The other set of keys moves the camera, except while the fish hides in the nest, when the camera stays on it
+        if (!this.isHidingInHome) {
             this.controls.update(delta);
         }
         updateNestCamera(this, this.isHidingInHome, frameScale);
 
-        oval.clear();
-        if (!this.isHiding) {
-            oval.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10).setDepth(6);
-        }
+        this.floorShadow
+            .setVisible(!this.isHiding)
+            .setPosition(this.guide.x, 950)
+            .setScale(this.guide.scale, 1);
 
         this.updateHearts();
         updateHomeBuilding(this, delta, clockIsRunning);
@@ -852,18 +758,27 @@ class TestScene extends Phaser.Scene {
         }
     }
 
-    // Half a heart the moment the fish touches the predator, then another for every second it stays in contact
+    // Where the grouper's mouth is. Its artwork faces left, and is mirrored to face right.
+    getPredatorMouth({ sprite }) {
+        const facing = sprite.flipX ? 1 : -1;
+        return {
+            x: sprite.x + Math.cos(sprite.rotation) * PREDATOR_MOUTH_OFFSET * facing,
+            y: sprite.y + Math.sin(sprite.rotation) * PREDATOR_MOUTH_OFFSET * facing,
+        };
+    }
+
+    // Half a heart the moment the predator's mouth reaches the fish, then another for every second it stays there
     checkPredatorContact(delta) {
-        // No damage while a popup is open, since the fish can't move away
-        const paused = this.bubbleCollision || this.coralInfoOpen;
-        // Only the homebase protects a hidden fish from predator bites.
-        const touching = !paused && (!this.isHiding || !this.isHidingInHome) &&
-            this.predators.some(({ sprite, spawned, fleeing }) =>
-                spawned && !fleeing && Phaser.Geom.Intersects.RectangleToRectangle(
-                    this.guide.getBounds(),
-                    sprite.getBounds()
-                )
-            );
+        // No damage while a popup is open, since the fish can't move away, or while the fish is hidden:
+        // the nest scares predators off, and in the coral they can't find it
+        const paused = this.coralInfoOpen;
+        const touching = !paused && !this.isHiding &&
+            this.predators.some(predator => {
+                if (!predator.spawned || predator.fleeing) return false;
+                const mouth = this.getPredatorMouth(predator);
+                return Phaser.Math.Distance.Between(mouth.x, mouth.y, this.guide.x, this.guide.y)
+                    <= PREDATOR_MOUTH_RADIUS + FISH_BODY_RADIUS;
+            });
 
         if (!touching) {
             if (!paused) this.touchingPredator = false;
@@ -882,11 +797,21 @@ class TestScene extends Phaser.Scene {
             this.loseHalfHeart();
         }
 
-        if (this.simEnd) this.emitStats();
+        if (this.simEnd) this.endSim();
     }
+
+    // Everything that has to happen once, when the reef dies, the fish dies or the ten years are up
+    endSim() {
+        this.simEnd = true;
+        this.recordHistory(true);
+        this.syncCriticalStressAlarm();
+        this.game.events.emit("reef-warning-cleared", "bleaching");
+        this.emitStats();
+    }
+
     RestartSim() {
         this.scene.restart();
-        this.bgMusic.stop(); // silence it straight away; the shutdown handler in setupAudio() destroys it
+        this.bgMusic.pause(); // silence it straight away; it's destroyed when the scene shuts down (see MusicPlayer.js)
         resetCorals(this);
     }
 
@@ -895,27 +820,42 @@ class TestScene extends Phaser.Scene {
 
         if (this.season === "summer") {
             this.summerLightOffset = 0;
+            if (Math.floor(this.yearsElapsed) === 5) {
+                this.game.events.emit("random-event", {
+                    title: "Halfway There",
+                    message: "Five years down, five to go. Survive all 10 years!",
+                    good: true,
+                });
+            }
         }
 
         if (this.season === "winter") {
             this.summerTemperatureChange = 0;
             // Living coral recovers gradually throughout winter; do not reset the reef stress meter instantly.
-        } else if (this.season === "summer" && isBleachingYear(this.yearsElapsed) && this.elapsedSimMs < SIMULATION_DURATION_MS) {
-            this.summerTemperatureChange = Phaser.Math.Between(2, 8);
+            this.game.events.emit("reef-warning-cleared", "bleaching");
+        } else if (isBleachingYear(this.yearsElapsed) && this.elapsedSimMs < SIMULATION_DURATION_MS) {
+            // Each bleaching summer is hotter than the last (see BleachingSchedule.js)
+            this.summerTemperatureChange = getSummerTemperatureRise(this.yearsElapsed);
             this.temperature = Math.min(35, this.temperature + this.summerTemperatureChange);
             this.tempStressSeverity = highRangeSeverity(this.temperature, THRESHOLDS.temperature);
+            this.game.events.emit("reef-warning", {
+                id: "bleaching",
+                bleaching: true,
+                title: "Temperature Bleaching Event",
+                message: `The water temperature has risen by ${this.summerTemperatureChange}°C. Pop green Cloudy bubbles to keep the light low and stop your reef bleaching.`,
+            });
         }
 
         this.lastSeason = this.season;
-        refreshCoralStress(this);
         this.emitStats();
     }
 
-    updateTemperature(temp, advanceYear = true) {
+    // Called by the event bubbles (Events.js)
+    updateTemperature(temp) {
         this.adjustWinterClimateStart("temperature", temp);
         this.temperature = temp;
         this.tempStressSeverity = highRangeSeverity(temp, THRESHOLDS.temperature);
-        this.updateStress(advanceYear);
+        this.syncCriticalStressAlarm();
         this.emitStats();
     }
 
@@ -953,7 +893,7 @@ class TestScene extends Phaser.Scene {
         this.lightStressSeverity = highRangeSeverity(this.lightLevel, THRESHOLDS.light);
     }
 
-    updateLight(light, advanceYear = true) {
+    updateLight(light) {
         this.adjustWinterClimateStart("light", light);
         if (this.season === "summer") {
             this.summerLightOffset = light - this.getNaturalSummerLight();
@@ -962,41 +902,8 @@ class TestScene extends Phaser.Scene {
             this.lightLevel = light;
         }
         this.lightStressSeverity = highRangeSeverity(light, THRESHOLDS.light);
-        this.updateStress(advanceYear);
-        this.emitStats();
-    }
-
-    updateStress(advanceYear = true) {
-        // Once the sim is over, no more years can pass
-        if (this.simEnd) return;
-
-        if (advanceYear || this.simEnd) this.updateHistory();
-        else this.refreshVisuals();
-
-        if (advanceYear){
-            // Every time jump costs the fish half a heart
-            this.loseHalfHeart();
-        }
-
-        // Only spawn new bubbles after every end condition has been checked
-        if (advanceYear || this.simEnd){
-            // this.destroyBubbles();
-            if (!this.simEnd) {
-                this.tweens.paused = false;
-                this.spawnBubbles();
-            }
-        }
-
-        refreshCoralStress(this);
         this.syncCriticalStressAlarm();
-    }
-
-    hasFatalClimateCombination() {
-        const temperature = THRESHOLDS.temperature;
-        const light = THRESHOLDS.light;
-        const bothLow = this.temperature <= temperature.a && this.lightLevel <= light.a;
-        const bothHigh = this.temperature >= temperature.d && this.lightLevel >= light.d;
-        return bothLow || bothHigh;
+        this.emitStats();
     }
 
     adjustWinterClimateStart(variable, value) {
@@ -1025,7 +932,7 @@ class TestScene extends Phaser.Scene {
             const yearProgress = elapsedMs % YEAR_DURATION_MS;
             const winterProgress = Phaser.Math.Clamp(
                 (yearProgress - SUMMER_DURATION_MS)
-                    / (YEAR_DURATION_MS - SUMMER_DURATION_MS),
+                    / WINTER_DURATION_MS,
                 0,
                 1
             );
@@ -1072,13 +979,13 @@ class TestScene extends Phaser.Scene {
         } else if (this.season === "winter") {
             const winterProgress = Phaser.Math.Clamp(
                 ((this.elapsedSimMs % YEAR_DURATION_MS) - SUMMER_DURATION_MS)
-                    / (YEAR_DURATION_MS - SUMMER_DURATION_MS),
+                    / WINTER_DURATION_MS,
                 0,
                 1
             );
             const remainingWinterFraction = Math.max(1 - winterProgress, 0.001);
             stressRate = -this.stressValue / remainingWinterFraction
-                / (YEAR_DURATION_MS - SUMMER_DURATION_MS) * YEAR_DURATION_MS;
+                / WINTER_DURATION_MS * YEAR_DURATION_MS;
         }
 
         const stressDelta = stressRate * delta / YEAR_DURATION_MS;
@@ -1090,10 +997,11 @@ class TestScene extends Phaser.Scene {
         );
         updateCoralStress(this, stressDelta, delta);
 
+        this.peakStress = Math.max(this.peakStress, this.stressValue);
+
         if (this.stressValue >= 100) {
             this.reefDeadStress = true;
             this.simEnd = true;
-            this.updateHistory();
             killCorals(this);
             return;
         }
@@ -1113,17 +1021,17 @@ class TestScene extends Phaser.Scene {
                 {
                     warning: true,
                     title: "Coral Stress Building",
-                    message: "Summer heat builds coral stress. Lowering the temperature slows bleaching; high light and pollution make it build faster.",
+                    message: "Hot water and bright light together are stressing your coral. Swim into a green Cloudy bubble to shade the reef.",
                 },
                 {
                     warning: true,
                     title: "Serious Bleaching Risk",
-                    message: "Coral stress is high. Reduce the heat before summer ends; lower light if it is elevated to slow further damage.",
+                    message: "Coral stress is high and still rising. Pop more green Cloudy bubbles before summer ends. Stress stops rising once the light is under 600.",
                 },
                 {
                     warning: true,
                     title: "Critical Reef Stress",
-                    message: "The reef is close to collapse. Lower the temperature now; reducing elevated light can also slow summer bleaching.",
+                    message: "The reef is close to collapse. Pop every green Cloudy bubble you can reach. The coral recovers when winter comes.",
                 },
             ][nextWarningLevel];
             this.playBleachingWarning();
@@ -1133,119 +1041,43 @@ class TestScene extends Phaser.Scene {
         this.syncCriticalStressAlarm();
     }
 
-    updateFatalClimateWarning() {
-        const isFatalClimate = this.hasFatalClimateCombination();
-        if (isFatalClimate === this.fatalClimateWarningActive) return;
+    // Adds to the end screen's charts whenever the next sample is due. Called every frame while the clock runs;
+    // final is for the last moment of the game, which is recorded whenever it falls so the charts end where the game did.
+    recordHistory(final = false) {
+        const due = this.yearsElapsed * HISTORY_SAMPLES_PER_YEAR >= this.nextHistorySample;
+        if (!due && !final) return;
+        if (final && this.history.years.at(-1) === this.yearsElapsed) return;
 
-        this.fatalClimateWarningActive = isFatalClimate;
-        if (isFatalClimate) {
-            this.playBleachingWarning();
-            this.game.events.emit("reef-warning", {
-                id: "fatal-climate",
-                persistent: true,
-                warning: true,
-                title: "Extreme Conditions",
-                message: "Temperature and light are both at fatal extremes. Lower at least one before the year ends to save the reef.",
-            });
-        } else {
-            this.game.events.emit("reef-warning-cleared", "fatal-climate");
-        }
+        this.nextHistorySample = Math.floor(this.yearsElapsed * HISTORY_SAMPLES_PER_YEAR) + 1;
+        this.history.years.push(this.yearsElapsed);
+        this.history.stress.push(this.stressValue);
+        this.history.temp.push(this.temperature);
+        this.history.light.push(this.lightLevel);
+        this.history.poll.push(this.pollutionValue);
     }
 
-    updateHistory() {
-        this.recordHistory();
-        this.refreshVisuals();
+    // The screen brightens or darkens with the light level, a red frame closes in as stress passes 60, and the
+    // second pipe starts running as pollution rises. Each eases towards its target a little every frame.
+    updateOverlays(delta) {
+        const targets = this.overlayTargets;
+        targets.light = Phaser.Math.Clamp((this.lightLevel - NORMAL_LIGHT_LEVEL) / 3000, 0, 0.1);
+        targets.dark = Phaser.Math.Clamp((NORMAL_LIGHT_LEVEL - this.lightLevel) / 500, 0, 0.6);
+        targets.outline = this.stressValue >= 60 ? Phaser.Math.Clamp(this.stressValue / 100, 0, 1) : 0;
+        targets.pipe = this.pollutionValue >= 3 ? Phaser.Math.Clamp((this.pollutionValue - 1) / 5, 0, 1) : 0;
+
+        const ease = 1 - Math.pow(1 - OVERLAY_FADE, delta / (1000 / 60));
+        const fade = (object, target) => {
+            if (object.alpha === target) return;
+            const alpha = Phaser.Math.Linear(object.alpha, target, ease);
+            // Snap once it's close: Linear never quite arrives, and Phaser only skips drawing at exactly 0
+            object.setAlpha(Math.abs(alpha - target) < 0.004 ? target : alpha);
+        };
+        fade(this.lightOverlay, targets.light);
+        fade(this.darkOverlay, targets.dark);
+        fade(this.badOutline, targets.outline);
+        fade(this.pipeB, targets.pipe);
     }
 
-    recordHistory(){
-        this.tempHistory.push(this.temperature)
-        this.lightHistory.push(this.lightLevel)
-        this.pollutionHistory.push(this.pollutionValue)
-        this.stressHistory.push(this.stressValue)
-
-        console.table(this.tempHistory);
-        console.table(this.lightHistory);
-        console.table(this.pollutionHistory);
-        console.table(this.stressHistory);
-    }
-
-    refreshVisuals() {
-        /* tween light level overlays */
-        const midpoint = 500;
-        let brightAlpha = 0;
-        let darkAlpha = 0;
-
-        if (this.lightLevel > midpoint) {
-            // Above 500 -> brighten
-            brightAlpha = Phaser.Math.Clamp(
-                (this.lightLevel - midpoint) / 3000, // scale factor
-                0,
-                0.1
-            );
-        }
-        else if (this.lightLevel < midpoint) {
-            // Below 500 -> darken
-            darkAlpha = Phaser.Math.Clamp(
-                (midpoint - this.lightLevel) / 500,
-                0,
-                0.6
-            );
-        }
-
-        this.tweens.killTweensOf(this.lightOverlay);
-        this.tweens.killTweensOf(this.darkOverlay);
-
-        this.tweens.add({
-            targets: this.lightOverlay,
-            alpha: brightAlpha,
-            duration: 800,
-            ease: "Sine.easeInOut"
-        });
-
-        this.tweens.add({
-            targets: this.darkOverlay,
-            alpha: darkAlpha,
-            duration: 800,
-            ease: "Sine.easeInOut"
-        });
-
-        /* adjust red outline as stress increases or decreases */
-        let outlineAlpha = 0;
-        if (this.stressValue >= 60) {
-            outlineAlpha = Phaser.Math.Clamp(
-                (this.stressValue) / 100,
-                0,
-                1
-            );
-        }
-        this.tweens.killTweensOf(this.badOutline);
-
-        this.tweens.add({
-            targets: this.badOutline,
-            alpha: outlineAlpha,
-            duration: 800,
-            ease: "Sine.easeInOut"
-        });
-
-        /* adjust pipe output as pollution increases or decreases */
-        let pollAlpha = 0;
-        if (this.pollutionValue >= 3) {
-            pollAlpha = Phaser.Math.Clamp(
-                (this.pollutionValue - 1) / 5,
-                0,
-                1
-            );
-        }
-        this.tweens.killTweensOf(this.pipeB);
-
-        this.tweens.add({
-            targets: this.pipeB,
-            alpha: pollAlpha,
-            duration: 800,
-            ease: "Sine.easeInOut"
-        });
-
-    }
     spawnPredator() {
         const sprite = this.add.image(0, 0, "grouper")
             .setScale(0.4)
@@ -1293,15 +1125,15 @@ class TestScene extends Phaser.Scene {
                     PREDATOR_DASH_SPEED,
                     frameScale
                 );
-                predator.dashRemaining = Math.max(0, predator.dashRemaining - Math.min(delta, 50));
+                predator.dashRemaining = Math.max(0, predator.dashRemaining - delta);
             } else {
                 this.movePredator(predator, predator.escapeDirection, 0, PREDATOR_SPEED, frameScale, false);
             }
 
-            const bounds = predator.sprite.getBounds();
+            const { x, displayWidth } = predator.sprite;
             const escaped = predator.escapeDirection < 0
-                ? bounds.right <= -PREDATOR_ESCAPE_MARGIN
-                : bounds.left >= this.WORLD_WIDTH + PREDATOR_ESCAPE_MARGIN;
+                ? x + displayWidth / 2 <= -PREDATOR_ESCAPE_MARGIN
+                : x - displayWidth / 2 >= this.WORLD_WIDTH + PREDATOR_ESCAPE_MARGIN;
             if (escaped) {
                 predator.sprite.destroy();
                 predator.spawned = false;
@@ -1311,8 +1143,12 @@ class TestScene extends Phaser.Scene {
                     this.game.events.emit("predator-left");
                 }
             }
-        } else if (!this.bubbleCollision && !this.coralInfoOpen) {
-            // The predator chases the fish unless the fish is hidden or an overlay is open.
+        } else if (this.isHiding) {
+            // Hidden in the coral: the predator can't find the fish, so it prowls around until the fish comes out.
+            // (Hidden in the nest it flees instead, which is handled above.)
+            this.wanderPredator(predator, delta, frameScale);
+        } else if (!this.coralInfoOpen) {
+            // The predator chases the fish unless an overlay is open.
             const predatorDistance = Phaser.Math.Distance.Between(
                 predator.sprite.x,
                 predator.sprite.y,
@@ -1378,7 +1214,7 @@ class TestScene extends Phaser.Scene {
                     this.WORLD_HEIGHT - predator.sprite.displayHeight / 2
                 );
             } else if (!predator.nervous && predatorDistance > 0) {
-                const frameDelta = Math.min(delta, 50);
+                const frameDelta = delta;
                 if (predator.dashRemaining > 0) {
                     this.movePredator(
                         predator,
@@ -1414,10 +1250,28 @@ class TestScene extends Phaser.Scene {
         }
     }
 
+    // Slow, lazy loops on the spot, a little wider than they are tall
+    wanderPredator(predator, delta, frameScale) {
+        predator.dashRemaining = 0;
+        predator.wanderAngle = (predator.wanderAngle ?? Phaser.Math.FloatBetween(0, Math.PI * 2)) + delta * 0.0007;
+        this.movePredator(
+            predator,
+            Math.cos(predator.wanderAngle),
+            Math.sin(predator.wanderAngle) * 0.5,
+            PREDATOR_WANDER_SPEED,
+            frameScale,
+            false
+        );
+        predator.sprite.x = Phaser.Math.Clamp(
+            predator.sprite.x,
+            predator.sprite.displayWidth / 2,
+            this.WORLD_WIDTH - predator.sprite.displayWidth / 2
+        );
+    }
+
     hideFish() {
         if (
             !this.tutorialComplete ||
-            this.bubbleCollision ||
             this.coralInfoOpen ||
             this.isHiding
         ) {
@@ -1442,9 +1296,10 @@ class TestScene extends Phaser.Scene {
             });
         }
 
+        // The nest wins whenever it's in reach, since it's the only place that makes a predator leave
         const nearbyHideTarget = hideTargets
             .filter(({ distance }) => distance <= REEF_HIDE_DISTANCE)
-            .sort((a, b) => a.distance - b.distance)[0];
+            .sort((a, b) => (b.isHome - a.isHome) || (a.distance - b.distance))[0];
 
         if (!nearbyHideTarget) return;
 
@@ -1454,6 +1309,11 @@ class TestScene extends Phaser.Scene {
         this.guide.setDepth(nearbyHideTarget.depth - 0.1);
         if (this.isHidingInHome) {
             this.predators.forEach(predator => this.startPredatorFlee(predator));
+        } else if (this.predators.some(({ spawned, fleeing }) => spawned && !fleeing)) {
+            this.game.events.emit("random-event", {
+                title: "Hidden in the Coral",
+                message: "The predator can't find you here, but it's waiting nearby. Only your nest makes it leave for good.",
+            });
         }
     }
 
@@ -1496,9 +1356,9 @@ class TestScene extends Phaser.Scene {
         predator.sprite.x += normalizedX * speed * frameScale - normalizedY * wiggle;
         predator.sprite.y += normalizedY * speed * frameScale + normalizedX * wiggle;
         this.facePredatorDirection(predator, normalizedX, normalizedY, frameScale);
-        const bounds = predator.sprite.getBounds();
-        if (bounds.top < 0) predator.sprite.y -= bounds.top;
-        if (bounds.bottom > this.WORLD_HEIGHT) predator.sprite.y -= bounds.bottom - this.WORLD_HEIGHT;
+        // Kept inside the top and bottom of the world, allowing for the tallest it can be when turned
+        const reach = predator.sprite.displayWidth / 2;
+        predator.sprite.y = Phaser.Math.Clamp(predator.sprite.y, Math.min(reach, this.WORLD_HEIGHT / 2), Math.max(this.WORLD_HEIGHT - reach, this.WORLD_HEIGHT / 2));
     }
 
     canPredatorMove(predator, directionX, directionY, frameScale) {
@@ -1558,26 +1418,6 @@ class TestScene extends Phaser.Scene {
         this.coralInfoOpen = false;
     }
 
-    freeFish(cancelled) {
-        this.bubbleCollision = false;
-        if (cancelled) {
-            this.returnBubble(this.collisionType);
-        }
-        this.emitStats();
-    }
-
-    // Brings a cancelled bubble back at a new random spot, away from the fish so it isn't popped again straight away
-    returnBubble(type) {
-        const bubble = this.bubbles[type];
-        if (!bubble) return;
-
-        const { x, y } = this.getBubbleSpawnLocation();
-
-        this.tweens.killTweensOf(bubble);
-        bubble.setScale(1);
-        bubble.enableBody(true, x, y, true, true);
-        this.bubbleIdle(bubble);
-    }
 }
 
 export default TestScene;

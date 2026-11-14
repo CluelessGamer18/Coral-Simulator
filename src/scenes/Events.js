@@ -101,7 +101,7 @@ export class EventManager {
             this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
         }
 
-        if (s.simEnd || !s.tutorialComplete || s.bubbleCollision || s.coralInfoOpen || s.yearsElapsed < 1) return;
+        if (s.simEnd || !s.tutorialComplete || s.coralInfoOpen || s.yearsElapsed < 1) return;
         if (s.season !== "summer" || !isBleachingYear(s.yearsElapsed)) return;
 
         this.nextSpawnIn -= delta;
@@ -110,8 +110,8 @@ export class EventManager {
             this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
         }
 
-        // Copy the array because resolving an event is able to modify it.
-        for (const b of [...this.active]) this.updateBubble(b, delta, frameScale);
+        // Removing a bubble replaces this.active with a new array, so the one being looped over is never changed
+        for (const b of this.active) this.updateBubble(b, delta, frameScale);
     }
 
     // Check if bubbles can spawn
@@ -346,9 +346,6 @@ export class EventManager {
         s.tweens.killTweensOf(b.sprite);
         s.tweens.add({targets: b.label, alpha: 0, duration: 400, onComplete: () => b.label.destroy() });
         s.tweens.add({targets: b.sprite, alpha: 0, duration: 400, onComplete: () => b.sprite.destroy() });
-        if (b.def.type === "negative") {
-            s.game.events.emit("event-averted", {id: b.def.id, title: b.def.title});
-        }
     }
 
     // Changes the value through update()
@@ -367,7 +364,7 @@ export class EventManager {
             ? Math.min(Math.round(boundedAfter / 10) * 10, variable.max)
             : boundedAfter;
 
-        s[variable.setter](after, false);
+        s[variable.setter](after);
 
         const verb = after > before ? "rose" : "fell";
         return `${variable.label} ${verb} from ${before}${variable.unit} to ${after}${variable.unit}. ${def.teach}`

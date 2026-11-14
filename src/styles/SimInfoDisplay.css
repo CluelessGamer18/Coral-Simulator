@@ -3,8 +3,10 @@
     width: 500px;
     height: 170px;
     /*background-color: red;*/
-    position: absolute; 
-    bottom: 5px;
+    /* Sits on the bottom edge of the game (see --game-height in App.css), not of the window, so it stays on the
+       game when the window is taller than the game is */
+    position: fixed;
+    bottom: calc((100dvh - var(--game-height)) / 2 + 5px);
     left: 50%; 
     transform: translateX(-50%);
     display: flex;
@@ -249,28 +251,62 @@
     justify-content: space-between;
 }
 
-.scoreGroup {
+.collectionGroup {
     border-left: 1px solid rgba(255,255,255,0.3);
     padding-left: 16px;
     margin-left: 4px;
 }
 
-.scoreLabel {
-    opacity: 0.8;
+.collectionLabel {
+    opacity: 0.85;
     font-size: 12px !important;
 }
 
-.scoreValue {
+.collectionPips {
+    display: flex;
+    gap: 4px;
+}
+
+.collectionPip {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    background: transparent;
+    transition: background-color 300ms ease, border-color 300ms ease, transform 300ms ease;
+}
+
+.collectionPip.found {
+    background: #ffe3a3;
+    border-color: #ffe3a3;
+    transform: scale(1.15);
+}
+
+.collectionValue {
     font-size: 16px !important;
     font-weight: 700 !important;
     color: #fff;
-    min-width: 40px;
+    min-width: 30px;
     text-align: right;
+    animation: collectionPop 450ms ease-out;
+}
+
+.collectionGroup.complete .collectionValue {
+    color: #ffe3a3;
+}
+
+@keyframes collectionPop {
+    0% { transform: scale(1.6); color: #ffe3a3; }
+    100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .collectionValue { animation: none; }
 }
 
 .TimelineIndicator {
     position: absolute;
-    left: -1px; 
+    left: 0;
     width: 5px;
     height: 5px;
     border-radius: 100%;
@@ -279,5 +315,5 @@
     border-width: 1px;
     border-color: aliceblue;
     border-style: solid;
-    transition: transform 0.4s ease;
+    transition: left 0.4s ease;
 }

@@ -153,3 +153,68 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0);
   }
 }
+/* The three numbers that sum the game up, above the charts */
+.SimEndSummary {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0 6px;
+    font-family: 'Poppins', sans-serif;
+    color: #FFFFFF;
+}
+
+.SimEndSummary > div {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(11, 46, 58, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.SimEndSummary > div.good {
+    border-color: #ffe3a3;
+}
+
+.SimEndSummary > div.good dd {
+    color: #ffe3a3;
+}
+
+.SimEndSummary dt {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.SimEndSummary dd {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.SimEndSummary small {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.85;
+}
+
+.SimEndLegend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    color: #FFFFFF;
+}
+
+.SimEndLegendSwatch {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    background: rgba(255, 122, 89, 0.6);
+}
+
+.SimEndPopUpChartButton.selected {
+    background-color: #FFFFFF;
+    color: #086b7a;
+}

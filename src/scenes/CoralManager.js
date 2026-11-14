@@ -1,194 +1,74 @@
 import Phaser from "phaser";
 import { asset } from "../assetUrl";
+import { YEAR_DURATION_MS, SUMMER_DURATION_MS, WINTER_DURATION_MS } from "./gameConfig.js";
 
-/*  
-Metadata for each coral type. 
-    Append by adding new coral objects here, 
-    and make sure to add corresponding images 
-    in the assets folder and load them in 
-    Preloader.js
+/*
+The kinds of coral on the reef. Each kind has one description and several drawings (variants), so a patch of
+the same kind doesn't look copied and pasted.
 
-    Any corals added here will be randomly generated in the scene, and will be affected by stress updates.
+To add a drawing: put the full-size art in assets-src/corals, run scripts/build-art.py, load it in Preloader.js
+and add its key to the kind's variants. To add a kind: add an entry here. Every kind is a collectable (see
+collectCoral below), and the reef is always planted with at least one patch of each.
+
+bleachRate is how fast the kind takes on stress, as a percentage of the reef's own rate.
+sway is how far it leans in the current, in degrees.
 */
-
-var coralTypes = { 
-  columnar1: {
-    key: 'Columnar-1',
+export const CORAL_KINDS = {
+  columnar: {
     name: 'Columnar',
     scientificName: 'Dendrogyra cylindrus',
-    status: 'Healthy',
     info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
     imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
     bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+    sway: 0.45,
+    variants: ['Columnar-1', 'Columnar-2', 'Columnar-3', 'Columnar-4'],
   },
-  columnar2: {
-    key: 'Columnar-2',
-    name: 'Columnar',
-    scientificName: 'Dendrogyra cylindrus',
-    status: 'Healthy',
-    info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  columnar3: {
-    key: 'Columnar-3',
-    name: 'Columnar',
-    scientificName: 'Dendrogyra cylindrus',
-    status: 'Healthy',
-    info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  columnar4: {
-    key: 'Columnar-4',
-    name: 'Columnar',
-    scientificName: 'Dendrogyra cylindrus',
-    status: 'Healthy',
-    info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  digitate1: {
-    key: 'Digitate-1',
+  digitate: {
     name: 'Digitate',
-    scientificName: "Acropora digitifera",
-    status: 'Healthy',
+    scientificName: 'Acropora digitifera',
     info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
     imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
     bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+    sway: 2.25,
+    variants: ['Digitate-1', 'Digitate-2', 'Digitate-3', 'Digitate-4'],
   },
-  digitate2: {
-    key: 'Digitate-2',
-    name: 'Digitate',
-    scientificName: "Acropora digitifera",
-    status: 'Healthy',
-    info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  digitate3: {
-    key: 'Digitate-3',
-    name: 'Digitate',
-    scientificName: "Acropora digitifera",
-    status: 'Healthy',
-    info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  digitate4: {
-    key: 'Digitate-4',
-    name: 'Digitate',
-    scientificName: "Acropora digitifera",
-    status: 'Healthy',
-    info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  folios1: {
-    key: 'Folios-1',
-    name: 'Folios',
-    scientificName: "Montipora foliosa",
-    status: 'Healthy',
+  folios: {
+    name: 'Foliose',
+    scientificName: 'Montipora foliosa',
     info: 'Montipora foliosa grows in broad, thin plates that spread outward and can overlap in tiers. This flattened, leaf-like growth form sets it apart from corals that build upright branches.',
     imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
     bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+    sway: 1.25,
+    variants: ['Folios-1', 'Folios-2'],
   },
-  folios2: {
-    key: 'Folios-2',
-    name: 'Folios',
-    scientificName: "Montipora foliosa",
-    status: 'Healthy',
-    info: 'Montipora foliosa grows in broad, thin plates that spread outward and can overlap in tiers. This flattened, leaf-like growth form sets it apart from corals that build upright branches.',
-    imgType: 'branch',
-    img: asset('microscopes/healthy_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  tabular1: {
-    key: 'Tabular-1',
+  tabular: {
     name: 'Tabular',
-    scientificName: "Acropora clathrata",
-    status: 'Healthy',
+    scientificName: 'Acropora clathrata',
     info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
     imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
     bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+    sway: 0.45,
+    variants: ['Tabular-1', 'Tabular-2', 'Tabular-3'],
   },
-  tabular2: {
-    key: 'Tabular-2',
-    name: 'Tabular',
-    scientificName: "Acropora clathrata",
-    status: 'Healthy',
-    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
-    imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  tabular3: {
-    key: 'Tabular-3',
-    name: 'Tabular',
-    scientificName: "Acropora clathrata",
-    status: 'Healthy',
-    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
-    imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  flatTabular1: {
-    key: 'Flat-Tabular-1',
+  flatTabular: {
     name: 'Flat Tabular',
-    scientificName: "Acropora clathrata",
-    status: 'Healthy',
+    scientificName: 'Acropora clathrata',
     info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
     imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
     bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  flatTabular2: {
-    key: 'Flat-Tabular-2',
-    name: 'Flat Tabular',
-    scientificName: "Acropora clathrata",
-    status: 'Healthy',
-    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
-    imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
-  },
-  flatTabular3: {
-    key: 'Flat-Tabular-3',
-    name: 'Flat Tabular',
-    scientificName: "Acropora clathrata",
-    status: 'Healthy',
-    info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
-    imgType: 'tabular',
-    img: asset('microscopes/healthy_tabular_microscope.png'),
-    bleachRate: 100,
-    generatedStages: null // placeholder for generated bleach stages, which will be created in Preloader.js
+    sway: 0.45,
+    variants: ['Flat-Tabular-1', 'Flat-Tabular-2', 'Flat-Tabular-3'],
   },
 };
+export const CORAL_KIND_IDS = Object.keys(CORAL_KINDS);
+
+// One entry per drawing, named after its kind: columnar1, columnar2, ... flatTabular3
+const coralTypes = {};
+for (const [kindId, kind] of Object.entries(CORAL_KINDS)) {
+  kind.variants.forEach((key, i) => {
+    coralTypes[`${kindId}${i + 1}`] = { ...kind, key, kind: kindId, generatedStages: null }; // the bleach stages are made when first needed
+  });
+}
 
 const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead']; // forwarded to React frontend for display
 export const BLEACH_STAGE_COUNT = 10;
@@ -228,32 +108,30 @@ export function getCoralInfo(typeName, stress, dead = false) {
 
 // z levels for corals, which determine their y position and rendering depth in the scene
 const depthLevels = [-10, 120, 180];
-const coralSwayAngles = {
-  Columnar: 0.45,
-  Digitate: 2.25,
-  Folios: 1.25,
-  Tabular: 0.45,
-  "Flat Tabular": 0.45,
-};
-
 
 /* main function to create coral instances in the scene. Called when game scene is created. */
 export function createCorals(scene) {
     scene.corals = [];
+    scene.coralCullX = undefined;
 
   const sandbarWidth = 800; // create a sandbar with a width of 800 pixels
   const coralClearance = 100 // half of the max coral width so it doesnt grow on the sandbar
   const sandbarStart = (scene.WORLD_WIDTH - sandbarWidth) / 2; // where the sandbar begins
   const sandbarEnd = sandbarStart + sandbarWidth;
 
-  createCoralGroup(scene, 100, coralClearance, sandbarStart - coralClearance);
-  createCoralGroup(scene, 100, sandbarEnd + coralClearance, scene.WORLD_WIDTH - coralClearance);
-  // createCoralGroup(scene, 30); // create 30 corals
+  // One drawing of every kind is handed out between the two reefs, so the whole collection can always be found
+  const oneOfEachKind = Phaser.Utils.Array.Shuffle(
+    Object.values(CORAL_KINDS).map(kind => Phaser.Utils.Array.GetRandom(kind.variants))
+  );
+  const half = Math.ceil(oneOfEachKind.length / 2);
+
+  createCoralGroup(scene, 100, coralClearance, sandbarStart - coralClearance, oneOfEachKind.slice(0, half));
+  createCoralGroup(scene, 100, sandbarEnd + coralClearance, scene.WORLD_WIDTH - coralClearance, oneOfEachKind.slice(half));
 }
 
 /* helper function to create a group of coral instances with random types and positions. */
-function createCoralGroup(scene, count, minX, maxX) {
-  const spawns = createCoralSpawnPlan(count, minX, maxX);
+function createCoralGroup(scene, count, minX, maxX, requiredImages) {
+  const spawns = createCoralSpawnPlan(count, minX, maxX, requiredImages);
 
   for (const spawn of spawns) {
     const { x, yOffset, typeName, depth } = spawn;
@@ -268,6 +146,8 @@ function createCoralGroup(scene, count, minX, maxX) {
       .setOrigin(0.5, 1)
       .setDepth(7 - depth);
 
+    // The art in public/assets/corals is 1.5x this size (see scripts/build-art.py), so there's detail to spare
+    // when a coral pulses or the camera zooms in on the nest
     const coralScale = Math.min(200 / coral.width, 170 / coral.height, 1);
     coral.setScale(coralScale);
     coral.baseScale = coralScale;
@@ -285,10 +165,7 @@ function createCoralGroup(scene, count, minX, maxX) {
     coral.bleachRate = type.bleachRate;
     coral.stress = 0;
     coral.bleachStage = 0;
-    coral.statusStage = 0;
-    coral.status = coralStatuses[0];
     coral.dead = false;
-    coral.img = type.imgType === 'branch' ? coralImgPathsBranch[0] : coralImgPathsTabular[0];
 
     coral.on('pointerover', () => { // hover effect
       coral.setTint(0xffcc88);
@@ -314,47 +191,28 @@ function createCoralGroup(scene, count, minX, maxX) {
       coral.setScale(coral.baseScale); // stopping the pulse mid-way leaves the coral at whatever size it had reached
     });
 
-    coral.on('pointerdown', () => { // on click: send coral info to React frontend for info popup
-      if(scene.bubbleCollision || !scene.tutorialComplete || scene.simEnd){return}
+    coral.on('pointerdown', () => { // on click: open the coral's info popup, and add its kind to the collection
+      if (!scene.tutorialComplete || scene.simEnd || scene.coralInfoOpen) return;
 
       scene.coralInfoOpen = true;
-      scene.score += 10;
-      scene.emitStats();
+      const collection = collectCoral(scene, coral);
 
-      const plusText = scene.add.text(coral.x, coral.y - coral.height * 0.5, '+10', {
-        fontSize: '28px',
-        fontFamily: 'Poppins, sans-serif',
-        fontStyle: 'bold',
-        color: '#ffffff',
-        stroke: '#005566',
-        strokeThickness: 4
-      }).setOrigin(0.5, 1).setDepth(20);
-
-      scene.tweens.add({
-        targets: plusText,
-        y: plusText.y - 60,
-        alpha: 0,
-        duration: 900,
-        ease: 'Cubic.out',
-        onComplete: () => plusText.destroy()
-      });
-
-      scene.game.events.emit('coralInfo', {
-        name: type.name,
-        scientificName: type.scientificName,
-        status: coral.status,
-        info: type.info,
-        img: coral.img
-      });
+      const { name, scientificName, status, info, img } = getCoralInfo(coral.type, coral.stress, coral.dead);
+      scene.game.events.emit('coralInfo', { name, scientificName, status, info, img, collection });
     });
 
+    // Each coral leans back and forth at its own pace (see swayCorals)
+    coral.swayAngle = Phaser.Math.FloatBetween(type.sway * 0.7, type.sway * 1.3);
+    coral.swaySpeed = Math.PI / Phaser.Math.Between(4000, 6000); // radians per ms: one lean each way every 8 to 12 seconds
+    coral.swayPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+
     scene.corals.push(coral);
-    coralSway(scene, coral, coralSwayAngles[type.name]);
   }
 }
 
 // Helper function to seperate the coral types when spawning them in.
-function createCoralSpawnPlan(count, minX, maxX) {
+// The first patches are made of requiredImages, one patch each; the rest are random.
+function createCoralSpawnPlan(count, minX, maxX, requiredImages = []) {
   // --- Lookup: image key -> coral type names that use that image ---
   const typeNamesByImage = {};
   for (const [typeName, type] of Object.entries(coralTypes)) {
@@ -414,7 +272,7 @@ function createCoralSpawnPlan(count, minX, maxX) {
     const baseDepth = Phaser.Math.Between(0, maxDepth);
     const maxRadius = 25 + patchSize * 7; // bigger patches may spread wider
  
-    const imageKey = Phaser.Utils.Array.GetRandom(imageKeys);
+    const imageKey = requiredImages[patchIndex] ?? Phaser.Utils.Array.GetRandom(imageKeys);
     const colonies = [{ x: center, y: baseY, depth: baseDepth }];
  
     for (let i = 1; i < patchSize; i++) {
@@ -465,19 +323,75 @@ function createCoralSpawnPlan(count, minX, maxX) {
   return spawns;
 }
 
-/* animate corals */
-function coralSway(scene, coral, maxAngle) {
-  const swayAngle = Phaser.Math.FloatBetween(maxAngle * 0.7, maxAngle * 1.3);
+// Adds the coral's kind to the player's collection the first time one of that kind is opened, with a little
+// "New coral!" over the coral. Returns what the popup needs to show: { kind, isNew, collected, total }.
+function collectCoral(scene, coral) {
+  const { kind } = coralTypes[coral.type];
+  const isNew = !scene.collectedCorals.has(kind);
+  const total = CORAL_KIND_IDS.length;
 
-  scene.tweens.add({
-    targets: coral,
-    angle: { from: -swayAngle, to: swayAngle },
-    duration: Phaser.Math.Between(4000, 6000),
-    delay: Phaser.Math.Between(0, 2500),
-    yoyo: true,
-    repeat: -1,
-    ease: 'sine.inOut'
-  });
+  if (isNew) {
+    scene.collectedCorals.add(kind);
+    scene.emitStats();
+
+    const text = scene.add.text(coral.x, coral.y - coral.displayHeight, `New coral! ${scene.collectedCorals.size}/${total}`, {
+      fontSize: '26px',
+      fontFamily: 'Poppins, sans-serif',
+      fontStyle: 'bold',
+      color: '#ffe3a3',
+      stroke: '#0b2e3a',
+      strokeThickness: 5
+    }).setOrigin(0.5, 1).setDepth(20);
+
+    scene.tweens.add({
+      targets: text,
+      y: text.y - 60,
+      alpha: 0,
+      duration: 1400,
+      ease: 'Cubic.out',
+      onComplete: () => text.destroy()
+    });
+  }
+
+  if (isNew && scene.collectedCorals.size === total) {
+    scene.game.events.emit('random-event', {
+      title: 'Collection Complete',
+      message: `You've found all ${total} kinds of coral on your reef. Now keep them alive!`,
+      good: true,
+    });
+  }
+
+  return { kind, isNew, collected: scene.collectedCorals.size, total };
+}
+
+// Leans every coral on screen back and forth. One sine each per frame, in place of 200 tweens that ran whether
+// or not their coral could be seen. Uses the scene's clock, so the reef holds still while the game is paused.
+export function swayCorals(scene) {
+  const now = scene.time.now;
+  for (const coral of scene.corals) {
+    if (coral.visible) coral.angle = Math.sin(now * coral.swaySpeed + coral.swayPhase) * coral.swayAngle;
+  }
+}
+
+const CULL_MARGIN = 150; // a coral is at most 200 px wide and sways a little, so this keeps it drawn until it's well out of view
+const CULL_STEP = 64;    // how far the camera has to move before the corals are checked again
+
+// Phaser draws every image whether or not the camera can see it. Only about a quarter of the reef is on screen at
+// once, so corals out of view are hidden, which also skips their sway. Called every frame, but only does anything once
+// the view has moved by CULL_STEP.
+export function cullCorals(scene) {
+  // The camera only ever zooms in, which narrows the view, so its unzoomed width covers every case
+  const { scrollX, width } = scene.cameras.main;
+  if (scene.coralCullX !== undefined && Math.abs(scrollX - scene.coralCullX) < CULL_STEP) return;
+  scene.coralCullX = scrollX;
+
+  const left = scrollX - CULL_MARGIN - CULL_STEP;
+  const right = scrollX + width + CULL_MARGIN + CULL_STEP;
+  for (const coral of scene.corals) {
+    const inView = coral.x > left && coral.x < right;
+    if (inView === coral.visible) continue;
+    coral.setVisible(inView);
+  }
 }
 
 export function createBleachStages(scene, coralType) {
@@ -595,93 +509,51 @@ export function getBleachStage(stressAmount) {
   return Math.floor(Phaser.Math.Clamp(stressAmount, 0, 100) / 100 * BLEACH_STAGE_COUNT);
 }
 
-/* Apply the reef's stress change to each coral using its susceptibility percentage. */
+/* Apply the reef's stress change to each coral using its susceptibility percentage. Called every frame. */
 export function updateCoralStress(scene, stressDelta, deltaMs = 0) {
-  scene.corals.forEach(coral => {
-    if (!coral.dead) {
-      let scaledDelta;
-      if (stressDelta > 0) {
-        scaledDelta = stressDelta * coral.bleachRate / 100;
-      } else if (scene.season === "winter") {
-        const winterProgress = Phaser.Math.Clamp(
-          ((scene.elapsedSimMs % 60_000) - 30_000) / 30_000,
-          0,
-          1
-        );
-        const remainingWinterFraction = Math.max(1 - winterProgress, 0.001);
-        scaledDelta = -coral.stress / remainingWinterFraction * deltaMs / 30_000;
-      } else {
-        scaledDelta = stressDelta;
-      }
-      coral.stress = Phaser.Math.Clamp(coral.stress + scaledDelta, 0, 100);
-      if (coral.stress >= 100) coral.dead = true;
-    }
-  });
-  refreshCoralStress(scene);
+  // Winter brings every living coral back to zero stress by the end of the season, however stressed it was
+  let winterRecovery = 0;
+  if (stressDelta <= 0 && scene.season === "winter") {
+    const winterProgress = Phaser.Math.Clamp(((scene.elapsedSimMs % YEAR_DURATION_MS) - SUMMER_DURATION_MS) / WINTER_DURATION_MS, 0, 1);
+    winterRecovery = deltaMs / WINTER_DURATION_MS / Math.max(1 - winterProgress, 0.001);
+  }
+
+  for (const coral of scene.corals) {
+    if (coral.dead) continue;
+
+    let scaledDelta;
+    if (stressDelta > 0) scaledDelta = stressDelta * coral.bleachRate / 100;
+    else if (scene.season === "winter") scaledDelta = -coral.stress * winterRecovery;
+    else scaledDelta = stressDelta;
+
+    coral.stress = Phaser.Math.Clamp(coral.stress + scaledDelta, 0, 100);
+    if (coral.stress >= 100) coral.dead = true;
+    showBleachStage(coral);
+  }
 }
 
-export function refreshCoralStress(scene) {
-  scene.corals.forEach(coral => {
-    const type = coralTypes[coral.type];
-    const { statusStage, status, img } = getCoralInfo(coral.type, coral.stress, coral.dead);
-    const bleachStage = getBleachStage(coral.stress);
+// Swaps the coral's texture when its stress crosses into another bleach stage, and not otherwise
+function showBleachStage(coral) {
+  const bleachStage = getBleachStage(coral.stress);
+  if (coral.bleachStage === bleachStage) return;
 
-    coral.statusStage = statusStage;
-    coral.status = status;
-    coral.img = img;
-
-    if (coral.bleachStage !== bleachStage) {
-      coral.bleachStage = bleachStage;
-      if (type.generatedStages) {
-        coral.setTexture(type.generatedStages[bleachStage]);
-      } else {
-        coral.setFrame(statusStage);
-      }
-    }
-  });
-}
-
-export function recoverLivingCorals(scene) {
-  scene.corals.forEach(coral => {
-    if (!coral.dead) {
-      coral.stress = 0;
-      coral.bleachStage = 0;
-      coral.statusStage = 0;
-      coral.status = coralStatuses[0];
-      const type = coralTypes[coral.type];
-      if (type.generatedStages) {
-        coral.setTexture(type.generatedStages[0]);
-      } else {
-        coral.setFrame(0);
-      }
-    }
-  });
-  refreshCoralStress(scene);
+  coral.bleachStage = bleachStage;
+  coral.setTexture(coralTypes[coral.type].generatedStages[bleachStage]);
 }
 
 export function killCorals(scene) {
   scene.corals.forEach(coral => {
     coral.stress = 100;
     coral.dead = true;
+    showBleachStage(coral);
   });
-  refreshCoralStress(scene);
 }
 
 /* helper function to reset coral states. Called when game is reset. */
 export function resetCorals(scene) {
   scene.corals.forEach(coral => {
     coral.stress = 0;
-    coral.bleachStage = 0;
-    coral.statusStage = 0;
-    coral.status = coralStatuses[0];
     coral.dead = false;
-    const type = coralTypes[coral.type];
-    coral.img = type.imgType === 'branch' ? coralImgPathsBranch[0] : coralImgPathsTabular[0];
-
-    if (type.generatedStages) {
-      coral.setTexture(type.generatedStages[0]);
-    } else {
-      coral.setFrame(0);
-    }
+    showBleachStage(coral);
   });
 }

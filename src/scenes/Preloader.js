@@ -7,6 +7,8 @@ export class Preloader extends Phaser.Scene {
 
 init() {
   const { width, height } = this.scale;
+  this.failedFiles = [];
+  this.loadingDone = false;
 
   this.add.rectangle(width / 2, height / 2, 468, 32).setStrokeStyle(2, 0xffffff);
 
@@ -25,28 +27,43 @@ init() {
     this.actualProgress = progress;
   });
 
+  // Phaser tries a file three times before giving up on it and reporting it here. Without this the game would
+  // start anyway, with black boxes where the missing pictures should be.
+  this.load.on('loaderror', (file) => {
+    this.failedFiles.push(file.key);
+  });
+
   this.load.on('complete', () => {
-    this.loadingDone = true;
+    if (this.failedFiles.length === 0) {
+      this.loadingDone = true;
+    } else {
+      // React shows a message with a Reload button (GameProblem in TestGame.jsx)
+      console.error("Could not load:", this.failedFiles.join(", "));
+      this.game.events.emit("game-problem", "load");
+    }
   });
 }
 
 /* 
 The update function is called every frame. 
-It smoothly animates the progress bar by interpolating between the current displayProgress and the actualProgress. 
-- Transitions to the game when complete.
+It moves the progress bar smoothly towards how much has loaded, at the same pace whatever the frame rate.
+- Transitions to the game as soon as loading is complete and the player has pressed Start.
 */
-update() {
-  this.displayProgress = Phaser.Math.Linear(
-    this.displayProgress,
-    this.actualProgress,
-    0.08
-  );
-
+update(time, delta) {
+  const ease = 1 - Math.pow(1 - 0.08, Math.min(delta, 50) / (1000 / 60));
+  this.displayProgress = Phaser.Math.Linear(this.displayProgress, this.actualProgress, ease);
   this.bar.width = 460 * this.displayProgress;
 
-          if (this.loadingDone && this.displayProgress > 0.95) {
-        this.scene.start('Tutorial');
-        }
+  if (!this.loadingDone) return;
+
+  // The game starts loading behind the title screen. If it finishes before the player presses Start, stop
+  // drawing frames until they do (TestGame.jsx wakes the loop), then go straight in.
+  if (!this.registry.get('started')) {
+    this.game.loop.sleep();
+    return;
+  }
+
+  this.scene.start('Tutorial');
 }
 
 /*
@@ -65,9 +82,6 @@ preload() {
         this.load.svg("heartFull", "health/heart_full.svg", { width: 33, height: 30 });
         this.load.svg("heartHalf", "health/heart_half.svg", { width: 33, height: 30 });
         this.load.svg("heartDead", "health/heart_dead.svg", { width: 33, height: 30 });
-
-        // the old algae orb food, no longer used now that the fish eats shellfish (see the shell images below)
-        this.load.svg("algaeOrb", "food/algae_orb.svg", { width: 30, height: 30 });
 
         // triggerfish home building: glowing pieces to collect, and the nest crater they go in
         // (pixel art, so sizes are whole multiples of the SVG grid to keep the pixels crisp)
@@ -91,14 +105,7 @@ preload() {
         this.load.image("mulberryDrupe", "shells/mulberry_drupe.png");
 
         // corals
-        this.load.spritesheet("acropora", "corals/acropora.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("acropora1", "corals/acropora1.png", { frameWidth: 186, frameHeight: 106 });
-        this.load.spritesheet("acropora2", "corals/acropora2.png", { frameWidth: 190.66, frameHeight: 81.52 });
-        this.load.spritesheet("acropora3", "corals/acropora3.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("montipora", "corals/montipora.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("staghorn1", "corals/staghorn1.png", { frameWidth: 180, frameHeight: 190 });
-        this.load.spritesheet("staghorn2", "corals/staghorn2.png", { frameWidth: 180, frameHeight: 190 });
-
+        // made from the full-size art in assets-src/corals by scripts/build-art.py
         this.load.image("Columnar-1", "corals/Columnar-1.png");
         this.load.image("Columnar-2", "corals/Columnar-2.png");
         this.load.image("Columnar-3", "corals/Columnar-3.png");
@@ -107,7 +114,6 @@ preload() {
         this.load.image("Digitate-2", "corals/Digitate-2.png");
         this.load.image("Digitate-3", "corals/Digitate-3.png");
         this.load.image("Digitate-4", "corals/Digitate-4.png");
-        this.load.image("Digitate-5", "corals/Digitate-5.png");
         this.load.image("Flat-Tabular-1", "corals/Flat-Tabular-1.png");
         this.load.image("Flat-Tabular-2", "corals/Flat-Tabular-2.png");
         this.load.image("Flat-Tabular-3", "corals/Flat-Tabular-3.png");
@@ -128,30 +134,13 @@ preload() {
 
         this.load.spritesheet("pipe", "background/sewage_spritesheet.png", { frameWidth: 577.93, frameHeight: 267.17 })
 
-        // audio
+        // sound effects
         this.load.audio('bubblePop', ['audio/BubblePOP.mp3']);
         this.load.audio('foodCrunch', ['audio/FoodCrunch.mp3']);
         this.load.audio('nestPiece', ['audio/NestPiece.mp3']);
         this.load.audio('bleachingWarning', ['audio/BleachingWarning.wav']);
-        this.load.audio('background_music', ['audio/Background.mp3']);
-
-        // Ocean Sounds mode (see OceanSounds.js). Ogg first for the loops: it loops without a gap, and Safari falls back to the mp3
-        this.load.audio('oceanReefHealthy', ['audio/ocean/reef_healthy.ogg', 'audio/ocean/reef_healthy.mp3']);
-        this.load.audio('oceanReefDegraded', ['audio/ocean/reef_degraded.ogg', 'audio/ocean/reef_degraded.mp3']);
-        this.load.audio('oceanWaves', ['audio/ocean/surface_waves.ogg', 'audio/ocean/surface_waves.mp3']);
-        this.load.audio('fishDuck', ['audio/ocean/fish_duck.mp3']);
-        this.load.audio('fishFalling', ['audio/ocean/fish_falling.mp3']);
-        this.load.audio('fishFlutey', ['audio/ocean/fish_flutey.mp3']);
-        this.load.audio('fishLow', ['audio/ocean/fish_low.mp3']);
-        this.load.audio('fishPurr', ['audio/ocean/fish_purr.mp3']);
-        this.load.audio('fishPurrs', ['audio/ocean/fish_purrs.mp3']);
-        this.load.audio('fishPulses', ['audio/ocean/fish_pulses.mp3']);
-        this.load.audio('fishShrill', ['audio/ocean/fish_shrill.mp3']);
-        this.load.audio('fishWoop', ['audio/ocean/fish_woop.mp3']);
-        this.load.audio('triggerfishPicasso', ['audio/ocean/triggerfish_picasso.mp3']);
-        this.load.audio('triggerfishWedge', ['audio/ocean/triggerfish_wedge.mp3']);
-        this.load.audio('triggerfishOrange', ['audio/ocean/triggerfish_orange.mp3']);
-        this.load.audio('whaleWhoop', ['audio/ocean/whale_whoop.mp3']);
+        // The music is streamed (MusicPlayer.js) and the Ocean Sounds recordings load when that mode is turned on
+        // (OceanSounds.js), so only the short sound effects are loaded and decoded here.
     }
 
     create() {
