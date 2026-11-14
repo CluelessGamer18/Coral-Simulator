@@ -2,51 +2,55 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import './styles/App.css'
 
-// The game's and the end screen's styles stay in the main stylesheet, in the order they've always had, so that
-// loading those components later (see below) doesn't change which rule wins where stylesheets overlap
+// The game's styles stay in the main stylesheet, so that loading its components later (see below) doesn't
+// change which rule wins where stylesheets overlap
 import './styles/TestScene.css'
 import './styles/CoralPopup.css'
 import './styles/TutorialBanner.css'
 import TitleScreen from "./TitleScreen/TitleScreen.jsx"
 import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
-import { LiveSimInfoDisplay } from './SimInfoDisplay.jsx'
-import './styles/SimEndPopUp.css'
+import { LiveHud } from './Hud.jsx'
 import Notices from './Notices.jsx'
 import GoalReminder from './GoalReminder.jsx'
+import TouchControls from './TouchControls.jsx'
 
 import { Routes, Route, useLocation, useNavigate } from 'react-router'
 import About from './About.jsx'
-import { asset } from './assetUrl';
 import { loadControlScheme, saveControlScheme } from './controlScheme';
 import { loadOceanSounds, saveOceanSounds } from './oceanSoundsSetting';
 import { loadAudioSettings, saveAudioSettings } from './audioSettings';
+import { getSettings, saveSettings, loadBest, saveBest, TEXT_SIZES } from './settings';
+import { getStars } from './reportGrade';
 
 // Phaser and every scene (about 340 KB gzipped) and Chart.js are fetched separately, so the title screen doesn't
 // have to wait for them. The game is fetched as soon as the title is up; the charts when a game ends.
 const loadGame = () => import('./TestGame.jsx');
 const TestGame = lazy(loadGame);
-const SimEndPopUp = lazy(() => import('./SimEndPopUp.jsx'));
+const loadReportCard = () => import('./ReportCard.jsx');
+const ReportCard = lazy(loadReportCard);
 
 const MAX_TOASTS = 3;
+const LOG_LENGTH = 3;
 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isAboutPage = location.pathname === "/about";
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
-  const inTutorial = scene?.scene.key === "Tutorial"; // the tutorial scene only shares the settings button with the main game
-  // The numbers that change all through a game go straight to the HUD (LiveSimInfoDisplay), so this component,
+  const inTutorial = scene?.scene.key === "Tutorial";
+  // The numbers that change all through a game go straight to the HUD (LiveHud), so this component,
   // and everything under it, is only drawn again when something here changes: a notice, a menu, the game ending.
   const [simEnd, setSimEnd] = useState(false);
-  const [result, setResult] = useState(null); // the scene's last stats, for the end screen
+  const [result, setResult] = useState(null); // the scene's last stats, for the report card
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
   const [hasStartedGame, setHasStartedGame] = useState(false);
+  const [playTutorial, setPlayTutorial] = useState(false); // "Play tutorial" was chosen for the first start
   // The game is put on the page, hidden, while the title screen is still showing, so its code and assets download
   // while the player reads the title. It waits on its loading scene until Start is pressed (hasStartedGame).
   const [gameMounted, setGameMounted] = useState(false);
 
-  // Saved in the browser, like the two settings below (audioSettings.js)
+  // Saved in the browser, like the settings below (audioSettings.js)
   const [savedAudio] = useState(loadAudioSettings);
   const [musicVolume, setMusicVolume] = useState(savedAudio.musicVolume);
   const [sfxVolume, setSfxVolume] = useState(savedAudio.sfxVolume);
@@ -55,17 +59,21 @@ function App() {
   const [showOptions, setShowOptions] = useState(false);
   const [controlScheme, setControlScheme] = useState(loadControlScheme);
   const [oceanSounds, setOceanSounds] = useState(loadOceanSounds);
+  const [settings, setSettings] = useState(() => ({ ...getSettings() })); // accessibility and pace (settings.js)
+  const [best, setBest] = useState(loadBest);
 
   // Notices come in two lanes (see Notices.jsx). banners[0] is the one showing; the rest wait their turn.
+  // The last few of either kind are kept for the HUD's Log card.
   const [banners, setBanners] = useState([]);
   const [toasts, setToasts] = useState([]);
+  const [log, setLog] = useState([]);
   const noticeCount = useRef(0);
   const [showGoal, setShowGoal] = useState(false);
 
   const skipSceneResume = useRef(false);
   const resumeAfterAbout = useRef(false);
   // Set by goToResources below, so the About page knows there's a game to go back to
-  const aboutBackLabel = location.state?.fromGame ? "Resume Game" : "Back to Title";
+  const aboutBackLabel = location.state?.fromGame ? "Back to the game" : "Back to title";
 
   const changeOceanSounds = (enabled) => {
     setOceanSounds(enabled);
@@ -77,9 +85,19 @@ function App() {
     saveControlScheme(scheme);
   };
 
+  // The scenes read the same saved settings when they need them (getSettings)
+  const changeSettings = useCallback((changes) => setSettings({ ...saveSettings(changes) }), []);
+
+  const allMuted = musicMuted && sfxMuted;
+  const toggleMute = useCallback(() => {
+    setMusicMuted(!allMuted);
+    setSfxMuted(!allMuted);
+  }, [allMuted]);
+
   const clearNotices = () => {
     setBanners([]);
     setToasts([]);
+    setLog([]);
   };
 
   // A notice timed out, or the player clicked its Close button (which the tutorial's lessons wait for)
@@ -90,6 +108,14 @@ function App() {
   }, [scene]);
 
   const hideGoal = useCallback(() => setShowGoal(false), []);
+
+  // Text size, colours and motion apply to the whole page, so they go on the root element
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--text-scale", TEXT_SIZES[settings.textSize]);
+    root.classList.toggle("colour-blind", settings.colourBlind);
+    root.classList.toggle("reduce-motion", settings.reducedMotion);
+  }, [settings]);
 
   useEffect(() => {
     // Not on the About page, which may be all the visitor came for, or when they've asked the browser to save data
@@ -121,54 +147,63 @@ function App() {
     scene?.setControlScheme?.(controlScheme);
   }, [scene, controlScheme]);
 
-  // The scene sends "stats-changed" whenever one of these values changes, so React only updates when something happens
+  // The scene's events. "stats-changed" arrives four times a second, but only the game ending matters here.
   useEffect(() => {
     if (!scene) return;
 
     const events = scene.game.events; // kept so cleanup still works after the game is destroyed
     const onStats = (stats) => {
-      setSimEnd(stats.simEnd) // React skips the redraw when this hasn't changed, which is nearly always
-      // Nothing left over from the game should sit on top of the end screen
+      setSimEnd(Boolean(stats.simEnd)) // React skips the redraw when this hasn't changed, which is nearly always
+      // Nothing left over from the game should sit on top of the report card
       if (stats.simEnd) {
         setResult(stats);
         setBanners([]);
         setToasts([]);
         setShowGoal(false);
+        loadReportCard();
+        // The best result is kept for the title screen
+        if (stats.summary?.survived) {
+          const { coralsAlive, coralsTotal } = stats.summary;
+          saveBest({ alive: Math.round(coralsAlive / coralsTotal * 100), stars: getStars(stats.summary) });
+          setBest(loadBest());
+        }
       }
     };
 
     const nextKey = () => ++noticeCount.current;
+    const addToLog = ({ key, title, message }) => setLog((list) => [{ key, title, message }, ...list].slice(0, LOG_LENGTH));
 
     // Things that happen to the fish: stacked top right, newest last, the oldest dropped when there are too many
     const addToast = (notice) => {
       const toast = { ...notice, key: nextKey() };
       setToasts((list) => [...list, toast].slice(-MAX_TOASTS));
+      addToLog(toast);
     };
 
-    // The state of the reef: one banner at a time. The bleaching alert goes to the front of the queue, since it
-    // opens the summer the others are about. A notice with an id replaces the one with the same id, and a new
-    // plain warning replaces older plain warnings, which it has made out of date.
+    // The state of the reef: one banner at a time. The card that opens a year goes to the front of the queue,
+    // since the others are about the year it introduces. A notice with an id replaces the one with the same id.
     const onReefWarning = (notice) => {
       const banner = { ...notice, key: nextKey() };
       setBanners((list) => {
         const others = list.filter((old) => notice.id ? old.id !== notice.id : Boolean(old.id));
-        return notice.bleaching ? [banner, ...others] : [...others, banner];
+        return notice.card ? [banner, ...others.filter((old) => old.id !== "season")] : [...others, banner];
       });
+      addToLog(banner);
     };
 
     const onReefWarningCleared = (id) => {
-      setBanners((list) => list.filter((notice) => notice.id !== id));
+      setBanners((list) => list.filter((notice) => notice.id !== id || notice.card));
     };
 
     const onPredatorAppeared = () => addToast({
-      title: 'Predator Alert',
-      message: 'A predator has appeared in the reef! Press E at your nest to hide.',
+      title: 'Grouper!',
+      message: 'Hide in your nest: swim there and press E. Follow the arrow.',
       warning: true,
     });
 
     const onPredatorLeft = () => addToast({
       title: 'All Clear',
-      message: 'The predator has left. You can come out now!',
+      message: 'The grouper has gone. You can come out now.',
       good: true,
     });
 
@@ -220,37 +255,35 @@ function App() {
     keyboard.disableGlobalCapture();
 
     return () => {
-      // the keyboard has no manager once the game has been destroyed (Return to Title / Resources)
+      // the keyboard has no manager once the game has been destroyed
       if (keyboard.manager) keyboard.enableGlobalCapture();
     };
   }, [scene, keyboardDialogOpen]);
 
   useEffect(() => {
-    if (!scene || showTitleScreen || simEnd) return;
+    if (simEnd || isAboutPage) return;
 
     const handleKeyDown = (event) => {
       if (event.repeat) return;
 
       if (event.key === "Escape") {
-        setShowOptions((isOpen) => !isOpen);
+        // On the title screen Escape only closes the settings; in the game it pauses and resumes
+        setShowOptions((isOpen) => (showTitleScreen ? false : !isOpen));
         return;
       }
 
-      if (event.key.toLowerCase() !== "m") return;
+      if (event.key.toLowerCase() !== "m" || showTitleScreen) return;
       const target = event.target;
       if (
         target instanceof HTMLElement &&
         (target.isContentEditable || target.matches("input:not([type='range']), textarea, select"))
       ) return;
-
-      const muteAll = !(musicMuted && sfxMuted);
-      setMusicMuted(muteAll);
-      setSfxMuted(muteAll);
+      toggleMute();
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [scene, showTitleScreen, simEnd, musicMuted, sfxMuted]);
+  }, [showTitleScreen, simEnd, isAboutPage, toggleMute]);
 
   // Coming back from the Resources page carries on with the game that was paused to visit it
   useEffect(() => {
@@ -260,7 +293,7 @@ function App() {
     if (scene?.sys?.isPaused()) scene.scene.resume();
   }, [isAboutPage, scene]);
 
-  // Puts the React side back to a fresh sim. Return to Title preserves the scene; this is for a new game or leaving for Resources.
+  // Puts the React side back to a fresh game
   const resetSimState = () => {
     setSimEnd(false);
     setResult(null);
@@ -268,8 +301,8 @@ function App() {
     clearNotices();
   }
 
-  // "Play Again" on the end screen: the game keeps running, so restart the scene as well
-  const endSim = () => {
+  // "Play again" on the report card: the game keeps running, so restart the scene as well
+  const playAgain = () => {
     scene.RestartSim();
     resetSimState();
   }
@@ -294,12 +327,16 @@ function App() {
     setShowTitleScreen(false);
   }
 
-  const startNewGame = () => {
+  // Start goes to the tutorial the first time, and straight to the game once it has been done (Preloader.js
+  // makes the same choice when the game hasn't started yet)
+  const startNewGame = (withTutorial) => {
     resetSimState();
     setShowTitleScreen(false);
     if (scene) {
-      scene.scene.start("Tutorial");
+      if (withTutorial || !getSettings().tutorialDone) scene.scene.start("Tutorial");
+      else scene.scene.start("TestScene", { tutorialComplete: true });
     } else {
+      setPlayTutorial(withTutorial);
       setGameMounted(true);
       setHasStartedGame(true);
     }
@@ -307,12 +344,12 @@ function App() {
 
   const goToResources = () => {
     skipSceneResume.current = true;
-    resumeAfterAbout.current = true;
+    resumeAfterAbout.current = !simEnd;
     setShowOptions(false);
     navigate("/about#resources", { state: { fromGame: true } });
   }
 
-  // In the tutorial the notices sit under the banner, inside the game, however tall the banner is
+  // In the tutorial the notices sit under the banner, however tall the banner is
   const tutorialNoticeSlot = inTutorial ? document.getElementById("tutorialNoticeSlot") : null;
   const notices = <Notices banners={banners} toasts={toasts} inSlot={Boolean(tutorialNoticeSlot)} onClose={closeNotice} />;
   const playing = !showTitleScreen && scene;
@@ -322,22 +359,14 @@ function App() {
     <Routes>
       <Route path="/" element={
         <>
-        {playing && simEnd && result ? (
+        {playing && simEnd && result?.summary ? (
           <Suspense fallback={null}>
-            <SimEndPopUp
-              history={result.history}
-              corals={result.corals}
-              yearsElapsed={result.yearsElapsed}
-              onClose={endSim}
-              dead={result.reefDead}
-              fishDead={result.fishDead}
-            />
+            <ReportCard result={result} onPlayAgain={playAgain} onResources={goToResources} />
           </Suspense>) : null}
-        {!showTitleScreen ? (tutorialNoticeSlot ? createPortal(notices, tutorialNoticeSlot) : notices) : null}
-        {playing && showGoal && !simEnd ? <GoalReminder onDone={hideGoal} /> : null}
-        {playing && !inTutorial ? <LiveSimInfoDisplay scene={scene} /> : null}
         {showOptions ? <OptionsDialog
-          setShowOptions={setShowOptions}
+          inGame={Boolean(playing)}
+          inTutorial={inTutorial}
+          onClose={() => setShowOptions(false)}
           goToTutorial={goToTutorial}
           returnToTitle={returnToTitle}
           goToResources={goToResources}
@@ -353,11 +382,16 @@ function App() {
           setOceanSounds={changeOceanSounds}
           controlScheme={controlScheme}
           setControlScheme={changeControlScheme}
+          settings={settings}
+          changeSettings={changeSettings}
         /> : null}
         {showTitleScreen ? <TitleScreen
           hasExistingGame={hasStartedGame && !!scene}
-          onStartNewGame={startNewGame}
+          tutorialDone={settings.tutorialDone || getSettings().tutorialDone}
+          best={best}
+          onStart={startNewGame}
           onResume={resumeGame}
+          onOptions={() => setShowOptions(true)}
         /> : null}
 
         </>
@@ -371,15 +405,28 @@ function App() {
         style={{ visibility: isAboutPage || showTitleScreen ? "hidden" : "visible" }}
         aria-hidden={isAboutPage || showTitleScreen}
       >
-        {playing ? (
-          <button className="OptionsButtonIcon" aria-label="Open settings" onClick={() => setShowOptions(true)}>
-            <img src={asset("settings.svg")} alt="" width="45" height="45" />
-          </button>
-        ) : null}
-        <div className="GameContainer">
-          <Suspense fallback={<p className="GameLoading" role="status">Loading…</p>}>
-            <TestGame started={hasStartedGame} onSceneReady={setScene} />
-          </Suspense>
+        <div className="Stage">
+          {playing ? (
+            <LiveHud
+              key={scene.scene.key}
+              scene={scene}
+              inTutorial={inTutorial}
+              log={log}
+              controlScheme={controlScheme}
+              onOpenOptions={() => setShowOptions(true)}
+              muted={allMuted}
+              onToggleMute={toggleMute}
+              onSkipTutorial={() => scene.finish?.()}
+            />
+          ) : null}
+          <div className="GameContainer">
+            <Suspense fallback={<p className="GameLoading" role="status">Loading…</p>}>
+              <TestGame started={hasStartedGame} playTutorial={playTutorial} onSceneReady={setScene} />
+            </Suspense>
+            {playing && !isAboutPage ? (tutorialNoticeSlot ? createPortal(notices, tutorialNoticeSlot) : notices) : null}
+            {playing && showGoal && !simEnd ? <GoalReminder onDone={hideGoal} /> : null}
+            {playing && !simEnd ? <TouchControls scene={scene} always={settings.touchButtons} /> : null}
+          </div>
         </div>
       </main>
     ) : null}

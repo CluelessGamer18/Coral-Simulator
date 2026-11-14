@@ -1,0 +1,126 @@
+/* The end-of-game report card (ReportCard.jsx) */
+.ReportScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 11500;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 22, 28, 0.62);
+}
+
+.ReportCard {
+  box-sizing: border-box;
+  width: min(900px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 22px 28px 24px;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 227, 163, 0.6);
+  background: var(--abyss);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  animation: reportIn 0.4s ease;
+}
+
+@keyframes reportIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ReportHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ReportHeader h1 { margin: 0; font-size: var(--fs-title); font-weight: 800; color: var(--sand); }
+.ReportSub { margin: 2px 0 0; font-size: var(--fs-small); color: var(--ink-soft); }
+
+.ReportStars { text-align: center; white-space: nowrap; }
+.ReportStars span { font-size: 2.4rem; line-height: 1; color: rgba(255, 255, 255, 0.22); }
+.ReportStars span.on { color: var(--amber); }
+.ReportStars small { display: block; font-size: 0.72rem; color: var(--ink-soft); }
+
+.ReportNumbers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.ReportNumbers > div {
+  padding: 8px 12px 10px;
+  border-radius: 12px;
+  background: var(--deep);
+  border: 1px solid var(--line);
+}
+
+.ReportNumbers > div.good { border-color: var(--good); }
+.ReportNumbers dt { font-size: var(--fs-small); color: var(--ink-soft); }
+.ReportNumbers dd { margin: 0; font-size: var(--fs-title); font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.ReportNumbers dd small { font-size: 0.55em; font-weight: 600; color: var(--ink-soft); }
+.ReportNumbers span { font-size: 0.8rem; color: var(--ink-soft); }
+
+.ReportCharts {
+  padding: 12px 14px 8px;
+  border-radius: 12px;
+  background: var(--deep);
+  border: 1px solid var(--line);
+}
+
+.ReportCard h2 { margin: 0 0 6px; font-size: var(--fs-body); font-weight: 700; }
+.ReportCharts h3 { margin: 6px 0 0; font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); }
+
+.ReportLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.ReportLegend li { display: flex; align-items: center; gap: 6px; }
+.ReportLegend .line { width: 18px; height: 3px; border-radius: 2px; }
+.ReportLegend .dot { width: 11px; height: 11px; border-radius: 50%; }
+.ReportLegend .triangle { width: 0; height: 0; border: 6px solid transparent; border-top-width: 0; border-bottom-width: 11px; }
+.ReportLegend .band { width: 16px; height: 11px; border-radius: 2px; background: rgba(255, 138, 112, 0.4); }
+
+.ReportStory { margin-top: 14px; }
+.ReportStory p { margin: 0 0 6px; font-size: var(--fs-small); line-height: 1.5; }
+
+.ReportFact {
+  margin-top: 10px !important;
+  padding: 8px 12px;
+  border-left: 4px solid var(--sky);
+  border-radius: 6px;
+  background: var(--deep);
+  color: var(--ink-soft);
+}
+
+.ReportFact b { color: var(--ink); }
+
+.ReportActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.ReportShow {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 11500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 640px) {
+  .ReportNumbers { grid-template-columns: 1fr; }
+  .ReportHeader { flex-direction: column; align-items: flex-start; }
+}

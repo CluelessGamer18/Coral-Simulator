@@ -12,7 +12,7 @@ import ProblemScreen from './ProblemScreen.jsx';
 
 
 // started is false while the game is loading behind the title screen, and true once the player has pressed Start
-function TestGame({started, onSceneReady}){
+function TestGame({started, playTutorial, onSceneReady}){
     const sceneRef = useRef(null);
     const [selectedCoral, setSelectedCoral] = useState(null);
     const [tutorialStep, setTutorialStep] = useState(null);
@@ -35,8 +35,9 @@ function TestGame({started, onSceneReady}){
             height: 1024,
             parent: "phaserContainer",
             scene: [Boot,Preloader,Tutorial,TestScene],
-            backgroundColor: "#0292A5",
+            backgroundColor: "#0B2E3A",
             render: { powerPreference: "high-performance" }, // on laptops with two graphics chips, ask for the fast one
+            input: { activePointers: 3 }, // a finger to steer and another for an on-screen button
             scale: { mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.NO_CENTER, // .GameContainer is already the canvas's exact size (App.css)
                 
@@ -74,9 +75,10 @@ function TestGame({started, onSceneReady}){
     const sim = sceneRef.current;
     if (!sim) return;
 
+    sim.registry.set("playTutorial", playTutorial); // "Play tutorial" on the title screen, for a player who has done it before
     sim.registry.set("started", started);
     if (started) sim.loop.wake();
-  }, [started]);
+  }, [started, playTutorial]);
 
   // Listen for coral click to call popup
   useEffect(() => {

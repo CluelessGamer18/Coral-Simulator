@@ -1,4 +1,8 @@
 import Phaser from "phaser";
+import { prepareBleachStages } from "./CoralManager.js";
+import { getSettings } from "../settings.js";
+
+const BLEACH_PREP_MS_PER_FRAME = 10; // nothing else is happening on this screen, so it can take most of a frame
 
 export class Preloader extends Phaser.Scene {
     constructor() {
@@ -56,14 +60,32 @@ update(time, delta) {
 
   if (!this.loadingDone) return;
 
+  // Every coral's bleached versions take a second or two to make. Doing it here, a little each frame while the
+  // title screen is up, means neither the tutorial nor the game has to stop for it.
+  this.bleachStagePrep ??= prepareBleachStages(this);
+  if (!this.bleachStagesReady) {
+    const stopAt = performance.now() + BLEACH_PREP_MS_PER_FRAME;
+    do {
+      if (this.bleachStagePrep.next().done) {
+        this.bleachStagesReady = true;
+        break;
+      }
+    } while (performance.now() < stopAt);
+  }
+
   // The game starts loading behind the title screen. If it finishes before the player presses Start, stop
   // drawing frames until they do (TestGame.jsx wakes the loop), then go straight in.
   if (!this.registry.get('started')) {
-    this.game.loop.sleep();
+    if (this.bleachStagesReady) this.game.loop.sleep();
     return;
   }
 
-  this.scene.start('Tutorial');
+  // Players who have done the tutorial go straight to the game; the title screen can still send them to it
+  if (getSettings().tutorialDone && !this.registry.get('playTutorial')) {
+    this.scene.start('TestScene', { tutorialComplete: true });
+  } else {
+    this.scene.start('Tutorial');
+  }
 }
 
 /*
@@ -129,8 +151,6 @@ preload() {
         this.load.image("floor_layer2", "background/middleground_2072x691.png")
         this.load.image("floor_layer3", "background/farground_1440x804.png")
         this.load.image("surface", "background/surface_1440x155.png")
-
-        this.load.image("badOutline", "background/endangeredCoralOutline.png")
 
         this.load.spritesheet("pipe", "background/sewage_spritesheet.png", { frameWidth: 577.93, frameHeight: 267.17 })
 

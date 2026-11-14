@@ -1,0 +1,443 @@
+/* The rails, the narrow-window bar, and the cards in them (Hud.jsx). Sizes are in em, from --hud-font (App.css),
+   so the HUD scales with the game. */
+.Rail {
+  box-sizing: border-box;
+  width: var(--rail-width);
+  height: var(--game-height);
+  padding: 0.6em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  font-size: var(--hud-font);
+  color: var(--ink);
+  background: var(--abyss);
+  position: relative;
+  z-index: 50; /* its explanations open over the edge of the game */
+}
+
+.RailLeft { grid-area: left; }
+.RailRight { grid-area: right; }
+
+.TopBar {
+  grid-area: bar;
+  display: none;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0 0.7em;
+  font-size: var(--hud-font);
+  background: var(--abyss);
+  color: var(--ink);
+  position: relative;
+  z-index: 50;
+}
+
+@media (max-aspect-ratio: 33/20), (max-width: 1040px) {
+  .Rail { display: none; }
+  .TopBar { display: flex; }
+}
+
+.HudButtons {
+  display: flex;
+  gap: 0.5em;
+}
+
+.HudIconButton {
+  display: grid;
+  place-items: center;
+  width: 2.75em;
+  height: 2.75em;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.8em;
+  background: var(--lagoon);
+  color: var(--ink);
+  font-size: inherit;
+}
+
+.HudIconButton:hover { background: var(--lagoon-light); }
+.HudIconButton img, .HudIconButton svg { width: 1.6em; height: 1.6em; }
+.HudIconButton[aria-pressed="true"] { background: var(--deep); color: var(--amber); }
+
+.HudCard {
+  position: relative;
+  padding: 0.55em 0.65em 0.65em;
+  border-radius: 0.7em;
+  background: var(--deep);
+  border: 1px solid var(--line);
+}
+
+.HudCard h2 {
+  margin: 0 0 0.3em;
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sky);
+}
+
+.HudChapter {
+  display: block;
+  font-size: 1.1em;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--sand);
+}
+
+.HudNote {
+  margin: 0.35em 0 0;
+  font-size: 0.82em;
+  color: var(--ink-soft);
+}
+
+.HudLine {
+  margin: 0.35em 0 0;
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+}
+
+.HudLine b, .HudRowValue, .HudBigNumber { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Reef stress */
+.HudBig {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.HudBigNumber {
+  font-size: 2.1em;
+  line-height: 1;
+}
+
+.HudBigNumber small { font-size: 0.5em; font-weight: 600; }
+
+.HudState {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.95em;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--tone);
+}
+
+.HudStateSub {
+  font-size: 0.82em;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.HudStressBar {
+  position: relative;
+  height: 0.6em;
+  margin-top: 0.45em;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.HudStressFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--tone);
+  transition: width 0.25s linear, background-color 0.4s ease;
+}
+
+/* tick marks at 40, 60 and 80, where the game warns */
+.HudStressBar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--abyss);
+}
+
+.HudReef.critical {
+  border-color: var(--bad);
+  animation: hudCritical 1s ease-in-out infinite;
+}
+
+@keyframes hudCritical {
+  50% { box-shadow: 0 0 0 3px var(--bad); }
+}
+
+/* Water */
+.HudRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 0.4em;
+  margin-top: 0.5em;
+  font-size: 0.9em;
+}
+
+.HudRow:first-of-type { margin-top: 0.1em; }
+
+.HudRowLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  color: var(--ink-soft);
+}
+
+.HudRowLabel svg { align-self: center; }
+.HudRowValue { text-align: right; }
+
+.HudWord {
+  grid-column: 1 / -1;
+  font-size: 0.86em;
+  font-weight: 600;
+  color: var(--tone);
+}
+
+.HudGauge {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 0.45em;
+  margin-top: 0.15em;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+/* the part of the range coral is comfortable in */
+.HudGaugeSafe {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(127, 227, 196, 0.28);
+  border-right: 2px solid var(--ink);
+}
+
+.HudGaugeFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--tone);
+  opacity: 0.95;
+  transition: width 0.25s linear, background-color 0.4s ease;
+}
+
+/* Colour-blind setting: danger also gets stripes */
+:root.colour-blind .tone-bad.HudGaugeFill,
+:root.colour-blind .tone-heat.HudGaugeFill,
+:root.colour-blind .tone-bad.HudStressFill,
+:root.colour-blind .tone-heat.HudStressFill {
+  background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(11, 46, 58, 0.55) 4px 7px);
+}
+
+/* Calendar */
+.HudSeason {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4em;
+  margin: 0 0 0.45em;
+  padding: 0.2em 0.5em;
+  border-radius: 0.5em;
+  font-size: 0.86em;
+  font-weight: 600;
+  background: var(--lagoon);
+}
+
+.HudSeason.heat { background: #8A2F1D; }
+.HudSeasonTime { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.HudCalendar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* two rows of five, so the numbers stay readable */
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.HudCalendar li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.15em 0;
+  border-radius: 0.3em;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.82em;
+  line-height: 1.2;
+  border: 1.5px solid transparent;
+}
+
+.HudCalendarYear { font-weight: 700; }
+.HudCalendarHeat { font-size: 0.86em; color: var(--ink-soft); }
+.HudCalendar li.heat { background: rgba(255, 138, 112, 0.24); }
+.HudCalendar li.heat .HudCalendarHeat { color: var(--hot); font-weight: 700; }
+.HudCalendar li.past { opacity: 0.45; }
+.HudCalendar li.now { border-color: var(--sand); background: rgba(255, 227, 163, 0.2); }
+
+/* The fish */
+.HudSplit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2em 0.6em;
+}
+
+.HudHearts { display: inline-flex; gap: 0.15em; }
+.HudHearts img { width: 1.45em; height: 1.3em; }
+
+.HudPips { display: inline-flex; gap: 0.2em; vertical-align: middle; }
+
+.HudPips span {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-soft);
+}
+
+.HudPips span.on { background: var(--sand); border-color: var(--sand); }
+
+.HudPop { display: inline-block; animation: hudPop 450ms ease-out; }
+
+@keyframes hudPop {
+  0% { transform: scale(1.6); color: var(--sand); }
+  100% { transform: scale(1); }
+}
+
+/* Goals */
+.HudGoals {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  font-size: 0.9em;
+  line-height: 1.3;
+}
+
+.HudGoals li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.45em;
+}
+
+.HudGoalBox {
+  display: grid;
+  place-items: center;
+  width: 1.15em;
+  height: 1.15em;
+  margin-top: 0.05em;
+  border: 2px solid var(--ink-soft);
+  border-radius: 0.25em;
+  font-size: 0.95em;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.HudGoals .goal-done { color: var(--ink-soft); }
+.HudGoals .goal-done .HudGoalBox { background: var(--good); border-color: var(--good); color: var(--abyss); }
+.HudGoals .goal-failed { color: var(--ink-soft); text-decoration: line-through; }
+.HudGoals .goal-failed .HudGoalBox { border-color: var(--bad); color: var(--bad); text-decoration: none; }
+.HudGoals b { color: var(--sand); white-space: nowrap; }
+
+/* Log */
+.HudLog { flex: 1 1 0; min-height: 4.5em; overflow: hidden; }
+
+.HudLog ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  font-size: 0.8em;
+  line-height: 1.3;
+}
+
+.HudLog li { color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.HudLog b { color: var(--ink); }
+
+/* Controls */
+.HudControls dl { margin: 0; font-size: 0.82em; display: grid; gap: 0.15em; }
+.HudControls dl div { display: grid; grid-template-columns: 4.2em 1fr; gap: 0.4em; }
+.HudControls dt { font-weight: 700; color: var(--sand); }
+.HudControls dd { margin: 0; color: var(--ink-soft); }
+
+.HudSkip { font-size: 0.95em; }
+.RailRight .HudSkip { margin-top: auto; }
+
+/* Explanations: real text, on hover, keyboard focus or tap */
+[data-tip] { position: relative; cursor: help; border-radius: 0.3em; }
+
+[data-tip]:hover::after,
+[data-tip]:focus::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: 0;
+  z-index: 60;
+  width: 17em;
+  padding: 0.6em 0.75em;
+  border-radius: 0.6em;
+  border: 1px solid var(--sand);
+  background: var(--abyss);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.RailLeft [data-tip]::after { left: calc(100% + 1em); }
+.RailRight [data-tip]::after { right: calc(100% + 1em); }
+
+/* The bar for narrow windows */
+.TopBarTitle { font-weight: 700; margin-right: auto; }
+
+.TopBarItem {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.TopBarItem b { font-size: 1.05em; }
+.TopBarLabel { font-size: 0.78em; color: var(--ink-soft); }
+.TopBarWord { font-size: 0.78em; font-weight: 600; color: var(--tone, var(--ink-soft)); }
+.TopBarItem.critical b { color: var(--bad); }
+.TopBar .HudHearts img { width: 1.5em; height: 1.35em; }
+
+.TopBarGoals {
+  margin-left: auto;
+  padding: 0.5em 0.9em;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: var(--lagoon);
+  color: var(--ink);
+  font-size: 0.95em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.TopBarGoalsPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 8px;
+  width: min(22em, calc(100vw - 16px));
+  box-sizing: border-box;
+  padding: 0.7em 0.9em;
+  border-radius: 0.8em;
+  border: 1px solid var(--sand);
+  background: var(--abyss);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.TopBarGoalsPanel h2 { margin: 0 0 0.4em; font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sky); }
+
+/* A very narrow bar drops the least urgent readings */
+@media (max-width: 760px) {
+  .TopBarItem:nth-of-type(2), .TopBarItem:nth-of-type(4), .TopBarItem:nth-of-type(7) { display: none; }
+  .TopBar { gap: 0.6em; }
+}

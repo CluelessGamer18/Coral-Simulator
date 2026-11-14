@@ -57,7 +57,7 @@ function About({backLabel = "Back to Title"}) {
 
             {/* Back Button */}
             <button
-                className="BackToTitleButton"
+                className="Button ButtonPrimary BackToTitleButton"
                 onClick={() => navigate("/")}
             >
                 {backLabel}
@@ -110,7 +110,7 @@ function About({backLabel = "Back to Title"}) {
                         target="_blank"
                         rel="noreferrer"
                         >
-                            {resource.title}
+                            <span>{resource.title}<small>{new URL(resource.url).hostname.replace("www.", "")}</small></span>
                         </a>
                     ))}
                 </div>

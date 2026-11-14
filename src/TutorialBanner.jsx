@@ -16,7 +16,7 @@ function TutorialBanner({ step, praise, onPraiseEnd, onButton }) {
               <p className="TutorialBannerText">{step.text}</p>
             </div>
             {step.buttonLabel ? (
-              <button className="TutorialBannerButton" onClick={onButton}>{step.buttonLabel}</button>
+              <button className="Button ButtonPrimary TutorialBannerButton" onClick={onButton}>{step.buttonLabel}</button>
             ) : null}
           </div>
         ) : null}
