@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import "./styles/SimInfoDisplay.css";
 import { asset } from "./assetUrl";
 import { isBleachingYear } from "./scenes/BleachingSchedule.js";
+import { GAME_YEARS } from "./scenes/gameConfig.js";
 
 function getTemperatureColor(temp) {
     const value = Number(temp);
@@ -42,12 +44,14 @@ function getCoralStressColor(stress) {
     return `#${channel(0)}${channel(1)}${channel(2)}`;
 }
 
-function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,score=0}){
-    const showSeasonIndicator = yearsElapsed >= 1;
+function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,corals,simEnd=false}){
+    const collected = corals?.collected.length ?? 0;
+    const totalCorals = corals?.total ?? 0;
+    const showSeasonIndicator = yearsElapsed >= 1 && yearsElapsed < GAME_YEARS && !simEnd; // not behind the end screen
     const summerIsBleaching = isBleachingYear(yearsElapsed);
     const coralStressIsHigh = stress >= 80;
     const coralStressColor = getCoralStressColor(stress);
-    yearsElapsed = 2*yearsElapsed
+    const timelineProgress = Math.min(Math.max(yearsElapsed / GAME_YEARS, 0), 1);
     const displayedPollution = Math.round(poll * 2) / 2
     const temperatureColor = getTemperatureColor(temp);
     const lightColor = getLightColor(light);
@@ -104,7 +108,8 @@ function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,s
                 <span
                     className="TimelineIndicator"
                     style={{
-                        transform: `translateX(${yearsElapsed * 8.59}px)`
+                        // from the first dot to the last, whatever the track's width (5px is the marker's own width)
+                        left: `calc(${timelineProgress} * (100% - 5px))`
                     }}
                 />
                 {/*<img className="hoverPreview" src={asset("tooltip_timeline.png")} />*/}
@@ -146,14 +151,50 @@ function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,s
                     <span className="SimInfoText">{displayedPollution}</span>
                     <img className="hoverPreview" src={asset("tooltips/tooltip_pollution.png")} alt="Pollution, in µMol: the amount of nutrients expelled from sewage waste." />
                 </div>
-                <div className="statusGroup scoreGroup">
-                    <span className="SimInfoText scoreLabel">Score</span>
-                    <span className="SimInfoText scoreValue">{score}</span>
+                {/* The coral collection: one pip for each kind of coral, filled in as the player finds them */}
+                <div
+                    className={`statusGroup collectionGroup${totalCorals > 0 && collected === totalCorals ? " complete" : ""}`}
+                    role="img"
+                    aria-label={`Corals collected: ${collected} of ${totalCorals}`}
+                >
+                    <span className="SimInfoText collectionLabel">Corals</span>
+                    <span className="collectionPips">
+                        {Array.from({ length: totalCorals }, (_, i) => (
+                            <span key={i} className={`collectionPip${i < collected ? " found" : ""}`} />
+                        ))}
+                    </span>
+                    {/* keyed by the count, so the number pops each time it goes up */}
+                    <span key={collected} className="SimInfoText collectionValue">{collected}/{totalCorals}</span>
                 </div>
             </div>
         </div>
     )
 }
 
+
+// The HUD wired straight to the scene. It listens for "stats-changed" itself (four times a second while the
+// clock runs), so only the HUD is drawn again each time, not the whole app.
+export function LiveSimInfoDisplay({ scene }) {
+    const [stats, setStats] = useState(() => scene.getStats());
+
+    useEffect(() => {
+        const events = scene.game.events; // kept so cleanup still works after the game is destroyed
+        events.on("stats-changed", setStats);
+        return () => events.off("stats-changed", setStats);
+    }, [scene]);
+
+    return (
+        <SimInfoDisplay
+            yearsElapsed={stats.yearsElapsed}
+            season={stats.season}
+            light={stats.light}
+            temp={stats.temperature}
+            stress={stats.stress}
+            poll={stats.pollution}
+            corals={stats.corals}
+            simEnd={stats.simEnd}
+        />
+    );
+}
 
 export default SimInfoDisplay;

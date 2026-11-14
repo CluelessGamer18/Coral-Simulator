@@ -38,8 +38,6 @@ const CONDITIONS = {
 };
 const BLEACHING_HEAT_SUPPLY_LOSS = 0.35; // at the worst heat, a bleaching event's supply drops by this much more
 
-export const HOME_PIECE_POINTS = 10;
-
 // Each stage is the crater from home_stageN.svg, drawn at 6x. The rim values describe the oval the
 // collected pieces sit on, measured from the bottom-centre of the image.
 export const HOME_STAGES = [
@@ -126,7 +124,7 @@ export function updateNestCamera(scene, hiding, frameScale) {
 export function updateHomeBuilding(scene, delta, clockIsRunning) {
     if (clockIsRunning && !scene.simEnd) updatePieceSupply(scene, delta);
 
-    const canAct = scene.tutorialComplete && !scene.bubbleCollision && !scene.coralInfoOpen && !scene.simEnd;
+    const canAct = scene.tutorialComplete && !scene.coralInfoOpen && !scene.simEnd;
     updateHomeControls(scene, canAct);
 }
 
@@ -209,15 +207,19 @@ export function addPiece(scene, x, type, y = Phaser.Math.Between(PIECE_MIN_Y, PI
     scene.tweens.add({ targets: piece, alpha: { from: 0, to: 1 }, duration: 800 });
 }
 
+// The closest piece on the floor within reach. Runs every frame, so it's a plain loop that makes no new arrays.
 function findNearbyPiece(scene) {
-    return scene.homePieces
-        .filter(piece => !piece.inHome)
-        .map(piece => ({
-            piece,
-            distance: Phaser.Math.Distance.Between(scene.guide.x, scene.guide.y, piece.x, piece.y),
-        }))
-        .filter(({ distance }) => distance <= PICKUP_DISTANCE)
-        .sort((a, b) => a.distance - b.distance)[0]?.piece;
+    let nearest = null;
+    let nearestDistance = PICKUP_DISTANCE;
+    for (const piece of scene.homePieces) {
+        if (piece.inHome) continue;
+        const distance = Phaser.Math.Distance.Between(scene.guide.x, scene.guide.y, piece.x, piece.y);
+        if (distance <= nearestDistance) {
+            nearest = piece;
+            nearestDistance = distance;
+        }
+    }
+    return nearest;
 }
 
 function pickUpPiece(scene, piece) {
@@ -236,8 +238,9 @@ function holdPiece(scene) {
             fish.x + Math.cos(fish.rotation) * mouthDistance,
             fish.y + Math.sin(fish.rotation) * mouthDistance + 8
         )
-        .setRotation(fish.rotation)
-        .setDepth(fish.depth + 0.1);
+        .setRotation(fish.rotation);
+    // setDepth makes Phaser sort every object in the scene again, so only call it when the depth really changes
+    if (scene.carriedPiece.depth !== fish.depth + 0.1) scene.carriedPiece.setDepth(fish.depth + 0.1);
 }
 
 // Dropped away from the nest: the piece sinks back to the floor and glows again
@@ -276,8 +279,6 @@ function placePieceInHome(scene) {
     piece.inHome = true;
     piece.rimAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
     scene.homePiecesPlaced++;
-    scene.score += HOME_PIECE_POINTS;
-    scene.emitStats();
 
     scene.tweens.add({
         targets: piece,

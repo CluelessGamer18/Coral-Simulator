@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Turns the raw recordings in public/assets/audio into the small, game-ready files in
+# Turns the raw recordings in assets-src/audio into the small, game-ready files in
 # public/assets/audio/ocean, used by Ocean Sounds mode (src/scenes/OceanSounds.js). Needs ffmpeg.
 # Run from the repo root: bash scripts/build-ocean-sounds.sh
 set -euo pipefail
 
-SRC=public/assets/audio
-OUT=$SRC/ocean
+SRC=assets-src/audio
+OUT=public/assets/audio/ocean
+
 REEF="$SRC/Ambient Music or Reef Sounds/Actual Reef Sounds"
 PACK=$SRC/shellfegio_sample_pack
 TRIGGER="$SRC/Sound Effects/Actual Trigger Fish Sounds"

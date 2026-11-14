@@ -1,95 +1,71 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import './styles/App.css'
 
-import RangeSlider from './RangeSlider.jsx'
-import ToggleBox from './ToggleBox.jsx'
-import TestGame from './TestGame.jsx'
+// The game's and the end screen's styles stay in the main stylesheet, in the order they've always had, so that
+// loading those components later (see below) doesn't change which rule wins where stylesheets overlap
+import './styles/TestScene.css'
+import './styles/CoralPopup.css'
+import './styles/TutorialBanner.css'
 import TitleScreen from "./TitleScreen/TitleScreen.jsx"
 import OptionsDialog from './TitleScreen/OptionsDialog.jsx'
-import SimInfoDisplay from './SimInfoDisplay.jsx'
-import SimBubblePopUp from './SimBubblePopUp.jsx'
-import SimEndPopUp from './SimEndPopUp.jsx'
+import { LiveSimInfoDisplay } from './SimInfoDisplay.jsx'
+import './styles/SimEndPopUp.css'
+import Notices from './Notices.jsx'
+import GoalReminder from './GoalReminder.jsx'
 
 import { Routes, Route, useLocation, useNavigate } from 'react-router'
 import About from './About.jsx'
 import { asset } from './assetUrl';
-import { isBleachingYear } from './scenes/BleachingSchedule.js';
 import { loadControlScheme, saveControlScheme } from './controlScheme';
 import { loadOceanSounds, saveOceanSounds } from './oceanSoundsSetting';
+import { loadAudioSettings, saveAudioSettings } from './audioSettings';
 
-const EMPTY_HISTORY = { stress: [], temp: [], light: [], poll: [] };
+// Phaser and every scene (about 340 KB gzipped) and Chart.js are fetched separately, so the title screen doesn't
+// have to wait for them. The game is fetched as soon as the title is up; the charts when a game ends.
+const loadGame = () => import('./TestGame.jsx');
+const TestGame = lazy(loadGame);
+const SimEndPopUp = lazy(() => import('./SimEndPopUp.jsx'));
+
+const MAX_TOASTS = 3;
 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isAboutPage = location.pathname === "/about";
-  const [temperatureValue, setTemperatureValue] = useState(27);
-  const [lightValue, setLightValue] = useState(500);
-  const [pollutionValue, setPollutionValue] = useState(1);
-  const [stressValue, setStressValue] = useState(0);
-  const [yearsElapsed, setYearsElapsed] = useState(0);
-  const [season, setSeason] = useState("summer");
-
-  const [bubbleCollision, setBubbleCollision] = useState(false);
-  const [collisionType, setCollisionType] = useState("None");
-  const [score, setScore] = useState(0);
-
   const [scene, setScene] = useState(null); // This ends up being an instance of our scene class
   const inTutorial = scene?.scene.key === "Tutorial"; // the tutorial scene only shares the settings button with the main game
+  // The numbers that change all through a game go straight to the HUD (LiveSimInfoDisplay), so this component,
+  // and everything under it, is only drawn again when something here changes: a notice, a menu, the game ending.
   const [simEnd, setSimEnd] = useState(false);
-  const [reefDead, setReefDead] = useState(false);
-  const [fishDead, setFishDead] = useState(false);
-  const [history, setHistory] = useState(EMPTY_HISTORY);
+  const [result, setResult] = useState(null); // the scene's last stats, for the end screen
 
   const [showTitleScreen, setShowTitleScreen] = useState(true);
   const [hasStartedGame, setHasStartedGame] = useState(false);
+  // The game is put on the page, hidden, while the title screen is still showing, so its code and assets download
+  // while the player reads the title. It waits on its loading scene until Start is pressed (hasStartedGame).
+  const [gameMounted, setGameMounted] = useState(false);
 
-  const [musicVolume, setMusicVolume] = useState(0.25);
-  const [sfxVolume, setSfxVolume] = useState(0.5);
-  const [musicMuted, setMusicMuted] = useState(false);
-  const [sfxMuted, setSfxMuted] = useState(false);
+  // Saved in the browser, like the two settings below (audioSettings.js)
+  const [savedAudio] = useState(loadAudioSettings);
+  const [musicVolume, setMusicVolume] = useState(savedAudio.musicVolume);
+  const [sfxVolume, setSfxVolume] = useState(savedAudio.sfxVolume);
+  const [musicMuted, setMusicMuted] = useState(savedAudio.musicMuted);
+  const [sfxMuted, setSfxMuted] = useState(savedAudio.sfxMuted);
   const [showOptions, setShowOptions] = useState(false);
   const [controlScheme, setControlScheme] = useState(loadControlScheme);
   const [oceanSounds, setOceanSounds] = useState(loadOceanSounds);
 
-  const [eventNotice, setEventNotice] = useState(null);
-  const [summerTemperatureChange, setSummerTemperatureChange] = useState(0);
-  const noticedSeason = useRef(null);
+  // Notices come in two lanes (see Notices.jsx). banners[0] is the one showing; the rest wait their turn.
+  const [banners, setBanners] = useState([]);
+  const [toasts, setToasts] = useState([]);
+  const noticeCount = useRef(0);
+  const [showGoal, setShowGoal] = useState(false);
+
   const skipSceneResume = useRef(false);
   const resumeAfterAbout = useRef(false);
-  const [aboutBackLabel, setAboutBackLabel] = useState("Back to Title");
-
-  let initialValue;
-  if (scene){
-    switch (collisionType) {
-      case "temp":
-        initialValue = temperatureValue;
-        break;
-
-      case "light":
-        initialValue = lightValue;
-        break;
-
-    }
-  }
-
-  // Called by the bubble popup's Apply button. The scene emits "stats-changed" afterwards,
-  // which updates the values and closes the popup.
-  const applyBubble = (value) => {
-    const type = scene.collisionType;
-    if (type === 'temp') {
-      scene.updateTemperature(value);
-    } else if (type === 'light') {
-      scene.updateLight(value);
-    }
-    scene.freeFish(false);
-  };
-
-  // Called by the bubble popup's Cancel button: frees the fish and puts the bubble back
-  const cancelBubble = () => {
-    scene.freeFish(true);
-  };
+  // Set by goToResources below, so the About page knows there's a game to go back to
+  const aboutBackLabel = location.state?.fromGame ? "Resume Game" : "Back to Title";
 
   const changeOceanSounds = (enabled) => {
     setOceanSounds(enabled);
@@ -101,47 +77,36 @@ function App() {
     saveControlScheme(scheme);
   };
 
-  const dismissEventNotice = () => {
-    setEventNotice(null);
-    scene?.eventNoticeClosed?.();
+  const clearNotices = () => {
+    setBanners([]);
+    setToasts([]);
   };
 
-  useEffect(() => {
-    if (!scene || scene.scene.key !== "TestScene" || yearsElapsed < 1 || simEnd) return;
+  // A notice timed out, or the player clicked its Close button (which the tutorial's lessons wait for)
+  const closeNotice = useCallback((key, byPlayer) => {
+    setBanners((list) => list.filter((notice) => notice.key !== key));
+    setToasts((list) => list.filter((notice) => notice.key !== key));
+    if (byPlayer) scene?.eventNoticeClosed?.();
+  }, [scene]);
 
-    if (noticedSeason.current !== season) {
-      noticedSeason.current = season;
-      if (season === "summer" && isBleachingYear(yearsElapsed)) {
-        setEventNotice({
-          title: "Temperature Bleaching Event",
-          message: `The water temperature has risen by ${summerTemperatureChange}°C. Keep the light levels lower to prevent a mass bleaching of your reef.`,
-          centered: true,
-          bleaching: true,
-        });
-      } else if (season === "winter") {
-        setEventNotice((current) => current?.bleaching ? null : current);
-      }
+  const hideGoal = useCallback(() => setShowGoal(false), []);
+
+  useEffect(() => {
+    // Not on the About page, which may be all the visitor came for, or when they've asked the browser to save data
+    if (gameMounted || isAboutPage || navigator.connection?.saveData) return;
+
+    // Once the browser is idle, so the title screen's own files and first paint come first
+    const mountGame = () => setGameMounted(true);
+    if (window.requestIdleCallback) {
+      const id = window.requestIdleCallback(mountGame, { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
     }
-  }, [scene, season, yearsElapsed, simEnd, summerTemperatureChange]);
+    const id = window.setTimeout(mountGame, 300);
+    return () => window.clearTimeout(id);
+  }, [gameMounted, isAboutPage]);
 
   useEffect(() => {
-    if (!simEnd) return;
-    setEventNotice((current) => current?.bleaching ? null : current);
-  }, [simEnd]);
-
-  useEffect(() => {
-    if (!eventNotice || eventNotice.persistent) return;
-
-    // Longer in the tutorial, where the notices are being read for the first time
-    const timeoutId = window.setTimeout(() => {
-      setEventNotice(null);
-    }, eventNotice.bleaching ? 7000 : inTutorial ? 10000 : 5000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [eventNotice, inTutorial]);
-
- 
-  useEffect(() => {
+    saveAudioSettings({ musicVolume, sfxVolume, musicMuted, sfxMuted });
     if (!scene) return;
 
     scene.setMusicVolume?.(musicMuted ? 0 : musicVolume);
@@ -162,62 +127,68 @@ function App() {
 
     const events = scene.game.events; // kept so cleanup still works after the game is destroyed
     const onStats = (stats) => {
-      setStressValue(stats.stress)
-      setLightValue(stats.light)
-      setTemperatureValue(stats.temperature)
-      setSummerTemperatureChange(stats.summerTemperatureChange ?? 0)
-      setPollutionValue(stats.pollution)
-      setYearsElapsed(stats.yearsElapsed)
-      setSeason(stats.season)
-      setBubbleCollision(stats.bubbleCollision)
-      setCollisionType(stats.collisionType)
-      setSimEnd(stats.simEnd)
-      setReefDead(stats.reefDead)
-      setFishDead(stats.fishDead)
-      setScore(stats.score)
-      setHistory(stats.history)
+      setSimEnd(stats.simEnd) // React skips the redraw when this hasn't changed, which is nearly always
+      // Nothing left over from the game should sit on top of the end screen
+      if (stats.simEnd) {
+        setResult(stats);
+        setBanners([]);
+        setToasts([]);
+        setShowGoal(false);
+      }
     };
 
-    // The scene sends the selected event's title and message when the event bubble is collected.
-    const onRandomEvent = ({ title, message }) => {
-      setEventNotice((current) => current?.bleaching || current?.persistent ? current : { title, message });
+    const nextKey = () => ++noticeCount.current;
+
+    // Things that happen to the fish: stacked top right, newest last, the oldest dropped when there are too many
+    const addToast = (notice) => {
+      const toast = { ...notice, key: nextKey() };
+      setToasts((list) => [...list, toast].slice(-MAX_TOASTS));
     };
 
-    const onReefWarning = (warning) => {
-      setEventNotice((current) => current?.bleaching || current?.persistent ? current : warning);
+    // The state of the reef: one banner at a time. The bleaching alert goes to the front of the queue, since it
+    // opens the summer the others are about. A notice with an id replaces the one with the same id, and a new
+    // plain warning replaces older plain warnings, which it has made out of date.
+    const onReefWarning = (notice) => {
+      const banner = { ...notice, key: nextKey() };
+      setBanners((list) => {
+        const others = list.filter((old) => notice.id ? old.id !== notice.id : Boolean(old.id));
+        return notice.bleaching ? [banner, ...others] : [...others, banner];
+      });
     };
 
     const onReefWarningCleared = (id) => {
-      setEventNotice((current) => current?.id === id ? null : current);
+      setBanners((list) => list.filter((notice) => notice.id !== id));
     };
 
-    const onPredatorAppeared = () => {
-      setEventNotice((current) => current?.bleaching || current?.persistent ? current : {
-        title: 'Predator Alert',
-        message: 'A predator has appeared in the reef!',
-      });
-    };
+    const onPredatorAppeared = () => addToast({
+      title: 'Predator Alert',
+      message: 'A predator has appeared in the reef! Press E at your nest to hide.',
+      warning: true,
+    });
 
-    const onPredatorLeft = () => {
-      setEventNotice((current) => current?.bleaching || current?.persistent ? current : {
-        title: 'All Clear',
-        message: 'The predator has left. You can come out now!',
-      });
-    };
+    const onPredatorLeft = () => addToast({
+      title: 'All Clear',
+      message: 'The predator has left. You can come out now!',
+      good: true,
+    });
+
+    const onGoalReminder = () => setShowGoal(true);
 
     events.on("stats-changed", onStats);
-    events.on("random-event", onRandomEvent);
+    events.on("random-event", addToast);
     events.on("reef-warning", onReefWarning);
     events.on("reef-warning-cleared", onReefWarningCleared);
     events.on("predator-appeared", onPredatorAppeared);
     events.on("predator-left", onPredatorLeft);
+    events.on("goal-reminder", onGoalReminder);
     return () => {
       events.off("stats-changed", onStats);
-      events.off("random-event", onRandomEvent);
+      events.off("random-event", addToast);
       events.off("reef-warning", onReefWarning);
       events.off("reef-warning-cleared", onReefWarningCleared);
       events.off("predator-appeared", onPredatorAppeared);
       events.off("predator-left", onPredatorLeft);
+      events.off("goal-reminder", onGoalReminder);
     };
   }, [scene]);
 
@@ -241,7 +212,7 @@ function App() {
 
   // Phaser blocks the arrow keys, Space, Shift and WASD on the whole page while playing. Let them through while a
   // dialog with sliders or buttons is open, so it works from the keyboard (arrows move sliders, Space presses buttons).
-  const keyboardDialogOpen = showOptions || bubbleCollision || simEnd;
+  const keyboardDialogOpen = showOptions || simEnd;
   useEffect(() => {
     if (!scene || !keyboardDialogOpen) return;
 
@@ -255,7 +226,7 @@ function App() {
   }, [scene, keyboardDialogOpen]);
 
   useEffect(() => {
-    if (!scene || showTitleScreen || bubbleCollision || simEnd) return;
+    if (!scene || showTitleScreen || simEnd) return;
 
     const handleKeyDown = (event) => {
       if (event.repeat) return;
@@ -279,38 +250,25 @@ function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [scene, showTitleScreen, bubbleCollision, simEnd, musicMuted, sfxMuted]);
+  }, [scene, showTitleScreen, simEnd, musicMuted, sfxMuted]);
 
+  // Coming back from the Resources page carries on with the game that was paused to visit it
   useEffect(() => {
-    if (isAboutPage) return;
+    if (isAboutPage || !resumeAfterAbout.current) return;
 
-    if (resumeAfterAbout.current) {
-      resumeAfterAbout.current = false;
-      if (scene?.sys?.isPaused()) scene.scene.resume();
-    }
-    setAboutBackLabel("Back to Title");
+    resumeAfterAbout.current = false;
+    if (scene?.sys?.isPaused()) scene.scene.resume();
   }, [isAboutPage, scene]);
 
   // Puts the React side back to a fresh sim. Return to Title preserves the scene; this is for a new game or leaving for Resources.
   const resetSimState = () => {
-    setTemperatureValue(27);
-    setLightValue(500);
-    setPollutionValue(1);
-    setStressValue(0);
-    setYearsElapsed(0);
-    setSeason("summer");
-    setBubbleCollision(false);
     setSimEnd(false);
-    setReefDead(false);
-    setFishDead(false);
-    setScore(0);
-    setHistory(EMPTY_HISTORY);
-    setEventNotice(null);
-    setSummerTemperatureChange(0);
-    noticedSeason.current = null;
+    setResult(null);
+    setShowGoal(false);
+    clearNotices();
   }
 
-  // "Restart Sim" on the end screen: the game keeps running, so restart the scene as well
+  // "Play Again" on the end screen: the game keeps running, so restart the scene as well
   const endSim = () => {
     scene.RestartSim();
     resetSimState();
@@ -342,6 +300,7 @@ function App() {
     if (scene) {
       scene.scene.start("Tutorial");
     } else {
+      setGameMounted(true);
       setHasStartedGame(true);
     }
   }
@@ -349,45 +308,34 @@ function App() {
   const goToResources = () => {
     skipSceneResume.current = true;
     resumeAfterAbout.current = true;
-    setAboutBackLabel("Resume Game");
     setShowOptions(false);
-    navigate("/about#resources");
+    navigate("/about#resources", { state: { fromGame: true } });
   }
 
-  const eventNoticeBox = eventNotice ? (
-    <aside className={`EventNotice${inTutorial ? " EventNoticeTutorial" : ""}${eventNotice.warning ? " EventNoticeWarning" : ""}${eventNotice.centered ? " EventNoticeCentered" : ""}${eventNotice.bleaching ? " EventNoticeBleaching" : ""}`} role={eventNotice.bleaching || eventNotice.warning ? "alert" : "status"} aria-live={eventNotice.bleaching || eventNotice.warning ? "assertive" : "polite"} aria-labelledby="event-notice-title">
-        <button className="EventNoticeDismiss" type="button" onClick={dismissEventNotice} aria-label="Dismiss event notification">Close</button>
-        {eventNotice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
-        <div className="EventNoticeHeading">
-        <h2 id="event-notice-title">{eventNotice.title}</h2>
-        </div>
-        <p>{eventNotice.message}</p>
-    </aside>
-  ) : null;
-  // In the tutorial the notice sits under the banner, inside the game, however tall the banner is
+  // In the tutorial the notices sit under the banner, inside the game, however tall the banner is
   const tutorialNoticeSlot = inTutorial ? document.getElementById("tutorialNoticeSlot") : null;
+  const notices = <Notices banners={banners} toasts={toasts} inSlot={Boolean(tutorialNoticeSlot)} onClose={closeNotice} />;
+  const playing = !showTitleScreen && scene;
 
   return (
   <>
     <Routes>
       <Route path="/" element={
         <>
-        {/*<RangeSlider onChange={setStressValue}/>*/}
-        {!showTitleScreen && scene && simEnd ? (
-          <SimEndPopUp stress={history.stress}
-            temp={history.temp}
-            light={history.light}
-            poll={history.poll}
-            onClose={endSim}
-            dead={reefDead}
-            fishDead={fishDead}
-          ></SimEndPopUp>) : null}
-        {!showTitleScreen && eventNotice ? (tutorialNoticeSlot ? createPortal(eventNoticeBox, tutorialNoticeSlot) : eventNoticeBox) : null}
-        {!showTitleScreen && scene && bubbleCollision ? <SimBubblePopUp key={collisionType} type={collisionType}
-        initialValue={initialValue}
-        onApply={applyBubble}
-        onCancel={cancelBubble} /> : null}
-        {scene && !showTitleScreen && !inTutorial ? <SimInfoDisplay yearsElapsed={yearsElapsed} season={season} light={lightValue} temp={temperatureValue} stress={stressValue} poll={pollutionValue} score={score}        /> : null}
+        {playing && simEnd && result ? (
+          <Suspense fallback={null}>
+            <SimEndPopUp
+              history={result.history}
+              corals={result.corals}
+              yearsElapsed={result.yearsElapsed}
+              onClose={endSim}
+              dead={result.reefDead}
+              fishDead={result.fishDead}
+            />
+          </Suspense>) : null}
+        {!showTitleScreen ? (tutorialNoticeSlot ? createPortal(notices, tutorialNoticeSlot) : notices) : null}
+        {playing && showGoal && !simEnd ? <GoalReminder onDone={hideGoal} /> : null}
+        {playing && !inTutorial ? <LiveSimInfoDisplay scene={scene} /> : null}
         {showOptions ? <OptionsDialog
           setShowOptions={setShowOptions}
           goToTutorial={goToTutorial}
@@ -417,19 +365,21 @@ function App() {
 
       <Route path="/about" element={<About backLabel={aboutBackLabel} />} />
     </Routes>
-    {hasStartedGame ? (
+    {gameMounted ? (
       <main
         className="MainContent"
         style={{ visibility: isAboutPage || showTitleScreen ? "hidden" : "visible" }}
         aria-hidden={isAboutPage || showTitleScreen}
       >
-        {!showTitleScreen && scene ? (
+        {playing ? (
           <button className="OptionsButtonIcon" aria-label="Open settings" onClick={() => setShowOptions(true)}>
             <img src={asset("settings.svg")} alt="" width="45" height="45" />
           </button>
         ) : null}
         <div className="GameContainer">
-          <TestGame onSceneReady={setScene} />
+          <Suspense fallback={<p className="GameLoading" role="status">Loading…</p>}>
+            <TestGame started={hasStartedGame} onSceneReady={setScene} />
+          </Suspense>
         </div>
       </main>
     ) : null}

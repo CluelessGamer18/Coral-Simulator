@@ -163,6 +163,11 @@ function chooseNextPos(scene, school, duration) {
 
   const isRight = newX > school.x;
 
+  // The back layers swim slowly, so their last move can still be running when the next one starts.
+  // Stop it first, or two tweens would be steering the same school (and each of its fish) at once.
+  scene.tweens.killTweensOf(school);
+  scene.tweens.killTweensOf(school.list);
+
   scene.tweens.add({
     targets: school,
     x: newX,

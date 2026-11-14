@@ -1,0 +1,122 @@
+/* The "Survive all 10 years!" card (GoalReminder.jsx). Clicks pass through everywhere but the card itself. */
+.GoalReminder {
+  position: fixed;
+  inset: 0;
+  z-index: 10500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 16vh;
+  pointer-events: none;
+  font-family: 'Poppins', sans-serif;
+}
+
+.GoalReminderCard {
+  position: relative;
+  pointer-events: auto;
+  cursor: pointer;
+  width: min(520px, calc(100vw - 40px));
+  box-sizing: border-box;
+  padding: 26px 34px 24px;
+  border-radius: 22px;
+  text-align: center;
+  color: #fff;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 227, 163, 0.22), rgba(255, 227, 163, 0) 60%),
+    linear-gradient(160deg, #123d4b, #0b2e3a);
+  border: 2px solid rgba(255, 227, 163, 0.85);
+  box-shadow: 0 0 0 6px rgba(255, 227, 163, 0.12), 0 18px 48px rgba(4, 22, 28, 0.55);
+  overflow: hidden;
+  /* drops in, holds, then lifts away; GoalReminder.jsx removes it just after */
+  animation: goalCard 4300ms cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
+}
+
+/* a slow sweep of light across the card */
+.GoalReminderCard::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+  animation: goalShine 1600ms ease-out 500ms forwards;
+  pointer-events: none;
+}
+
+.GoalReminderLabel {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #ff7a59;
+  color: #0b2e3a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.GoalReminderTitle {
+  margin: 10px 0 14px;
+  font-size: clamp(28px, 4.2vw, 40px);
+  font-weight: 800;
+  line-height: 1.1;
+  color: #ffe3a3;
+  text-shadow: 0 3px 0 rgba(4, 22, 28, 0.45);
+}
+
+.GoalReminderYears {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+}
+
+.GoalReminderYear {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(127, 227, 196, 0.16);
+  border: 2px solid #7fe3c4;
+  color: #eafff8;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0;
+  animation: goalYear 360ms cubic-bezier(0.3, 1.5, 0.5, 1) forwards;
+}
+
+.GoalReminderText {
+  margin: 14px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #d6eef2;
+}
+
+@keyframes goalCard {
+  0%   { opacity: 0; transform: translateY(-28px) scale(0.92); }
+  9%   { opacity: 1; transform: translateY(0) scale(1.02); }
+  13%  { transform: translateY(0) scale(1); }
+  88%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-18px) scale(0.97); }
+}
+
+@keyframes goalYear {
+  from { opacity: 0; transform: scale(0.3); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes goalShine {
+  to { left: 120%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .GoalReminderCard { animation: goalCardFade 4300ms linear forwards; }
+  .GoalReminderCard::after { display: none; }
+  .GoalReminderYear { animation: none; opacity: 1; }
+}
+
+@keyframes goalCardFade {
+  0%, 100% { opacity: 0; }
+  8%, 90% { opacity: 1; }
+}

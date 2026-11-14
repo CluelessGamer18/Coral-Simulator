@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { createBleachStages, getBleachStage, getCoralInfo, prepareBleachStages } from "./CoralManager.js";
 import { EVENTS } from "./Events.js";
 import { createHome, addPiece, updateHomeControls, updateNestCamera } from "./HomeBuilding.js";
-import { addGlow, removeGlow } from "./Glow.js";
+import { addGlow, removeGlow, addShadow } from "./Glow.js";
 import {
     FOOD_GROWTH,
     FOOD_GLOW_COLOR,
@@ -12,8 +12,10 @@ import {
     REEF_HIDE_DISTANCE,
     PREDATOR_ESCAPE_MARGIN,
 } from "./TestScene.js";
+import { exposeForDebugging } from "./debug.js";
+import { getEffectiveVolumes } from "../audioSettings.js";
+import { MAX_FRAME_MS, FISH_SPEED, MAX_HEARTS, HEART_SPACING, HEART_OFFSET_Y } from "./gameConfig.js";
 
-const FISH_SPEED = 6.75; // same as the main game
 const FISH_SCALE = 1.3 / 1.5; // the fish's size in the main game before it grows
 const PRAISE_DURATION = 2000; // ms the "well done" message shows before moving on (keep in sync with TutorialBanner.css)
 const TUTORIAL_PREDATOR_SPEED = PREDATOR_SPEED * 0.6; // slower than the real one, to give time to read the banner
@@ -21,11 +23,6 @@ const TUTORIAL_BITE_INTERVAL = 2000; // ms between bites, half as often as the m
 const TUTORIAL_MIN_HEALTH = 2; // bites stop at one full heart, so the fish can't die in the tutorial
 const SWIM_KEY_TIME = 400; // ms each direction has to be held to finish the first lesson
 const BLEACH_PREP_MS_PER_FRAME = 6; // time each frame spends making the main game's coral bleach stages in the background
-
-// Hearts above the fish, laid out the same as the main game. Health is counted in half hearts.
-const MAX_HEARTS = 3;
-const HEART_SPACING = 36;
-const HEART_OFFSET_Y = 30;
 
 // One of each kind of nest piece, spread out on either side of the nest
 const TUTORIAL_PIECES = [
@@ -37,7 +34,7 @@ const TUTORIAL_PIECES = [
 // The heatwave lesson: the coral bleaches until a Cloudy bubble shades it, then recovers in winter
 const CORAL_TYPE = "tabular1";
 const CORAL_KEY = "Tabular-1";
-const HEATWAVE_TEMPERATURE_RISE = 5; // °C, the main game's summers add 2 to 8
+const HEATWAVE_TEMPERATURE_RISE = 5; // °C, the main game's summers add 3 to 7 (see BleachingSchedule.js)
 const SUMMER_LIGHT = 1500;
 const CLOUDY_LIGHT_DROP = 400;
 const HEATWAVE_STRESS_PER_SECOND = 18;
@@ -108,7 +105,7 @@ const STEPS = [
     {
         id: "coral",
         title: "Check On Your Coral",
-        text: "In winter the water cools and stressed coral can recover. Click on your coral to learn about it and see how it's doing. Looking at corals earns you points!",
+        text: "In winter the water cools and stressed coral can recover. Click on your coral to learn about it and see how it's doing. Every new kind of coral you open is added to your collection. Can you find them all?",
         image: "tutorial/tutorial_1.png",
         imageAlt: "A computer mouse beside a fish swimming toward the coral reef",
         praise: "Complete!",
@@ -116,7 +113,7 @@ const STEPS = [
     {
         id: "predator",
         title: "Watch Out for Predators",
-        text: "A grouper is hunting you! Swim to your nest and press E to hide. Stay there until the All Clear message appears.",
+        text: "A grouper is hunting you! Swim to your nest and press E to hide. Stay there until the All Clear message appears. (Coral hides you too, but the grouper will wait nearby.)",
         image: "tutorial/tutorial_predator.svg",
         imageAlt: "The E key beside a fish hiding in its nest while a grouper swims past",
         praise: "Complete!",
@@ -148,11 +145,10 @@ class Tutorial extends Phaser.Scene {
         this.health = MAX_HEARTS * 2 - 1; // half a heart short, so eating shows the hearts filling up
         this.temperature = 27;
         this.lightLevel = 500;
-        this.score = 0;
         this.isHiding = false;
         this.coralInfoOpen = false;
         this.heatNoticeClosed = false;
-        this.sfxVolume ??= 0.5;
+        this.sfxVolume ??= getEffectiveVolumes().sfx;
 
         this.setupWorld();
         this.setupFish();
@@ -165,7 +161,7 @@ class Tutorial extends Phaser.Scene {
 
         this.nextStep();
 
-        window.gameScene = this;
+        exposeForDebugging(this);
         // Tells React about the scene, so the settings button can pause it and the popups can talk to it
         this.game.events.emit("scene-ready", this);
         this.emitStats();
@@ -198,10 +194,9 @@ class Tutorial extends Phaser.Scene {
         this.guide = this.add.image(300, 450, "Guide")
             .setDepth(9999)
             .setScale(FISH_SCALE);
-        // preFX only exists under WebGL; on the Canvas fallback renderer it's null, so skip the shadow there
-        this.guide.preFX?.addShadow(0, -8, 0.009, 1, 0x333333, 5);
+        addShadow(this, this.guide);
 
-        this.shadow = this.add.graphics({ fillStyle: { color: 0x000000 } }).setDepth(6).setAlpha(0.5);
+        this.shadow = this.add.ellipse(this.guide.x, 950, 100, 10, 0x000000, 0.5).setDepth(6);
 
         this.hearts = [];
         for (let i = 0; i < MAX_HEARTS; i++) {
@@ -321,20 +316,18 @@ class Tutorial extends Phaser.Scene {
         this.sfxVolume = value;
     }
 
-    // The same values the main game sends, so App's state matches the tutorial (it never opens the bubble popup)
+    // The same values the main game sends, so App's state matches the tutorial
     emitStats() {
         this.game.events.emit("stats-changed", {
             stress: this.coralStress ?? 0,
             light: this.lightLevel,
             temperature: this.temperature,
             pollution: 1,
-            bubbleCollision: false,
-            collisionType: "None",
             simEnd: false,
             reefDead: false,
             fishDead: false,
-            score: this.score,
-            history: { stress: [], temp: [], light: [], poll: [] },
+            corals: null,
+            history: null,
         });
     }
 
@@ -342,7 +335,8 @@ class Tutorial extends Phaser.Scene {
         this.continueBleachStagePrep();
 
         // Tuned at 60fps like the main game, and capped so a lag spike doesn't teleport the fish
-        const frameScale = Math.min(delta, 50) / (1000 / 60);
+        delta = Math.min(delta, MAX_FRAME_MS);
+        const frameScale = delta / (1000 / 60);
 
         const hidePressed = Phaser.Input.Keyboard.JustDown(this.hideKey);
         if (hidePressed && this.stepId === "predator") this.hideFish();
@@ -382,8 +376,7 @@ class Tutorial extends Phaser.Scene {
         updateNestCamera(this, this.isHiding, frameScale);
         this.keepSkipButtonInPlace();
 
-        this.shadow.clear();
-        this.shadow.fillEllipse(this.guide.x, 950, this.guide.scale * 100, 10);
+        this.shadow.setPosition(this.guide.x, 950).setScale(this.guide.scale, 1);
     }
 
     // Does at least one step of the bleach stages, then more until this frame's time is used up
@@ -532,7 +525,7 @@ class Tutorial extends Phaser.Scene {
     emitHomeStep() {
         this.shownPiecesPlaced = this.homePiecesPlaced;
         this.emitStep({
-            text: `Triggerfish build nests in the sand. Swim to a glowing piece and press Q to pick it up, then press Q again by the nest to drop it in. Every piece earns points and helps your nest grow. (${this.homePiecesPlaced}/${TUTORIAL_PIECES.length} placed)`
+            text: `Triggerfish build nests in the sand. Swim to a glowing piece and press Q to pick it up, then press Q again by the nest to drop it in. Every piece helps your nest grow. (${this.homePiecesPlaced}/${TUTORIAL_PIECES.length} placed)`
         });
     }
 
@@ -587,7 +580,7 @@ class Tutorial extends Phaser.Scene {
             persistent: true,
             warning: true,
             title: "Temperature Bleaching Event",
-            message: `The water temperature has risen by ${HEATWAVE_TEMPERATURE_RISE}°C. Keep the light levels lower to prevent a mass bleaching of your reef.`,
+            message: `The water temperature has risen by ${HEATWAVE_TEMPERATURE_RISE}°C. Pop green Cloudy bubbles to keep the light low and stop your reef bleaching.`,
         });
         this.emitStep({ text: "Your coral is heating up! Read the notice below, then click Close to continue." });
         this.emitStats();
@@ -774,7 +767,8 @@ class Tutorial extends Phaser.Scene {
         );
     }
 
-    // Same rule as the main game: only the nest is safe, and the predator leaves while the fish stays in it
+    // Like the main game, the predator leaves while the fish stays in its nest. (The main game's corals hide the
+    // fish too, but the predator only waits nearby, so the lesson teaches the nest.)
     hideFish() {
         const hideY = Phaser.Math.Clamp(this.home.y - this.home.displayHeight * 0.45, 120, 850);
         const distance = Phaser.Math.Distance.Between(this.guide.x, this.guide.y, this.home.x, hideY);
