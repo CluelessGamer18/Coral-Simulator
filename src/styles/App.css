@@ -3,66 +3,65 @@
   height: 100%;
 }
 
-/*
-The game is drawn at 1440 x 1024 and scaled to fit. On a wide window a rail sits either side of it (Hud.jsx),
-each a fixed share of the game's height, so the three scale together; the game gives up a little size when the
-window's own margins are narrower than a rail. Everything is worked out by CSS, so it follows the window.
-*/
+/* The game is drawn at 1440 x 1024 and scaled to the biggest size that fits the window. These are that size,
+   worked out by CSS rather than taken from the canvas, so the box grows back when the window does. */
 :root {
-  --rail-ratio: calc(0.215 * var(--text-scale));
-  --game-height: min(100dvh, calc(100vw / (1.40625 + 2 * var(--rail-ratio))));
-  --game-width: calc(var(--game-height) * 1.40625);
-  --rail-width: calc(var(--game-height) * var(--rail-ratio));
-  --bar-height: 0px;
-  /* 16px when the game is 1024px tall, and never too small to read */
-  --hud-font: max(12.5px, calc(var(--game-height) / 64 * var(--text-scale)));
-}
-
-/* Too narrow for rails (4:3 screens, tablets held upright): one bar above the game instead */
-@media (max-aspect-ratio: 33/20), (max-width: 1040px) {
-  :root {
-    --bar-height: calc(clamp(52px, 8dvh, 76px) * var(--text-scale));
-    --game-height: min(calc(100dvh - var(--bar-height)), calc(100vw * 1024 / 1440));
-    --rail-width: 0px;
-    --hud-font: calc(clamp(12px, 1.5vw, 17px) * var(--text-scale));
-  }
-}
-
-.MainContent {
-  display: grid;
-  place-content: center;
-  height: 100dvh;
-  background: var(--abyss);
-}
-
-.Stage {
-  display: grid;
-  grid-template-columns: var(--rail-width) var(--game-width) var(--rail-width);
-  grid-template-rows: var(--bar-height) var(--game-height);
-  grid-template-areas: "bar bar bar" "left game right";
+  --game-width: min(100vw, calc(100dvh * 1440 / 1024));
+  --game-height: min(100dvh, calc(100vw * 1024 / 1440));
 }
 
 .GameContainer {
-  grid-area: game;
-  position: relative;
   width: var(--game-width);
   height: var(--game-height);
-  /* what the notices, cards and buttons over the game are sized from, so they scale with it */
-  font-size: max(12.5px, calc(var(--game-height) / 64 * var(--text-scale)));
-  overflow: hidden;
+}
+
+.MainContent {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  /* gap: 20px; */
+  background-color:#0292A5;
+}
+
+.OptionsButtonIcon{
+  height: 60px;
+  width: 60px;
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  border-radius: 18px;
+  background-color: #0292A5;
+  /* border-width: 5px;
+  border-style: solid;
+  border-color: #FFFFFF; */
+  padding: 0px;
+  font-size: 40px;
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  z-index: 100;
+}
+
+.OptionsButtonIcon:hover{
+  background-color: rgba(251, 105, 0, 0.864);
 }
 
 .BackToTitleButton {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 20;
+    background-color: #0292A5;
+    color: #FFFFFF;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 20;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
 }
-
 /* Shown for a moment if Start is pressed before the game's code has arrived */
 .GameLoading {
-  color: var(--ink);
-  font-size: var(--fs-large);
-  text-align: center;
-  padding-top: 40%;
+  color: #FFFFFF;
+  font-size: 1.25rem;
 }

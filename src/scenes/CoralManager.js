@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { asset } from "../assetUrl";
-import { getSettings } from "../settings.js";
+import { YEAR_DURATION_MS, SUMMER_DURATION_MS, WINTER_DURATION_MS } from "./gameConfig.js";
 
 /*
 The kinds of coral on the reef. Each kind has one description and several drawings (variants), so a patch of
@@ -10,10 +10,7 @@ To add a drawing: put the full-size art in assets-src/corals, run scripts/build-
 and add its key to the kind's variants. To add a kind: add an entry here. Every kind is a collectable (see
 collectCoral below), and the reef is always planted with at least one patch of each.
 
-bleachRate is how fast the kind takes on heat stress, as a percentage of the reef's own rate, and endurance is
-how long it can stay fully bleached before it starves, against the average. Surveys of bleached reefs find table
-and branching Acropora among the first corals to bleach and die, with sturdier, slower-growing corals lasting
-longer, so that's the order here. heat is the same thing in words, for the coral's popup.
+bleachRate is how fast the kind takes on stress, as a percentage of the reef's own rate.
 sway is how far it leans in the current, in degrees.
 */
 export const CORAL_KINDS = {
@@ -22,9 +19,7 @@ export const CORAL_KINDS = {
     scientificName: 'Dendrogyra cylindrus',
     info: 'Pillar coral is naturally uncommon and grows slowly, which makes recovery difficult after losses. Stony coral tissue loss disease has caused severe declines in parts of its range, and NOAA lists the species as endangered under the U.S. Endangered Species Act.',
     imgType: 'branch',
-    bleachRate: 80,
-    endurance: 1.3,
-    heat: 'Sturdy: slow to bleach, and it can last a while once it has.',
+    bleachRate: 100,
     sway: 0.45,
     variants: ['Columnar-1', 'Columnar-2', 'Columnar-3', 'Columnar-4'],
   },
@@ -33,9 +28,7 @@ export const CORAL_KINDS = {
     scientificName: 'Acropora digitifera',
     info: 'Acropora digitifera forms low or upright colonies of narrow, finger-like branches, each with a prominent corallite at its tip. It lives on shallow tropical reefs across the Indo-Pacific, where marine heat can trigger bleaching.',
     imgType: 'branch',
-    bleachRate: 110,
-    endurance: 0.9,
-    heat: 'Sensitive: branching corals like this bleach early in a heatwave.',
+    bleachRate: 100,
     sway: 2.25,
     variants: ['Digitate-1', 'Digitate-2', 'Digitate-3', 'Digitate-4'],
   },
@@ -44,9 +37,7 @@ export const CORAL_KINDS = {
     scientificName: 'Montipora foliosa',
     info: 'Montipora foliosa grows in broad, thin plates that spread outward and can overlap in tiers. This flattened, leaf-like growth form sets it apart from corals that build upright branches.',
     imgType: 'branch',
-    bleachRate: 95,
-    endurance: 1.0,
-    heat: 'In between: its thin plates bleach at about the pace of the reef as a whole.',
+    bleachRate: 100,
     sway: 1.25,
     variants: ['Folios-1', 'Folios-2'],
   },
@@ -55,9 +46,7 @@ export const CORAL_KINDS = {
     scientificName: 'Acropora clathrata',
     info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
     imgType: 'tabular',
-    bleachRate: 125,
-    endurance: 0.8,
-    heat: 'Very sensitive: table corals are usually the first to bleach, and the first to die.',
+    bleachRate: 100,
     sway: 0.45,
     variants: ['Tabular-1', 'Tabular-2', 'Tabular-3'],
   },
@@ -66,9 +55,7 @@ export const CORAL_KINDS = {
     scientificName: 'Acropora clathrata',
     info: 'Known as lattice table coral, Acropora clathrata forms broad colonies with a table-like outline. It occurs across the Indo-Central Pacific, from the Red Sea to western Australia.',
     imgType: 'tabular',
-    bleachRate: 120,
-    endurance: 0.8,
-    heat: 'Very sensitive: table corals are usually the first to bleach, and the first to die.',
+    bleachRate: 100,
     sway: 0.45,
     variants: ['Flat-Tabular-1', 'Flat-Tabular-2', 'Flat-Tabular-3'],
   },
@@ -84,19 +71,6 @@ for (const [kindId, kind] of Object.entries(CORAL_KINDS)) {
 }
 
 const coralStatuses = ['Healthy', 'Ok', 'Stressed', 'Bleached', 'Dead']; // forwarded to React frontend for display
-// One line on why the coral looks the way it does, for each status
-const coralReasons = [
-  'Its algae are thriving, and they feed it and give it its colour.',
-  'The warm water is starting to bother the algae living inside it.',
-  'Hot water and strong light are driving out its algae. It is turning pale.',
-  'Nearly all of its algae are gone, so it is white and starving. It can still recover if the water cools soon.',
-  'It went too long without its algae and starved. Seaweed is growing over the skeleton.',
-];
-const ALGAE_SHOWN = 12; // algae in the microscope picture of a healthy coral
-const STARVE_SECONDS = 15; // how long an average coral can stay fully bleached before it dies
-const DEAD_TINT = 0x8f9478; // a dead coral's skeleton is soon covered in dull green-brown turf algae
-const REPLANT_SCALE = 0.55; // a replanted fragment starts this much of a full colony's size
-const REPLANT_GROW_MS = 90000;
 export const BLEACH_STAGE_COUNT = 10;
 
 const coralImgPathsTabular = [ // microscope images of tabular coral bleach stages (for sending to React frontend)
@@ -127,12 +101,6 @@ export function getCoralInfo(typeName, stress, dead = false) {
     scientificName: type.scientificName,
     status: coralStatuses[statusStage],
     statusStage,
-    statuses: coralStatuses,
-    stress: Math.round(dead ? 100 : stress),
-    reason: coralReasons[statusStage],
-    heat: type.heat,
-    algaeLeft: dead ? 0 : Math.round(ALGAE_SHOWN * (1 - stress / 100)),
-    algaeTotal: ALGAE_SHOWN,
     info: type.info,
     img: (type.imgType === 'branch' ? coralImgPathsBranch : coralImgPathsTabular)[statusStage],
   };
@@ -194,11 +162,8 @@ function createCoralGroup(scene, count, minX, maxX, requiredImages) {
       type.generatedStages = createBleachStages(scene, type.key);
     }
 
-    // No two colonies are quite alike, even of the same kind, so each has its own sensitivity and endurance
-    coral.sensitivity = type.bleachRate / 100 * Phaser.Math.FloatBetween(0.8, 1.2);
-    coral.endurance = STARVE_SECONDS * type.endurance * Phaser.Math.FloatBetween(0.5, 1.5);
+    coral.bleachRate = type.bleachRate;
     coral.stress = 0;
-    coral.starved = 0; // seconds spent fully bleached
     coral.bleachStage = 0;
     coral.dead = false;
 
@@ -217,8 +182,7 @@ function createCoralGroup(scene, count, minX, maxX, requiredImages) {
     });
 
     coral.on('pointerout', () => { // end hover effect
-      if (coral.dead) coral.setTint(DEAD_TINT);
-      else coral.clearTint();
+      coral.clearTint();
 
       if (coral.coralPulse) {
         coral.coralPulse.stop();
@@ -227,16 +191,14 @@ function createCoralGroup(scene, count, minX, maxX, requiredImages) {
       coral.setScale(coral.baseScale); // stopping the pulse mid-way leaves the coral at whatever size it had reached
     });
 
-    // On a click or tap: open the coral's info popup, and add its kind to the collection. Pressing and holding
-    // steers the fish instead (PointerControls.js), so this waits for the release and checks it was quick.
-    coral.on('pointerup', (pointer) => {
-      if (!scene.tutorialComplete || scene.simEnd || scene.coralInfoOpen || !isTap(pointer)) return;
+    coral.on('pointerdown', () => { // on click: open the coral's info popup, and add its kind to the collection
+      if (!scene.tutorialComplete || scene.simEnd || scene.coralInfoOpen) return;
 
       scene.coralInfoOpen = true;
-      scene.pointerGoal = null;
       const collection = collectCoral(scene, coral);
-      scene.yearStats.looked++;
-      scene.game.events.emit('coralInfo', { ...getCoralInfo(coral.type, coral.stress, coral.dead), collection });
+
+      const { name, scientificName, status, info, img } = getCoralInfo(coral.type, coral.stress, coral.dead);
+      scene.game.events.emit('coralInfo', { name, scientificName, status, info, img, collection });
     });
 
     // Each coral leans back and forth at its own pace (see swayCorals)
@@ -361,12 +323,6 @@ function createCoralSpawnPlan(count, minX, maxX, requiredImages = []) {
   return spawns;
 }
 
-const TAP_MS = 350;
-const TAP_DISTANCE = 16;
-export function isTap(pointer) {
-  return pointer.getDuration() <= TAP_MS && pointer.getDistance() <= TAP_DISTANCE;
-}
-
 // Adds the coral's kind to the player's collection the first time one of that kind is opened, with a little
 // "New coral!" over the coral. Returns what the popup needs to show: { kind, isNew, collected, total }.
 function collectCoral(scene, coral) {
@@ -411,7 +367,6 @@ function collectCoral(scene, coral) {
 // Leans every coral on screen back and forth. One sine each per frame, in place of 200 tweens that ran whether
 // or not their coral could be seen. Uses the scene's clock, so the reef holds still while the game is paused.
 export function swayCorals(scene) {
-  if (getSettings().reducedMotion) return;
   const now = scene.time.now;
   for (const coral of scene.corals) {
     if (coral.visible) coral.angle = Math.sin(now * coral.swaySpeed + coral.swayPhase) * coral.swayAngle;
@@ -554,78 +509,27 @@ export function getBleachStage(stressAmount) {
   return Math.floor(Phaser.Math.Clamp(stressAmount, 0, 100) / 100 * BLEACH_STAGE_COUNT);
 }
 
-/*
-Passes the reef's change in heat stress on to every living coral. Called every frame while the clock runs.
-
-Rising stress is scaled by the coral's own sensitivity, so the delicate kinds pale first. A coral that reaches
-100 is fully bleached: it has lost the algae that feed it, and it starves if it stays that way for longer than
-it can endure. Corals that hold out until the water cools recover with the rest of the reef, which is why the
-reef dies a few colonies at a time and not all at once. Returns how many died in this step.
-*/
-export function updateCoralStress(scene, stressDelta, deltaMs) {
-  const seconds = deltaMs / 1000;
-  let died = 0;
+/* Apply the reef's stress change to each coral using its susceptibility percentage. Called every frame. */
+export function updateCoralStress(scene, stressDelta, deltaMs = 0) {
+  // Winter brings every living coral back to zero stress by the end of the season, however stressed it was
+  let winterRecovery = 0;
+  if (stressDelta <= 0 && scene.season === "winter") {
+    const winterProgress = Phaser.Math.Clamp(((scene.elapsedSimMs % YEAR_DURATION_MS) - SUMMER_DURATION_MS) / WINTER_DURATION_MS, 0, 1);
+    winterRecovery = deltaMs / WINTER_DURATION_MS / Math.max(1 - winterProgress, 0.001);
+  }
 
   for (const coral of scene.corals) {
     if (coral.dead) continue;
 
-    const change = stressDelta > 0 ? stressDelta * coral.sensitivity : stressDelta;
-    coral.stress = Phaser.Math.Clamp(coral.stress + change, 0, 100);
+    let scaledDelta;
+    if (stressDelta > 0) scaledDelta = stressDelta * coral.bleachRate / 100;
+    else if (scene.season === "winter") scaledDelta = -coral.stress * winterRecovery;
+    else scaledDelta = stressDelta;
 
-    if (coral.stress >= 100) {
-      coral.starved += seconds;
-      if (coral.starved >= coral.endurance) {
-        killCoral(coral);
-        died++;
-      }
-    } else if (stressDelta < 0) {
-      coral.starved = Math.max(coral.starved - seconds / 2, 0);
-    }
+    coral.stress = Phaser.Math.Clamp(coral.stress + scaledDelta, 0, 100);
+    if (coral.stress >= 100) coral.dead = true;
     showBleachStage(coral);
   }
-  return died;
-}
-
-function killCoral(coral) {
-  coral.stress = 100;
-  coral.dead = true;
-  coral.setTint(DEAD_TINT);
-}
-
-// Extra recovery (or, with a negative amount, extra harm) for the corals around a spot: the winter jobs use it
-export function changeStressNear(scene, x, radius, amount) {
-  for (const coral of scene.corals) {
-    if (coral.dead || Math.abs(coral.x - x) > radius) continue;
-    coral.stress = Phaser.Math.Clamp(coral.stress + amount, 0, 100);
-    if (amount < 0) coral.starved = 0;
-    showBleachStage(coral);
-  }
-}
-
-// A fragment of living coral planted on a dead colony's spot grows into a new colony of the same kind
-export function replantCoral(scene, coral) {
-  coral.dead = false;
-  coral.stress = 0;
-  coral.starved = 0;
-  coral.clearTint();
-  showBleachStage(coral);
-
-  const fullScale = coral.fullScale ?? coral.baseScale;
-  coral.fullScale = fullScale;
-  coral.baseScale = fullScale * REPLANT_SCALE;
-  coral.setScale(coral.baseScale);
-  scene.tweens.add({
-    targets: coral,
-    baseScale: fullScale,
-    duration: REPLANT_GROW_MS,
-    onUpdate: () => { if (!coral.coralPulse) coral.setScale(coral.baseScale); },
-  });
-}
-
-export function countLivingCorals(scene) {
-  let alive = 0;
-  for (const coral of scene.corals) if (!coral.dead) alive++;
-  return alive;
 }
 
 // Swaps the coral's texture when its stress crosses into another bleach stage, and not otherwise
@@ -639,7 +543,8 @@ function showBleachStage(coral) {
 
 export function killCorals(scene) {
   scene.corals.forEach(coral => {
-    if (!coral.dead) killCoral(coral);
+    coral.stress = 100;
+    coral.dead = true;
     showBleachStage(coral);
   });
 }
@@ -648,9 +553,7 @@ export function killCorals(scene) {
 export function resetCorals(scene) {
   scene.corals.forEach(coral => {
     coral.stress = 0;
-    coral.starved = 0;
     coral.dead = false;
-    coral.clearTint();
     showBleachStage(coral);
   });
 }

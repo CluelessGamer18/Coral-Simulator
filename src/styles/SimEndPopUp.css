@@ -1,0 +1,220 @@
+.SimEndPopUp{
+    z-index: 9999;
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    background-color: rgba(2, 146, 165, 0.9);
+    border-radius: 16px;
+    background: linear-gradient(#0292A5, #0292A5) padding-box,
+    linear-gradient(to bottom, #0292A5, #FFFFFF) border-box;
+    border: 4px solid transparent;
+    backdrop-filter: blur(4px);
+
+    padding: 40px;
+
+          /* Animation */
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards; 
+}
+
+.SimEndPopUpButtonContainer{
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.SimEndPopUpChartButton{
+    width: 100px;
+    color:#FFFFFF;
+    text-align: center;
+    background-color: rgba(2, 146, 165, 0.8);
+    border-radius: 25px;
+    border-style: solid;
+    border-color: white;
+    border-width: 2px;
+    padding: 8px;
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.SimEndPopUpChartButton:hover{
+    scale: 1.1;
+    background-color: #F86A1C;
+}
+
+.SimEndPopUpText{
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: #FFFFFF;
+    margin-right: 10px;
+}
+
+.SimEndPopUpTitle{
+    font-family: 'Poppins', sans-serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: #FFFFFF;
+    margin-right: 10px;
+}
+
+.SimEndPopUpRestartButton{
+    background-color: white;
+    border-radius: 25px;
+    border-style: solid;
+    border-color: white;
+    border-width: 2px;
+    width: 155px;
+    padding: 8px;
+    color:rgba(2, 146, 165, 0.8);
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.SimEndPopUpMinimizeButton{
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(2, 146, 165, 0.8);
+    border-radius: 20px;
+    border-style: solid;
+    border-color: white;
+    border-width: 2px;
+    width: 50px;
+    padding: 0px;
+    color:white;
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.SimEndPopUpExpandButton{
+  height: 60px;
+  width: 60px;
+  position: absolute;
+  left: 20px;
+  top: 100px;
+  border-radius: 18px;
+  background-color: #0292A5;
+  padding: 0px;
+  font-size: 40px;
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  z-index: 100;
+  animation: popIn 1s ease-out forwards;
+}
+
+.SimEndPopUpExpandButton:hover{
+  background-color: rgba(251, 105, 0, 0.864);
+}
+
+
+
+.SimEndPopUpRestartButton:hover{
+    scale: 1.1;
+    background-color: #F86A1C;
+    color: #FFFFFF;
+}
+
+.SimEndPopUpMinimizeButton:hover{
+    scale: 1.1;
+    background-color: #F86A1C;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.6);
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    opacity: 1;
+    background-color: #F86A1C;
+    border-color: white;
+    border-width: 3px;
+
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0);
+  }
+}
+/* The three numbers that sum the game up, above the charts */
+.SimEndSummary {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0 6px;
+    font-family: 'Poppins', sans-serif;
+    color: #FFFFFF;
+}
+
+.SimEndSummary > div {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(11, 46, 58, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.SimEndSummary > div.good {
+    border-color: #ffe3a3;
+}
+
+.SimEndSummary > div.good dd {
+    color: #ffe3a3;
+}
+
+.SimEndSummary dt {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.SimEndSummary dd {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.SimEndSummary small {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.85;
+}
+
+.SimEndLegend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    color: #FFFFFF;
+}
+
+.SimEndLegendSwatch {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    background: rgba(255, 122, 89, 0.6);
+}
+
+.SimEndPopUpChartButton.selected {
+    background-color: #FFFFFF;
+    color: #086b7a;
+}

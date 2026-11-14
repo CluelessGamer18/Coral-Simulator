@@ -14,7 +14,7 @@
   padding: 28px 32px;
   border-radius: 18px;
   border: 2px solid #ffffff;
-  background: var(--abyss);
+  background: #086b7a;
   color: #ffffff;
   text-align: center;
 }
@@ -32,15 +32,16 @@
 
 .ProblemScreenCard button {
   padding: 9px 24px;
-  border: 2px solid var(--coral);
+  border: 2px solid #ffffff;
   border-radius: 25px;
-  background: var(--coral);
-  color: var(--abyss);
+  background: #ffffff;
+  color: #086b7a;
   font-size: 16px;
   font-weight: 600;
 }
 
 .ProblemScreenCard button:hover {
-  background: var(--coral-light);
-  border-color: var(--coral-light);
+  background: #F86A1C;
+  border-color: #F86A1C;
+  color: #ffffff;
 }

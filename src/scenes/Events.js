@@ -1,182 +1,311 @@
 import Phaser from "phaser";
-import { addShade, addCooling, addPlumeHeat, isHeatwave, getCalendarYear } from "./reefModel.js";
+import { isBleachingYear } from "./BleachingSchedule.js";
 
-/*
-The bubbles that drift around the fish during a heatwave. Swimming into one pops it.
-
-  Cloudy        shades the reef for a few seconds, which slows bleaching (from the first heatwave, year 2)
-  Cool Current  takes the edge off the heat for a few seconds (from year 4)
-  Hot Plume     a pocket of even hotter water that creeps towards the fish; touching one heats the reef for
-                the rest of the summer (from year 7)
-
-Both helpful kinds wear off, so a heatwave needs looking after all summer and not just once. Later years bring
-fewer helpful bubbles, and they drift away from the fish, which is how the game gets harder.
-*/
-
-export const SHADE_AMOUNT = 480;   // light a Cloudy bubble holds off; it fades over 12 seconds (reefModel.js)
-export const COOLING_AMOUNT = 2.4; // °C a Cool Current takes off; it fades over 12 seconds
-const PLUME_HEAT = 1;              // °C a Hot Plume adds
-
-export const BUBBLES = {
-    cloudy: {
-        texture: "LightBubble", tint: 0x7fe3c4, label: "Shade", labelColor: "#0b2e3a", helpful: true,
-        title: "Cloudy", message: "Clouds are shading the reef for the next few seconds. Shade slows bleaching, but only cooler water stops it.",
-    },
-    cool: {
-        texture: "TempBubble", tint: 0x8fd3ff, label: "Cool", labelColor: "#0b2e3a", helpful: true,
-        title: "Cool Current", message: `A current of deeper water has cooled the reef by ${COOLING_AMOUNT} °C for a few seconds. Bleaching can be reversed when the heat is taken away.`,
-    },
-    plume: {
-        texture: "TempBubble", tint: 0xff5d5d, label: "HOT", labelColor: "#ffffff", helpful: false,
-        title: "Hot Plume", message: `You swam into a pocket of hot water. The reef is ${PLUME_HEAT} °C hotter until winter. Steer around the red ones!`,
-    },
+// Tweak these values to change how the event bubbles behave
+const CONFIG = {
+    spawnMinTime: 1000, // minimum time between event spawns
+    spawnMaxTime: 7000, // maximum time between event spawns
+    maxNegativeBubbles: 6, // maximum number of negative bubbles on screen at once
+    maxPositiveBubbles: 3, // maximum number of helpful bubbles on screen at once
+    maxTotalBubbles: 10, // maximum number of total bubbles on screen at once
+    negativeBubbleLifetime: 30000, // evade negative bubbles for this long and they disappear
+    positiveBubbleLifetime: 45000, 
+    aggroRadius: 700, // if the player is within this distance the bubbles will chase the player
+    minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
+    positiveMinSpawnDistance: 350, // keep helpful bubbles clear of the player's position
+    baseChaseSpeed: 1.2,
+    chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
+    eventsCanKill: true, // when false, negative events cannot push conditions into fatal ranges
+    negativeBubblesEnabled: false, // Temporarily disable negative bubbles until they receive their updated behavior
+    negativeHitDamage: 0, // half a heart lost by interacting with event bubble
 };
 
-// What each heatwave year offers. Times are in ms; helpful bubbles spawn this far from the fish, in px.
-function getPlan(year) {
-    if (year >= 7) return { every: [3600, 6000], coolChance: 0.4, plumes: year - 5, drift: 1.1 };
-    if (year >= 4) return { every: [3000, 5200], coolChance: 0.4, plumes: 0, drift: 0 };
-    return { every: [2400, 4200], coolChance: 0, plumes: 0, drift: 0 };
+// Environmental variable map
+const VARIABLES = {
+    temperature: {prop: "temperature", setter: "updateTemperature", texture: "TempBubble", label: "The temperature", unit: "°C", max: 35},
+    light: {prop: "lightLevel", setter: "updateLight", texture: "LightBubble", label: "The light level", unit: "", max: 1839},
+};
+
+const EVENT_CHANGE_RANGES = {
+    temperature: {min: 1, max: 5, step: 1},
+    light: {min: 100, max: 500, step: 10},
+    positiveLight: {min: 300, max: 700, step: 10},
+};
+
+function randomEventChange(variable, type = "negative") {
+    const rangeName = type === "positive" && variable === "light"
+        ? "positiveLight"
+        : variable;
+    const { min, max, step } = EVENT_CHANGE_RANGES[rangeName];
+    return Phaser.Math.Between(min / step, max / step) * step;
 }
 
-const MAX_HELPFUL = 3;
-const HELPFUL_LIFETIME = 14000;
-const HELPFUL_DISTANCE = [380, 640];
-const FIRST_BUBBLE_DELAY = 1800;       // the first bubble of a summer comes quickly, so there is something to do
-const DRIFT_RANGE = 520;               // late-game helpful bubbles back away while the fish is this close
-const PLUME_EVERY = [4500, 7500];
-const PLUME_LIFETIME = 13000;
-const PLUME_SPEED = 1.7;               // px per frame at 60fps; the fish swims at 6.75
-const PLUME_MIN_SPAWN_DISTANCE = 650;
-const BUBBLE_SPACING = 170;            // bubbles don't spawn on top of each other
-const SWIM_AREA = { top: 150, bottom: 760 }; // bubbles keep off the sea floor, where the pickups are
+// Calculate risk with something defined as the profile of a trapezoid-shaped distribution
+// This calculates the normalized probability (0 to 1) or risk occuring up to value
+function risk(value, {a, b, c, d}){
+    if (value < b) return Phaser.Math.Clamp((b - value) / (b - a), 0, 1);
+    if (value > c) return Phaser.Math.Clamp((value - c) / (d - c), 0, 1);
+    return 0;
+}
 
+// Event definitions
+// weight (r) gets the current risk of each variable and returns how likely it is to be relevant to the other ones
+export const EVENTS = [
+    // Negative events (chase fish), darker = more intense
+    {
+        id: "temp_up", type: "negative", intensity: 2, variable: "temperature",
+        title: "Ocean Temperatures Rising", learning: "multiple_stressors",
+        teach: "High heat builds stress over time, and bright light can make that stress build faster.",
+        weight: (r) => 1 + r.light * 1.5,
+    },
+    {
+        id: "light_up", type: "negative", intensity: 2, variable: "light",
+        title: "Light Levels Increasing", learning: "multiple_stressors",
+        teach: "Bright light can accelerate bleaching when water is too warm.",
+        weight: (r) => 1 + r.temperature * 1.5,
+    },
+
+    // Positive events (swim into them to help the reef)
+    {
+        id: "cool_current", type: "positive", intensity: 1, variable: "temperature",
+        title: "Cool Current", learning: "reversible",
+        teach: "Coral bleaching can be reversed when the stress is removed.",
+        weight: (r) => 0.4 + r.temperature * 3,
+    },
+    {
+        id: "shade", type: "positive", intensity: 1, variable: "light",
+        title: "Cloudy", learning: "reversible",
+        teach: "Shade from clouds takes pressure off of stressed corals.",
+        weight: (r) => 0.4 + r.light * 3,
+    },
+];
+
+// Event Manager
 export class EventManager {
-    constructor(scene) {
+    constructor(scene, thresholds) {
         this.scene = scene;
+        this.th = thresholds;
         this.active = [];
-        this.wasHeatwave = false;
-        this.nextHelpfulIn = 0;
-        this.nextPlumeIn = 0;
+        this.season = scene.season;
+        this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
     }
 
     // Call every frame from the scene's update()
     update(delta, frameScale) {
         const s = this.scene;
-        const heatwave = isHeatwave(s.reef) && !s.simEnd;
 
-        if (heatwave !== this.wasHeatwave) {
-            this.wasHeatwave = heatwave;
-            if (heatwave) {
-                this.nextHelpfulIn = FIRST_BUBBLE_DELAY;
-                this.nextPlumeIn = Phaser.Math.Between(...PLUME_EVERY);
-            } else {
-                this.active.forEach(b => this.expire(b)); // winter: what's left fizzles out
-            }
+        // Event bubbles only appear during scheduled bleaching summers.
+        if (this.season !== s.season) {
+            this.clear();
+            this.season = s.season;
+            this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
         }
-        if (s.coralInfoOpen) return;
 
-        if (heatwave) {
-            const plan = getPlan(getCalendarYear(s.reef));
-            const count = (helpful) => this.active.filter(b => b.def.helpful === helpful && !b.resolving).length;
+        if (s.simEnd || !s.tutorialComplete || s.coralInfoOpen || s.yearsElapsed < 1) return;
+        if (s.season !== "summer" || !isBleachingYear(s.yearsElapsed)) return;
 
-            this.nextHelpfulIn -= delta;
-            if (this.nextHelpfulIn <= 0) {
-                this.nextHelpfulIn = Phaser.Math.Between(...plan.every);
-                if (count(true) < MAX_HELPFUL) {
-                    this.spawn(Math.random() < plan.coolChance ? "cool" : "cloudy", plan);
-                }
-            }
-
-            this.nextPlumeIn -= delta;
-            if (plan.plumes > 0 && this.nextPlumeIn <= 0) {
-                this.nextPlumeIn = Phaser.Math.Between(...PLUME_EVERY);
-                if (count(false) < plan.plumes) this.spawn("plume", plan);
-            }
+        this.nextSpawnIn -= delta;
+        if (this.nextSpawnIn <= 0) {
+            this.spawn();
+            this.nextSpawnIn = Phaser.Math.Between(CONFIG.spawnMinTime, CONFIG.spawnMaxTime);
         }
 
         // Removing a bubble replaces this.active with a new array, so the one being looped over is never changed
         for (const b of this.active) this.updateBubble(b, delta, frameScale);
     }
 
-    spawn(kind, plan) {
-        const s = this.scene;
-        const def = BUBBLES[kind];
-        const [near, far] = def.helpful ? HELPFUL_DISTANCE : [PLUME_MIN_SPAWN_DISTANCE, PLUME_MIN_SPAWN_DISTANCE + 500];
+    // Check if bubbles can spawn
+    canSpawn(def) {
+        if (def.type === "negative" && !CONFIG.negativeBubblesEnabled) return false;
 
-        // A ring around the fish, kept inside the water it can reach. A few tries find a spot that the edges of
-        // the world haven't pushed too close.
-        let x, y;
-        for (let tries = 0; tries < 12; tries++) {
-            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            const distance = Phaser.Math.Between(near, far);
-            x = Phaser.Math.Clamp(s.guide.x + Math.cos(angle) * distance, 120, s.WORLD_WIDTH - 120);
-            y = Phaser.Math.Clamp(s.guide.y + Math.sin(angle) * distance * 0.6, SWIM_AREA.top, SWIM_AREA.bottom);
-            const clearOfFish = Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) >= near * 0.8;
-            const clearOfOthers = this.active.every(b => Phaser.Math.Distance.Between(x, y, b.sprite.x, b.sprite.y) >= BUBBLE_SPACING);
-            if (clearOfFish && clearOfOthers) break;
+        const isSummer = this.scene.season === "summer";
+        if (!isSummer) return false;
+        if (def.type === "positive" && def.variable !== "light") return false;
+
+        const variable = VARIABLES[def.variable];
+        const threshold = this.th[def.variable];
+        const value = this.scene[variable.prop];
+
+        if (def.type === "negative") {
+            if (value < threshold.b) return false; // Already below the healthy value
+            const maxChange = EVENT_CHANGE_RANGES[def.variable].max;
+            const after = value + maxChange;
+            if (!CONFIG.eventsCanKill && after > variable.max) return false;
+            if (!CONFIG.eventsCanKill && after > threshold.d) return false; // Prevent events from instantly killing the reef
+            if (!CONFIG.eventsCanKill) {
+                const nextTemperature = def.variable === "temperature" ? after : this.scene.temperature;
+                const nextLight = def.variable === "light" ? after : this.scene.lightLevel;
+                const temperatureThreshold = this.th.temperature;
+                const lightThreshold = this.th.light;
+                const wouldCauseFatalPair =
+                    (nextTemperature >= temperatureThreshold.d && nextLight >= lightThreshold.d)
+                    || (nextTemperature <= temperatureThreshold.a && nextLight <= lightThreshold.a);
+                if (wouldCauseFatalPair) return false;
+            }
+            return true;
         }
 
-        const sprite = s.add.image(x, y, def.texture).setDepth(7.6).setTint(def.tint).setAlpha(0);
-        const label = s.add.text(x, y, def.label, {
-            fontSize: "17px",
-            fontFamily: "Poppins, sans-serif",
+        return value > threshold.b;
+    }
+
+    // Choose what event is picked
+    pickEvent() {
+        const s = this.scene;
+        // Positive bubbles are available only during summer; winter recovery is automatic.
+        if (s.season !== "summer") return null;
+
+        const r = {
+            temperature: risk(s.temperature, this.th.temperature),
+            light: risk(s.lightLevel, this.th.light),
+        };
+        const negativeCount = this.active.filter(b => b.def.type === "negative").length;
+        const positiveCount = this.active.filter(b => b.def.type === "positive").length;
+
+        const pool = EVENTS
+            .filter(e => !(e.type === "negative" && negativeCount >= CONFIG.maxNegativeBubbles))
+            .filter(e => !(e.type === "positive" && positiveCount >= CONFIG.maxPositiveBubbles))
+            .filter(e => this.canSpawn(e))
+            .map(e => ({e, w: Math.max(0, e.weight(r))}))
+            .filter(p => p.w > 0);
+
+        const total = pool.reduce((sum, p) => sum + p.w, 0);
+        if (total <= 0) return null;
+
+        let roll = Math.random() * total;
+        return (pool.find(p => (roll -= p.w) <= 0) ?? pool[0]).e;
+    }
+
+    // Spawning
+    spawn() {
+        if (this.active.length >= CONFIG.maxTotalBubbles) return;
+        const def = this.pickEvent();
+        if (!def) return;
+
+        const s = this.scene;
+        const change = randomEventChange(def.variable, def.type);
+        const minDist = def.type === "negative"
+            ? CONFIG.minSpawnDistance
+            : CONFIG.positiveMinSpawnDistance;
+        let x, y, tries = 0;
+
+        do {
+            if (def.type === "positive") {
+                // Keep helpful bubbles near the center of the reef for easy collection.
+                x = Phaser.Math.Between(
+                    Math.max(100, s.guide.x - 400),
+                    Math.min(s.WORLD_WIDTH - 100, s.guide.x + 400)
+                );
+                y = Phaser.Math.Between(
+                    Math.max(120, s.guide.y - 400),
+                    Math.min(850, s.guide.y + 400)
+                );
+            } else {
+                // Only spawn in the same areas that the fish can reach.
+                x = Phaser.Math.Between(100, s.WORLD_WIDTH - 100);
+                y = Phaser.Math.Between(120, 850);
+            }
+        } while (
+            Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist
+            && ++tries < 20
+        );
+
+        // If a constrained positive spawn has exhausted its retries, place it at the
+        // nearest guaranteed valid point instead of using a candidate on top of the player.
+        if (def.type === "positive"
+            && Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist) {
+            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            x = Phaser.Math.Clamp(s.guide.x + Math.cos(angle) * minDist, 100, s.WORLD_WIDTH - 100);
+            y = Phaser.Math.Clamp(s.guide.y + Math.sin(angle) * minDist, 120, 850);
+            // If clamping moved this fallback inside the exclusion radius, try the
+            // opposite axis, then center it in the nearest safe in-bounds area.
+            if (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist) {
+                x = Phaser.Math.Clamp(s.guide.x, 100 + minDist, s.WORLD_WIDTH - 100 - minDist);
+                y = Phaser.Math.Clamp(s.guide.y + minDist, 120 + minDist, 850 - minDist);
+            }
+        }
+
+        const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
+        const changeSign = def.type === "negative" ? "+" : "−";
+        const changeUnit = def.variable === "temperature" ? "°C" : "";
+        const label = s.add.text(x, y, `${changeSign}${change}${changeUnit}`, {
+            fontSize: "18px",
+            fontFamily: "Arial, sans-serif",
             fontStyle: "bold",
-            color: def.labelColor,
-            stroke: def.helpful ? "#ffffff" : "#7d1717",
-            strokeThickness: 4,
-        }).setOrigin(0.5, 1).setDepth(7.7).setAlpha(0);
-        s.tweens.add({ targets: [sprite, label], alpha: 1, duration: 350 });
-        if (!def.helpful) {
-            sprite.setScale(1.15);
-            s.tweens.add({ targets: sprite, scale: 1.28, duration: 520, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+            color: def.type === "negative" ? "#ffffff" : "#123d24",
+            stroke: def.type === "negative" ? "#7d1717" : "#ffffff",
+            strokeThickness: 3,
+        })
+            .setOrigin(0.5, 1)
+            .setDepth(8);
+
+        if (def.type === "negative") {
+            // Red, getting darker with intensity: 1 = bright red, 3 = dark red
+            const red = Math.round(255 - (def.intensity - 1) * 55);
+            sprite.setTint(Phaser.Display.Color.GetColor(red, 40, 40));
+
+            const base = 0.9 + 0.15 * def.intensity;
+            sprite.setScale(base);
+            s.tweens.add({targets: sprite, scale: base * 1.08, duration: 600, yoyo: true, repeat: -1, ease: "Sine.inOut"});
+        } else {
+            sprite.setTint(0x44dd66); // Green
+            s.bubbleIdle(sprite);
         }
 
         this.active.push({
-            sprite, label, def, kind, age: 0,
-            life: def.helpful ? HELPFUL_LIFETIME : PLUME_LIFETIME,
-            drift: def.helpful ? plan.drift : 0,
-            bob: Math.random() * Math.PI * 2,
+            sprite, label, def, change, age: 0, phase: Math.random() * 1000,
+            life: def.type === "negative" ? CONFIG.negativeBubbleLifetime : CONFIG.positiveBubbleLifetime, 
+            direction: Phaser.Math.FloatBetween(0, Math.PI * 2), 
+            targetDirection: Phaser.Math.FloatBetween(0, Math.PI * 2),
+            directionTimer: Phaser.Math.Between(500, 1500),
+
         });
     }
 
+    // Per Bubble Behaviour
     updateBubble(b, delta, frameScale) {
         const s = this.scene;
         if (b.resolving) return;
         b.age += delta;
 
-        const dx = s.guide.x - b.sprite.x;
-        const dy = s.guide.y - b.sprite.y;
-        const distance = Math.hypot(dx, dy) || 1;
-
-        if (!b.def.helpful && !s.isHiding) {
-            // Hot plumes creep towards the fish, slowly enough to swim around
-            b.sprite.x += dx / distance * PLUME_SPEED * frameScale;
-            b.sprite.y += dy / distance * PLUME_SPEED * frameScale;
-        } else if (b.drift > 0 && distance < DRIFT_RANGE) {
-            b.sprite.x -= dx / distance * b.drift * frameScale;
-            b.sprite.y -= dy / distance * b.drift * 0.5 * frameScale;
-        }
-        // a gentle bob, in place of a tween per bubble
-        b.bob += delta * 0.003;
-        b.sprite.y += Math.sin(b.bob) * 0.35 * frameScale;
-        b.sprite.x = Phaser.Math.Clamp(b.sprite.x, 100, s.WORLD_WIDTH - 100);
-        b.sprite.y = Phaser.Math.Clamp(b.sprite.y, 120, 850);
-        b.label.setPosition(b.sprite.x, b.sprite.y - b.sprite.displayHeight * 0.52);
-
+        const dist = Phaser.Math.Distance.Between(b.sprite.x, b.sprite.y, s.guide.x, s.guide.y);
         const touchRadius = b.sprite.displayWidth / 2 + 30;
-        if (distance < touchRadius && !s.isHiding) return this.resolve(b);
-        if (b.age >= b.life) return this.expire(b);
+
+        if (b.def.type === "negative") {
+            b.directionTimer -= delta;
+
+            if (b.directionTimer <= 0) {
+                b.direction = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                b.directionTimer = Phaser.Math.Between(500, 1500);
+            }
+
+            b.targetDirection = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            b.directionTimer = Phaser.Math.Between(1500, 3000);
+
+            const speed =
+                (CONFIG.baseChaseSpeed + CONFIG.chasePerIntensity * b.def.intensity) * frameScale;
+
+            const angleDifference = Phaser.Math.Angle.Wrap(b.targetDirection - b.direction);
+            const maxTurn = 0.8 * delta / 1000; // radians per second
+            b.direction += Phaser.Math.Clamp(angleDifference, -maxTurn, maxTurn);
+            b.sprite.x += Math.cos(b.direction) * speed;
+            b.sprite.y += Math.sin(b.direction) * speed;
+            b.sprite.x = Phaser.Math.Clamp(b.sprite.x, 100, s.WORLD_WIDTH - 100);
+            b.sprite.y = Phaser.Math.Clamp(b.sprite.y, 120, 850);
+        }
+
+        b.label.setPosition(b.sprite.x, b.sprite.y - b.sprite.displayHeight * 0.55);
+
+        if (dist < touchRadius) return this.resolve(b); // negative: you got hit, positive: you collected it
+        if (b.age >= b.life) return this.expire(b); // Bubble disapears <-(how do you spell this)
     }
 
-    // The fish touched the bubble
+    // Fish touched the bubble
     resolve(b) {
         const s = this.scene;
         if (b.resolving) return;
         b.resolving = true;
         s.tweens.killTweensOf(b.sprite);
         s.sound.play("bubblePop", { volume: s.sfxVolume });
-        this.apply(b.kind);
         s.tweens.add({
             targets: b.sprite,
             scale: b.sprite.scaleX * 1.4,
@@ -184,25 +313,30 @@ export class EventManager {
             angle: b.sprite.angle + 12,
             duration: 180,
             ease: "Back.in",
-            onComplete: () => this.remove(b),
+            onComplete: () => {
+                this.remove(b);
+
+                if (b.def.type === "negative") {
+                    for (let i = 0; i < CONFIG.negativeHitDamage && !s.simEnd; i++) s.loseHalfHeart();
+                    if (s.simEnd) {
+                        s.emitStats();
+                        this.clear();
+                        return;
+                    }
+                }
+
+                const message = this.apply(b);
+                s.game.events.emit("random-event", {
+                    title: b.def.title,
+                    message,
+                    type: b.def.type,
+                    id: b.def.id,
+                    learning: b.def.learning
+                });
+
+                if (s.simEnd) this.clear();
+            }
         });
-        b.label.setVisible(false);
-    }
-
-    // What popping a bubble of this kind does to the reef. Also used by the automated balance checks.
-    apply(kind) {
-        const s = this.scene;
-        const def = BUBBLES[kind];
-        if (kind === "cloudy") addShade(s.reef, SHADE_AMOUNT);
-        else if (kind === "cool") addCooling(s.reef, COOLING_AMOUNT);
-        else addPlumeHeat(s.reef, PLUME_HEAT);
-
-        s.onBubblePopped(kind);
-        // The lesson is only spelled out the first couple of times; after that the HUD shows the effect
-        const seen = (s.bubbleNoticesShown[kind] = (s.bubbleNoticesShown[kind] ?? 0) + 1);
-        if (seen <= 2 || !def.helpful) {
-            s.game.events.emit("random-event", { title: def.title, message: def.message, warning: !def.helpful, good: def.helpful });
-        }
     }
 
     // Bubbles fizzle out harmlessly
@@ -210,19 +344,45 @@ export class EventManager {
         const s = this.scene;
         this.active = this.active.filter(x => x !== b);
         s.tweens.killTweensOf(b.sprite);
-        s.tweens.add({ targets: [b.sprite, b.label], alpha: 0, duration: 400, onComplete: () => { b.sprite.destroy(); b.label.destroy(); } });
+        s.tweens.add({targets: b.label, alpha: 0, duration: 400, onComplete: () => b.label.destroy() });
+        s.tweens.add({targets: b.sprite, alpha: 0, duration: 400, onComplete: () => b.sprite.destroy() });
     }
 
+    // Changes the value through update()
+    apply(bubble) {
+        const s = this.scene;
+        const {def, change} = bubble;
+        const variable = VARIABLES[def.variable];
+        const threshold = this.th[def.variable];
+        const before = s[variable.prop];
+        const direction = def.type === "negative" ? 1 : -1;
+        const rawAfter = before + direction * change;
+        const boundedAfter = def.type === "negative"
+            ? Math.min(rawAfter, variable.max)
+            : Math.max(rawAfter, threshold.b); // Positives stop at healthy flow
+        const after = def.variable === "light"
+            ? Math.min(Math.round(boundedAfter / 10) * 10, variable.max)
+            : boundedAfter;
+
+        s[variable.setter](after);
+
+        const verb = after > before ? "rose" : "fell";
+        return `${variable.label} ${verb} from ${before}${variable.unit} to ${after}${variable.unit}. ${def.teach}`
+    }
+
+    // Cleanup files
     remove(b) {
         this.active = this.active.filter(x => x !== b);
-        this.scene.tweens.killTweensOf([b.sprite, b.label]);
+        this.scene.tweens.killTweensOf(b.sprite);
+        this.scene.tweens.killTweensOf(b.label);
         b.sprite.destroy();
         b.label.destroy();
     }
 
     clear() {
         for (const b of this.active) {
-            this.scene.tweens.killTweensOf([b.sprite, b.label]);
+            this.scene.tweens.killTweensOf(b.sprite);
+            this.scene.tweens.killTweensOf(b.label);
             b.sprite.destroy();
             b.label.destroy();
         }

@@ -1,6 +1,6 @@
 .TutorialOverlay {
     position: absolute;
-    top: 0.9em;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
@@ -10,7 +10,7 @@
     align-items: center;
     gap: 12px;
 
-    width: min(56em, 92%);
+    width: min(900px, 76%); /* leaves room for the Skip tutorial button, which scales with the game */
 }
 
 .TutorialNoticeSlot {
@@ -21,22 +21,22 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 1.4em;
+    gap: 24px;
 
     width: 100%;
     box-sizing: border-box;
-    padding: 0.9em 1.5em;
+    padding: 16px 28px;
 
-    border-radius: 1em;
-    background: var(--abyss);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    color: var(--ink);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    border-radius: 16px;
+    background: linear-gradient(#0292A5, #0292A5) padding-box,
+    linear-gradient(to bottom, #0292A5, #FFFFFF) border-box;
+    border: 4px solid transparent;
+    color: #FFFFFF;
 }
 
 .TutorialBannerImage {
     flex: 0 0 auto;
-    height: 6em;
+    height: 110px;
     width: auto;
     border-radius: 8px;
 }
@@ -48,20 +48,39 @@
 
 .TutorialBannerTitle {
     margin: 0;
-    font-size: 1.5em;
-    font-weight: 700;
-    color: var(--sand);
+    font-family: 'Poppins', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
 }
 
 .TutorialBannerText {
     margin: 6px 0 0;
-    font-size: 1em;
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
     font-weight: 500;
-    line-height: 1.4;
 }
 
+/* Same look as the old tutorial's Next button */
 .TutorialBannerButton {
     flex: 0 0 auto;
+    height: 50px;
+    width: 170px;
+    background-color: white;
+    border-radius: 25px;
+    border: 2px solid white;
+    padding: 5px;
+    color: rgba(2, 146, 165, 0.8);
+    transition: 0.2s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.TutorialBannerButton:hover {
+    background-color: #F86A1C;
+    color: white;
+    scale: 1.10;
 }
 
 /* Pops in, holds, then fades out. Keep the duration in sync with PRAISE_DURATION in scenes/Tutorial.js */
@@ -73,7 +92,8 @@
     z-index: 9999;
     margin: 0;
 
-    font-size: 3em;
+    font-family: 'Poppins', sans-serif;
+    font-size: 48px;
     font-weight: 700;
     color: #FFFFFF;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);

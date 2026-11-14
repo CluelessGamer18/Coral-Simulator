@@ -3,48 +3,22 @@ import './styles/Notices.css'
 import { asset } from './assetUrl'
 
 /*
-The messages the game shows, all inside the play area and near the top of it, in two lanes so one kind never
-hides the other:
+The messages the game shows over the play area, in two lanes so one kind never hides the other:
 
-  - the banner, top centre, for the state of the reef: the card that opens each year, the winter job and the
-    stress warnings. One at a time; the rest wait their turn (App.jsx keeps the queue and decides the order).
+  - the banner, top centre, for the state of the reef: the bleaching alert and the stress warnings. One at a
+    time; the rest wait their turn (App.jsx keeps the queue and decides the order).
   - toasts, top right, for things that happen to the fish: predators, the nest, bubbles and the coral
     collection. Up to three are stacked, each with its own timer.
 
-App also keeps the last few in the HUD's Log card, so one that was missed can still be read.
 In the tutorial both lanes sit in the slot under the lesson banner instead (inSlot), so they follow it.
 */
 
 // How long each kind stays up, in ms. Persistent notices stay until closed or cleared by the game.
 function getDuration(notice, slow) {
   if (notice.persistent) return null;
-  if (notice.card) return 9000;
+  if (notice.bleaching) return 7000;
   if (slow) return 10000; // the tutorial's notices are being read for the first time
-  return notice.warning ? 6500 : 5500;
-}
-
-// The card that opens each year: how last year went, what this one brings, and its goals
-function YearCard({ notice, titleId }) {
-  const { report } = notice;
-  return (
-    <>
-      {notice.chapter ? <span className="YearCardChapter">Chapter {notice.chapter.number}: {notice.chapter.title}</span> : null}
-      <h2 id={titleId} className="YearCardTitle">
-        {notice.heat > 0 ? <img src={asset("warning.svg")} alt="" /> : null}
-        Year {notice.year}: {notice.heat > 0 ? `heatwave +${notice.heat} °C` : "no heatwave"}
-      </h2>
-      <p className="YearCardBrief">{notice.brief}</p>
-      <ul className="YearCardGoals" aria-label="This year's goals">
-        {notice.goals.map(goal => <li key={goal}>{goal}</li>)}
-      </ul>
-      {report ? (
-        <p className="YearCardReport">
-          Last year: stress peaked at <b>{report.peak}%</b> · <b>{report.lost}</b> {report.lost === 1 ? "coral" : "corals"} lost
-          · goals <b>{report.met}/{report.total}</b>{report.allMet ? " · +1 heart" : ""}
-        </p>
-      ) : null}
-    </>
-  );
+  return notice.warning ? 6500 : 5000;
 }
 
 function Notice({ notice, slow, onClose }) {
@@ -59,24 +33,19 @@ function Notice({ notice, slow, onClose }) {
 
   const urgent = notice.bleaching || notice.warning;
   const titleId = `notice-title-${key}`;
-  const kind = notice.card ? (notice.heat > 0 ? " YearCard YearCardHeat" : " YearCard")
-    : notice.warning ? " EventNoticeWarning" : notice.good ? " EventNoticeGood" : "";
   return (
     <aside
-      className={`EventNotice${kind}`}
+      className={`EventNotice${notice.warning ? " EventNoticeWarning" : ""}${notice.bleaching ? " EventNoticeBleaching" : ""}${notice.good ? " EventNoticeGood" : ""}`}
       role={urgent ? "alert" : "status"}
       aria-live={urgent ? "assertive" : "polite"}
       aria-labelledby={titleId}
     >
-      <button className="EventNoticeDismiss" type="button" onClick={() => onClose(key, true)} aria-label="Close this message">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
-      </button>
-      {notice.card ? <YearCard notice={notice} titleId={titleId} /> : (
-        <>
-          <h2 id={titleId}>{notice.title}</h2>
-          <p>{notice.message}</p>
-        </>
-      )}
+      <button className="EventNoticeDismiss" type="button" onClick={() => onClose(key, true)} aria-label="Dismiss notification">Close</button>
+      {notice.bleaching ? <img className="EventNoticeBleachingIcon" src={asset("warning.svg")} alt="" /> : null}
+      <div className="EventNoticeHeading">
+        <h2 id={titleId}>{notice.title}</h2>
+      </div>
+      <p>{notice.message}</p>
     </aside>
   );
 }

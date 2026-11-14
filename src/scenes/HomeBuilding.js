@@ -1,8 +1,5 @@
 import Phaser from "phaser";
 import { addGlow, removeGlow } from "./Glow.js";
-import { takeVirtualKey, listenForPress } from "./PointerControls.js";
-import { getCarryAction } from "./WinterJobs.js";
-import { getSettings } from "../settings.js";
 
 /*
 Home building: the triggerfish collects glowing pieces of rubble from around the
@@ -60,14 +57,14 @@ const STAGE_NOTICES = [
     },
 ];
 
-const PIECE_GLOW_COLOR = 0xffe07a; // sand yellow: green and red are kept for the state of the reef
+const PIECE_GLOW_COLOR = 0x66ff66;
 const PICKUP_DISTANCE = 90;     // how close the fish must be to grab a piece
 const HOME_DROP_DISTANCE = 220; // how close the fish must be to the nest to drop a piece in
 const HOME_CLEARANCE = 450;     // pieces never spawn this close to the nest
 const PIECE_MIN_Y = 790;        // on/near the floor, but still inside the fish's reachable area (y <= 850)
 const PIECE_MAX_Y = 845;
 
-const HOME_BOTTOM = 860;        // the nest sits on the sand band the fish swims over
+const HOME_BOTTOM = 860;        // the nest sits on the sand band the fish swims over (lower down is hidden by the HUD)
 const HOME_DEPTH = 6.5;         // above the sand layers (depth 5 and 6), below the corals in front
 const PIECE_DEPTH = 7.5;
 const PIECE_HOME_SCALE = 0.6;   // pieces shrink a little once they're part of the nest
@@ -92,16 +89,14 @@ export function createHome(scene, x) {
         .setDepth(HOME_DEPTH);
 
     scene.homeKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
-    listenForPress(scene, scene.homeKey, "action");
 
     // Small "Q" hint above the fish whenever there's something to pick up or drop
     scene.homePrompt = scene.add.text(0, 0, "", {
-        fontFamily: "Poppins, sans-serif",
+        fontFamily: "monospace",
         fontSize: "18px",
-        fontStyle: "bold",
         color: "#ffffff",
-        backgroundColor: "#0b2e3ae6",
-        padding: { x: 9, y: 4 },
+        backgroundColor: "#1f3b4dcc",
+        padding: { x: 6, y: 3 },
     }).setOrigin(0.5, 1).setDepth(10002).setVisible(false);
 }
 
@@ -109,10 +104,10 @@ export function createHome(scene, x) {
 // The scene's camera bounds keep the view on the world, so it settles against the sea floor.
 export function updateNestCamera(scene, hiding, frameScale) {
     const cam = scene.cameras.main;
-    if (!hiding && cam.zoom === 1 && cam.scrollY === 0) return;
+    if (!hiding && cam.zoom === 1) return;
 
     const ease = 1 - Math.pow(1 - HIDE_CAMERA_SMOOTHING, frameScale);
-    const targetZoom = hiding && !getSettings().reducedMotion ? HIDE_ZOOM : 1; // zooming is motion some players can't watch
+    const targetZoom = hiding ? HIDE_ZOOM : 1;
     const zoom = Phaser.Math.Linear(cam.zoom, targetZoom, ease);
     cam.setZoom(Math.abs(zoom - targetZoom) < 0.001 ? targetZoom : zoom); // Linear never quite arrives
 
@@ -140,16 +135,9 @@ export function updateHomeControls(scene, canAct) {
     const nearHome = Phaser.Math.Distance.Between(scene.guide.x, scene.guide.y, center.x, center.y)
         <= HOME_DROP_DISTANCE;
 
-    // Replanting a fragment or plugging the pipe (WinterJobs.js). The tutorial has neither.
-    const special = scene.carriedPiece && scene.reef ? getCarryAction(scene, scene.carriedPiece) : null;
-    const canPlace = nearHome && !scene.carriedPiece?.isFragment;
-
-    // Q, or the on-screen button on a touch screen
-    const pressed = takeVirtualKey(scene, "action");
-    if (canAct && pressed) {
-        if (special?.run) special.run();
-        else if (scene.carriedPiece) {
-            if (canPlace) placePieceInHome(scene);
+    if (canAct && Phaser.Input.Keyboard.JustDown(scene.homeKey)) {
+        if (scene.carriedPiece) {
+            if (nearHome) placePieceInHome(scene);
             else dropPiece(scene);
         } else if (nearbyPiece) {
             pickUpPiece(scene, nearbyPiece);
@@ -159,11 +147,8 @@ export function updateHomeControls(scene, canAct) {
     if (scene.carriedPiece) holdPiece(scene);
 
     let prompt = "";
-    if (canAct && scene.carriedPiece) {
-        if (special) prompt = special.run ? `Q: ${special.prompt}` : special.prompt;
-        else prompt = canPlace ? "Q: place in nest" : "Q: drop";
-    } else if (canAct && nearbyPiece) prompt = "Q: pick up";
-    scene.actionAvailable = prompt.startsWith("Q"); // lights up the on-screen button
+    if (canAct && scene.carriedPiece) prompt = nearHome ? "Q: place in nest" : "Q: drop";
+    else if (canAct && nearbyPiece) prompt = "Q: pick up";
     scene.homePrompt
         .setText(prompt)
         .setVisible(prompt !== "")
@@ -173,13 +158,12 @@ export function updateHomeControls(scene, canAct) {
 // What the reef is going through right now, which decides how many pieces turn up and of which kind
 function getReefCondition(scene) {
     if (scene.season === "winter") return "cooling";
-    if (scene.tempStressSeverity > 0) return "bleaching";
+    if (scene.yearsElapsed >= 1) return "bleaching";
     return "calm";
 }
 
 function updatePieceSupply(scene, delta) {
-    const floorPieces = scene.homePieces
-        .filter(piece => !piece.inHome && !piece.plugged && !piece.isFragment && piece !== scene.carriedPiece).length;
+    const floorPieces = scene.homePieces.filter(piece => !piece.inHome && piece !== scene.carriedPiece).length;
     if (floorPieces >= MAX_FLOOR_PIECES) return;
 
     const condition = getReefCondition(scene);
@@ -228,7 +212,7 @@ function findNearbyPiece(scene) {
     let nearest = null;
     let nearestDistance = PICKUP_DISTANCE;
     for (const piece of scene.homePieces) {
-        if (piece.inHome || piece.plugged) continue;
+        if (piece.inHome) continue;
         const distance = Phaser.Math.Distance.Between(scene.guide.x, scene.guide.y, piece.x, piece.y);
         if (distance <= nearestDistance) {
             nearest = piece;
@@ -270,7 +254,7 @@ function dropPiece(scene) {
         angle: Phaser.Math.Between(-20, 20),
         duration: 700,
         ease: "Sine.out",
-        onComplete: () => addGlow(scene, piece, piece.glowColor ?? PIECE_GLOW_COLOR),
+        onComplete: () => addGlow(scene, piece, PIECE_GLOW_COLOR),
     });
 }
 
@@ -295,7 +279,6 @@ function placePieceInHome(scene) {
     piece.inHome = true;
     piece.rimAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
     scene.homePiecesPlaced++;
-    if (scene.yearStats) scene.yearStats.placed++;
 
     scene.tweens.add({
         targets: piece,

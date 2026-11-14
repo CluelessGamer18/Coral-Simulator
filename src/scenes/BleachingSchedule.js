@@ -1,7 +1,7 @@
-// The summers that bring a heatwave, by calendar year (the game's first year is year 1), and how many degrees
-// each one adds to the water. They are scripted, not random, so the difficulty is designed: a gentle first one,
-// two back to back, a year off, then three in a row that keep getting hotter (see Objectives.js for the chapters).
-export const SUMMER_TEMPERATURE_RISE = { 2: 3, 4: 4, 5: 5, 7: 5, 8: 6, 9: 7 };
+// The summers that bring a bleaching heatwave, by calendar year (the game's first year is year 1), and how many
+// degrees each one adds to the water. Every heatwave is as hot as the last or hotter, as the climate warms.
+// At +4 °C and above the heat alone is as dangerous as it gets; rising pollution is what makes later years harder.
+export const SUMMER_TEMPERATURE_RISE = { 2: 3, 4: 4, 5: 4, 7: 5, 8: 6, 9: 7 };
 
 export const BLEACHING_YEARS = Object.keys(SUMMER_TEMPERATURE_RISE).map(Number);
 

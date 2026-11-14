@@ -1,146 +1,60 @@
-/*
-The palette and type scale every screen draws from.
-
-Dark navy panels frame the bright reef, so the art is the brightest thing on screen and white text passes
-contrast everywhere (white on Abyss is 14:1). State colours are for bars, icons and borders; body text stays
-white. Coral is kept for the one main action on each screen.
-*/
 :root {
-  --abyss: #0B2E3A;   /* panels, rails, dialogs */
-  --deep: #123D4B;    /* cards on panels */
-  --lagoon: #086B7A;  /* secondary buttons, chips */
-  --lagoon-light: #0A8496;
-  --coral: #FF7A59;   /* the primary action */
-  --coral-light: #FF9A80;
-  --sand: #FFE3A3;    /* highlights, light surfaces */
-  --mint: #7FE3C4;    /* healthy, helpful */
-  --amber: #FFC857;   /* caution, light */
-  --heat: #FF8A70;    /* hot water */
-  --danger: #FF5D5D;  /* critical, damage */
-  --sky: #8FD3FF;     /* cool water, info */
-  --ink: #FFFFFF;
-  --ink-soft: #C9E4EA;
-  --line: rgba(255, 255, 255, 0.16);
-
-  /* What the state colours mean. The colour-blind setting swaps the first and last for blue and orange. */
-  --good: var(--mint);
-  --warn: var(--amber);
-  --hot: var(--heat);
-  --bad: var(--danger);
-
-  /* 14 / 16 / 20 / 28 / 48 px at the normal text size */
-  --text-scale: 1;
-  --fs-small: calc(0.875rem * var(--text-scale));
-  --fs-body: calc(1rem * var(--text-scale));
-  --fs-large: calc(1.25rem * var(--text-scale));
-  --fs-title: calc(1.75rem * var(--text-scale));
-  --fs-display: calc(3rem * var(--text-scale));
-
   font-family: 'Poppins', system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+
+   /* background-color:#8ACFC9; */
+  /*background-image: url("bg.png");*/
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-:root.colour-blind {
-  --good: #8FD3FF;
-  --bad: #FF9E3D;
-  --hot: #FFB86B;
-}
-
 html {
-  background-color: var(--abyss);
-  line-height: 1.5;
-  font-weight: 500;
-  color-scheme: dark;
-  color: var(--ink);
-}
+  background-color: #32AFAC;
 
-body {
-  margin: 0;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: rgba(255, 255, 255, 0.87);
 }
 
 a {
   font-weight: 500;
-  color: var(--sky);
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  /* min-width: 320px;
+  min-height: 100vh; */
 }
 
 h1 {
-  font-size: var(--fs-display);
+  font-size: 3.2em;
   line-height: 1.1;
 }
 
 button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
   font-family: inherit;
+  background-color: #1a1a1a;
   cursor: pointer;
+  transition: border-color 0.25s;
 }
-
-/* One focus ring everywhere, visible on navy and on the reef */
-:focus-visible {
-  outline: 3px solid var(--sand);
-  outline-offset: 2px;
-}
-
-/* Buttons: Coral for the main action on a screen, Lagoon for the rest. Hover lightens the same colour. */
-.Button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5em;
-  min-height: 2.75em;
-  padding: 0.5em 1.4em;
-  border: 2px solid transparent;
-  border-radius: 999px;
-  font-size: var(--fs-body);
-  font-weight: 600;
-  line-height: 1.2;
-  transition: background-color 0.15s ease, transform 0.15s ease;
-}
-
-.ButtonPrimary {
-  background: var(--coral);
-  color: var(--abyss);
-}
-
-.ButtonPrimary:hover {
-  background: var(--coral-light);
-}
-
-.ButtonSecondary {
-  background: var(--lagoon);
-  color: var(--ink);
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.ButtonSecondary:hover {
-  background: var(--lagoon-light);
-}
-
-.Button:active {
-  transform: scale(0.97);
-}
-
-.tone-good { --tone: var(--good); }
-.tone-warn { --tone: var(--warn); }
-.tone-heat { --tone: var(--hot); }
-.tone-bad { --tone: var(--bad); }
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* The "reduce motion" setting, and the same preference set on the computer (settings.js starts from it) */
-:root.reduce-motion *,
-:root.reduce-motion *::before,
-:root.reduce-motion *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  scroll-behavior: auto !important;
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
 }

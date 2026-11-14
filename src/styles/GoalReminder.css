@@ -1,13 +1,14 @@
 /* The "Survive all 10 years!" card (GoalReminder.jsx). Clicks pass through everywhere but the card itself. */
 .GoalReminder {
-  position: absolute; /* inside the play area */
+  position: fixed;
   inset: 0;
   z-index: 10500;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 14%;
+  padding-top: 16vh;
   pointer-events: none;
+  font-family: 'Poppins', sans-serif;
 }
 
 .GoalReminderCard {
@@ -110,7 +111,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .GoalReminderCard, :root.reduce-motion .GoalReminderCard { animation: goalCardFade 4300ms linear forwards; }
+  .GoalReminderCard { animation: goalCardFade 4300ms linear forwards; }
   .GoalReminderCard::after { display: none; }
   .GoalReminderYear { animation: none; opacity: 1; }
 }

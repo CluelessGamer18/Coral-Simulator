@@ -1,235 +1,288 @@
-/* The title screen, and the Options dialog that opens from it and from the game */
-.TitleScreen {
-  position: fixed;
-  inset: 0;
+.TitleScreenContainer {
+  width: 100vw;
+  height: 100vh;
+  position: absolute; 
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  background-color:#8ACFC9;
   z-index: 1000;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background: linear-gradient(#8ACFC9 0%, #5DB9B5 55%, #2E8F96 100%);
 }
 
-.TitleArt { position: absolute; inset: 0; }
-
-.TitleLayer {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  min-width: 100%;
-  height: auto;
+.TitleArt {
+  width: 100%;
+  border-radius: 30px;
+  height: 350px;
 }
 
-.TitleLayer0 { top: 0; bottom: auto; width: 100%; height: 15vh; }
-.TitleLayer1 { height: 74vh; opacity: 0.9; }
-.TitleLayer2 { height: 62vh; }
-.TitleLayer3 { height: 40vh; }
-.TitleLayer4 { height: 14vh; }
-
-.TitleFish {
-  position: absolute;
-  left: 12%;
-  top: 30%;
-  width: clamp(90px, 9vw, 150px);
-  animation: titleFish 26s linear infinite;
+.StartButton {
+  margin-top: 40px;
+  width: 370px;
+  height: 45px;
+  border-width: 2px;
+  border-color: white;
+  border-radius: 100px;
+  background-color: #0292A5;
+  letter-spacing: 0.1em;
+  font-size: 20px;
+  padding: 0px;
+  color: white;
+  transition: 0.2s ease;
 }
 
-@keyframes titleFish {
-  0% { transform: translate(-30vw, 0); }
-  50% { transform: translate(40vw, 8vh); }
-  100% { transform: translate(110vw, -4vh); }
-}
-
-.TitlePlate {
-  position: relative;
-  box-sizing: border-box;
-  width: min(560px, calc(100vw - 32px));
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-  padding: 32px 36px 28px;
-  border-radius: 24px;
-  border: 2px solid rgba(255, 227, 163, 0.7);
-  background: rgba(11, 46, 58, 0.93);
-  box-shadow: 0 18px 60px rgba(4, 22, 28, 0.5);
-  text-align: center;
-  animation: titlePlate 0.8s ease-out;
-}
-
-@keyframes titlePlate {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: none; }
-}
-
-.TitleName {
-  margin: 0;
-  font-size: clamp(2.2rem, 6vw, 3.4rem);
-  font-weight: 800;
-  line-height: 1.05;
-  color: var(--sand);
-}
-
-.TitleTagline {
-  margin: 10px 0 22px;
-  font-size: var(--fs-large);
-  color: var(--ink);
-}
-
-.TitleButtons {
-  display: grid;
-  gap: 10px;
-  width: min(320px, 100%);
-  margin: 0 auto;
-}
-
-.TitleButtons .ButtonPrimary { font-size: var(--fs-large); }
-
-.TitleBest {
-  margin: 18px 0 0;
-  font-size: var(--fs-small);
-  color: var(--ink-soft);
-}
-
-.TitleBest span[aria-hidden] { color: var(--amber); font-size: 1.3em; letter-spacing: 0.1em; }
-
-/* Options */
-.OptionsScrim {
-  position: fixed;
-  inset: 0;
-  z-index: 12000;
-  display: grid;
-  place-items: center;
-  background: rgba(4, 22, 28, 0.6); /* the game dims, so it reads as paused */
-}
-
-.OptionsBox {
-  box-sizing: border-box;
-  width: min(860px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-  padding: 22px 28px 24px;
-  border-radius: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: var(--abyss);
-  color: var(--ink);
-  font-size: var(--fs-body);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.OptionsHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 6px;
-}
-
-.OptionsHeader h1 { margin: 0; font-size: var(--fs-title); font-weight: 700; }
-
-.OptionsColumns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 32px;
-}
-
-@media (max-width: 720px) {
-  .OptionsColumns { grid-template-columns: 1fr; }
-}
-
-.OptionsBox h2 {
-  margin: 16px 0 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--line);
-  font-size: var(--fs-small);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--sky);
-}
-
-.OptionsRow {
-  display: flex;
-  flex-wrap: wrap; /* the control drops under its label when the text is large or the window narrow */
-  align-items: center;
-  gap: 6px 10px;
-  margin: 8px 0;
-}
-
-.OptionsRow > :first-child { flex: 0 0 8.5em; }
-.OptionsRow > :last-child { flex: 1 1 13em; min-width: 0; }
-
-.OptionsLabel { font-size: var(--fs-small); font-weight: 600; }
-
-.OptionsChoice {
-  display: flex;
-  border-radius: 1.4em;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  overflow: hidden;
-}
-
-.OptionsChoice button {
-  flex: 1 1 auto;
-  min-height: 2.5em;
-  padding: 0.3em 0.7em;
-  white-space: nowrap;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  font-size: var(--fs-small);
-  font-weight: 600;
-}
-
-.OptionsChoice button:hover { background: rgba(255, 255, 255, 0.12); }
-.OptionsChoice button[aria-pressed="true"] { background: var(--sand); color: var(--abyss); }
-.OptionsChoice button:focus-visible { outline-offset: -3px; }
-
-.OptionsVolume { display: flex; align-items: center; gap: 10px; }
-.OptionsVolume input { flex: 1; min-width: 0; accent-color: var(--coral); }
-
-.OptionsMute {
-  display: grid;
-  place-items: center;
-  width: 44px;
+.OptionsButton {
+  margin-top: 40px;
+  width: 370px;
   height: 40px;
-  padding: 0;
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  background: var(--lagoon);
-  color: var(--ink);
+  border-width: 2px;
+  border-color: white;
+  border-radius: 100px;
+  background-color: #0292A5;
+  letter-spacing: 0.1em;
+  font-size: 20px;
+  color: white;
+  padding: 0px;
+  transition: 0.2s ease;
 }
 
-.OptionsMute[aria-pressed="true"] { background: var(--deep); color: var(--amber); }
-
-.OptionsHint {
-  margin: -4px 0 8px;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
+.OptionHighlightedButton {
+  margin-top: 15px;
+  width: 100%;
+  height: 40px;
+  border-width: 2px;
+  border-color: white;
+  border-radius: 100px;
+  background-color: #FFFFFF;
+  color: #0292A5;
+  letter-spacing: 0.1em;
+  font-size: 20px;
+  padding: 0px;
+  position: relative;
+  transition: background-color 0.3s ease-in-out;
 }
 
-.OptionsKeys, .OptionsGlossary { margin: 0; display: grid; gap: 4px; font-size: var(--fs-small); }
-.OptionsKeys div { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; }
-.OptionsKeys dt, .OptionsGlossary dt { font-weight: 700; color: var(--sand); }
-.OptionsKeys dd, .OptionsGlossary dd { margin: 0; color: var(--ink-soft); }
-
-.OptionsGlossary {
-  margin-top: 16px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--deep);
-  gap: 8px;
-}
-
-.OptionsActions { display: grid; gap: 8px; }
-.OptionsActions .Button { font-size: var(--fs-small); }
-
-.OptionsConfirm {
+.OptionsBoxContainer {
   display: flex;
-  flex-wrap: wrap;
+  position: absolute; 
+  padding: 50px;
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%);
+  background-color: rgba(2, 146, 165, 0.9);
+  border-radius: 16px;
+  background: linear-gradient(#0292A5, #0292A5) padding-box,
+  linear-gradient(to bottom, #0292A5, #FFFFFF) border-box;
+  color: #FFFFFF;
+  border: 4px solid transparent;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 2px solid var(--amber);
-  font-size: var(--fs-small);
+  z-index: 10000; /* above the tutorial banner, which is 9999 */
 }
 
-.OptionsConfirm span { flex: 1 1 100%; }
+.OptionsDialogButton{
+  margin-top: 15px;
+  width: 100%;
+  height: 40px;
+  border-width: 2px;
+  border-color: white;
+  border-radius: 100px;
+  background-color: #0292A5;
+  color: #FFFFFF;
+  letter-spacing: 0.1em;
+  font-size: 20px;
+  padding: 0px;
+  position: relative;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.OptionsXButton{
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    top:20px;
+    left:20px;
+    padding: 0px;
+    font-weight: 800;
+    font-size: 15px;
+    color: #FFFFFF;
+    background-color: #0292A5;
+    border-width: 2px;
+    border-color: white;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.OptionsTitle{
+    font-size: 70px;
+    letter-spacing: 0.1rem;
+}
+
+.CoralSimTitle{
+  font-size: 90px;
+  letter-spacing: 0.2rem;
+  animation: fadeIn 1.2s ease-out forwards;
+  font-style: extraBold;
+  /* text-shadow: 3px 3px 6px rgba(0,0,0,0.3); */
+}
+
+@keyframes fadeIn { 
+  from { opacity: 0; transform: translateY(20px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+
+.StartButton:hover{
+  background-color: rgba(251, 105, 0, 0.864);
+  scale: 1.1;
+}
+
+.OptionsButton:hover{
+  background-color: rgba(251, 105, 0, 0.864);
+  scale: 1.1;
+}
+
+.OptionsDialogButton:hover{
+  background-color: rgba(251, 105, 0, 0.864);
+}
+
+.OptionsXButton:hover{
+  background-color: rgba(251, 105, 0, 0.864);
+}
+
+.OptionHighlightedButton:hover{
+  background-color: rgba(251, 105, 0, 0.864);
+  color: #FFFFFF;
+}
+
+
+.backgroundWave {
+  position: absolute;
+  left: 0;
+  bottom: -10%;
+  width: 100vw;
+  height:90%;
+  background-color: #0292A5;
+  --mask:
+    radial-gradient(111.8px at 50% 150px,#000 100%,#0000 100%) calc(50% - 100px) 0/200px 100%,
+    radial-gradient(111.8px at 50% -100px,#0000 100%,#000 100%) 50% 50px/200px 100% repeat-x;
+  -webkit-mask: var(--mask);
+          mask: var(--mask);
+
+  animation: float 2s ease-in-out 2s infinite alternate;
+}
+
+
+.waveWrapper {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 65%;
+  animation: slideUp 2s ease forwards;
+  z-index: -5;
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0); /* start low */
+  }
+  100% {
+    transform: translate(0, +10%); /* move up to final pos */
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translate(0, 65%); /* start low */
+  }
+  100% {
+    transform: translate(0, -10%); /* move up to final pos */
+  }
+}
+
+.OptionsSliderGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    margin: 10px auto;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+}
+
+.OptionsSliderGroup input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.OptionsSliderControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.OptionsMuteButton {
+    flex: 0 0 72px;
+    padding: 5px 8px;
+    border: 1px solid white;
+    border-radius: 16px;
+    background-color: #0292A5;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+}
+
+.OptionsMuteButton:hover {
+    background-color: rgba(251, 105, 0, 0.864);
+}
+
+.OptionsKeysButton {
+    flex: 1 1 0;
+    padding: 5px 4px;
+    white-space: nowrap;
+    border: 1px solid white;
+    border-radius: 16px;
+    background-color: #0292A5;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+}
+
+.OptionsKeysButton[aria-pressed="true"] {
+    background-color: white;
+    color: #0292A5;
+}
+
+.OptionsKeysButton:hover {
+    background-color: rgba(251, 105, 0, 0.864);
+    color: white;
+}
+
+/* Short windows: tighter, so the whole box usually fits. If it still doesn't, it scrolls instead of running off the screen */
+@media (max-height: 880px) {
+    .OptionsBoxContainer {
+        box-sizing: border-box;
+        max-height: calc(100vh - 16px);
+        padding: 24px 50px;
+        overflow-y: auto;
+        justify-content: flex-start;
+    }
+
+    .OptionsBoxContainer > * {
+        flex-shrink: 0;
+    }
+
+    .OptionsBoxContainer .OptionsTitle {
+        margin: 0;
+        font-size: 40px;
+    }
+}
