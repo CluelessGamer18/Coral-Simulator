@@ -4,6 +4,14 @@ import { asset } from "./assetUrl";
 import { isBleachingYear } from "./scenes/BleachingSchedule.js";
 import { GAME_YEARS } from "./scenes/gameConfig.js";
 
+const CORAL_COLLECTION_ICONS = [
+    { id: "columnar", name: "Columnar coral", image: "assets/corals/Columnar-1.png" },
+    { id: "digitate", name: "Digitate coral", image: "assets/corals/Digitate-1.png" },
+    { id: "folios", name: "Foliose coral", image: "assets/corals/Folios-1.png" },
+    { id: "tabular", name: "Tabular coral", image: "assets/corals/Tabular-1.png" },
+    { id: "flatTabular", name: "Flat Tabular coral", image: "assets/corals/Flat-Tabular-1.png" },
+];
+
 function getTemperatureColor(temp) {
     const value = Number(temp);
     const average = 28;
@@ -151,17 +159,25 @@ function SimInfoDisplay({yearsElapsed,season="summer",light,temp,stress=0,poll,c
                     <span className="SimInfoText">{displayedPollution}</span>
                     <img className="hoverPreview" src={asset("tooltips/tooltip_pollution.png")} alt="Pollution, in µMol: the amount of nutrients expelled from sewage waste." />
                 </div>
-                {/* The coral collection: one pip for each kind of coral, filled in as the player finds them */}
+                {/* The coral collection: silhouettes reveal their color as the player finds each kind */}
                 <div
                     className={`statusGroup collectionGroup${totalCorals > 0 && collected === totalCorals ? " complete" : ""}`}
-                    role="img"
-                    aria-label={`Corals collected: ${collected} of ${totalCorals}`}
+                    role="group"
+                    aria-label={`Coral collection: ${collected} of ${totalCorals} kinds found`}
                 >
                     <span className="SimInfoText collectionLabel">Corals</span>
-                    <span className="collectionPips">
-                        {Array.from({ length: totalCorals }, (_, i) => (
-                            <span key={i} className={`collectionPip${i < collected ? " found" : ""}`} />
-                        ))}
+                    <span className="collectionIcons">
+                        {CORAL_COLLECTION_ICONS.slice(0, totalCorals).map((coral) => {
+                            const found = corals?.collected.includes(coral.id) ?? false;
+                            return (
+                                <img
+                                    key={coral.id}
+                                    className={`collectionCoralIcon${found ? " found" : ""}`}
+                                    src={asset(coral.image)}
+                                    alt={`${coral.name}, ${found ? "found" : "not yet found"}`}
+                                />
+                            );
+                        })}
                     </span>
                     {/* keyed by the count, so the number pops each time it goes up */}
                     <span key={collected} className="SimInfoText collectionValue">{collected}/{totalCorals}</span>
