@@ -84,13 +84,10 @@ preload() {
         this.load.svg("heartDead", "health/heart_dead.svg", { width: 33, height: 30 });
 
         // triggerfish home building: glowing pieces to collect, and the nest crater they go in
-        // (pixel art, so sizes are whole multiples of the SVG grid to keep the pixels crisp)
-        this.load.svg("homePebble", "home/material_pebble.svg", { width: 48, height: 48 });
-        this.load.svg("homeShell", "home/material_shell_fragment.svg", { width: 48, height: 48 });
-        this.load.svg("homeCoralRubble", "home/material_coral_rubble.svg", { width: 48, height: 48 });
-        this.load.svg("homeStage1", "home/home_stage1.svg", { width: 216, height: 90 });
-        this.load.svg("homeStage2", "home/home_stage2.svg", { width: 288, height: 120 });
-        this.load.svg("homeStage3", "home/home_stage3.svg", { width: 360, height: 156 });
+        this.load.image("homePebble", "home/nest_fragment1.png");
+        this.load.image("homeShell", "home/nest_fragment2.png");
+        this.load.image("homeCoralRubble", "home/nest_fragment3.png");
+        this.load.image("homeNest", "home/nest.png");
 
         // bubbles
         this.load.image("TempBubble","bubbles/tempBubble.png")
