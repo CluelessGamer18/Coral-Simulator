@@ -574,15 +574,16 @@ class Tutorial extends Phaser.Scene {
 
         // The same warning sound and notice the main game shows when a summer heatwave starts
         this.sound.play("bleachingWarning", { volume: this.sfxVolume });
-        // Stays until it's closed, and the lesson waits for that, so there's time to read it
+        // The notice closes automatically after three seconds or when the player chooses to close it.
         this.game.events.emit("reef-warning", {
             id: LESSON_NOTICE_ID,
             persistent: true,
+            advanceTutorialOnClose: true,
             warning: true,
             title: "Temperature Bleaching Event",
             message: `The water temperature has risen by ${HEATWAVE_TEMPERATURE_RISE}°C. Pop green Cloudy bubbles to keep the light low and stop your reef bleaching.`,
         });
-        this.emitStep({ text: "Your coral is heating up! Read the notice below, then click Close to continue." });
+        this.emitStep({ text: "Your coral is heating up! Read the notice below, then pop a green Cloudy bubble to slow the bleaching." });
         this.emitStats();
     }
 
@@ -742,17 +743,17 @@ class Tutorial extends Phaser.Scene {
         this.refreshHeartTextures();
     }
 
-    // Worded the same as the main game's notice, but it stays until closed, and the lesson waits for that,
-    // so the player reads one message at a time
+    // Worded the same as the main game's notice, while still allowing the tutorial lesson to advance on close.
     showAllClear() {
         this.game.events.emit("reef-warning", {
             id: LESSON_NOTICE_ID,
             persistent: true,
+            advanceTutorialOnClose: true,
             title: "All Clear",
             message: "The predator has left. You can come out now!",
         });
         this.emitStep({
-            text: "The grouper has gone! Once your fish reaches its maximum size, it can scare predators off. Click Close to continue."
+            text: "The grouper has gone! Once your fish reaches its maximum size, it can scare predators off."
         });
     }
 
