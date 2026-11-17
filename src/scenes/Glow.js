@@ -17,11 +17,11 @@ const SHADOW_DROP = 5;   // how far below the target its shadow falls, at scale 
 
 // Pulsing glow that marks something on the sea floor the fish can interact with (green for nest pieces, red for
 // food). The target has to stay put while it glows; call removeGlow() before moving or destroying it.
-export function addGlow(scene, target, color) {
+export function addGlow(scene, target, color, { padding = GLOW_PADDING, blur = GLOW_BLUR, layers = GLOW_LAYERS } = {}) {
     removeGlow(target);
 
-    const glow = scene.add.image(target.x, target.y, getSilhouette(scene, target, color, GLOW_BLUR, GLOW_LAYERS))
-        .setDisplayOrigin(target.displayOriginX + GLOW_PADDING, target.displayOriginY + GLOW_PADDING)
+    const glow = scene.add.image(target.x, target.y, getSilhouette(scene, target, color, blur, layers, padding))
+        .setDisplayOrigin(target.displayOriginX + padding, target.displayOriginY + padding)
         .setScale(target.scaleX, target.scaleY)
         .setRotation(target.rotation)
         .setFlip(target.flipX, target.flipY)
@@ -62,7 +62,7 @@ export function removeGlow(target) {
 // Soft shadow under something that moves, like the player's fish. It follows the target's position, size, turn and
 // depth after every update, until the scene shuts down.
 export function addShadow(scene, target) {
-    const shadow = scene.add.image(target.x, target.y, getSilhouette(scene, target, SHADOW_COLOR, SHADOW_BLUR, 1))
+    const shadow = scene.add.image(target.x, target.y, getSilhouette(scene, target, SHADOW_COLOR, SHADOW_BLUR, 1, GLOW_PADDING))
         .setDisplayOrigin(target.displayOriginX + GLOW_PADDING, target.displayOriginY + GLOW_PADDING)
         .setAlpha(SHADOW_ALPHA);
 
@@ -87,14 +87,14 @@ export function addShadow(scene, target) {
 
 // A blurred copy of the target's shape in one colour, GLOW_PADDING bigger than the art on every side. Made once
 // for each image and colour, and kept for the whole game (textures are shared by every scene).
-function getSilhouette(scene, target, color, blur, layers) {
+function getSilhouette(scene, target, color, blur, layers, padding) {
     const { frame } = target;
-    const key = `silhouette-${target.texture.key}-${frame.name}-${color}-${blur}-${layers}`;
+    const key = `silhouette-${target.texture.key}-${frame.name}-${color}-${blur}-${layers}-${padding}`;
     if (scene.textures.exists(key)) return key;
 
     const canvas = document.createElement("canvas");
-    canvas.width = frame.cutWidth + GLOW_PADDING * 2;
-    canvas.height = frame.cutHeight + GLOW_PADDING * 2;
+    canvas.width = frame.cutWidth + padding * 2;
+    canvas.height = frame.cutHeight + padding * 2;
     const context = canvas.getContext("2d");
 
     // The art is drawn off the side of the canvas, and only its shadow lands on it
@@ -106,7 +106,7 @@ function getSilhouette(scene, target, color, blur, layers) {
         context.drawImage(
             frame.source.image,
             frame.cutX, frame.cutY, frame.cutWidth, frame.cutHeight,
-            GLOW_PADDING - offCanvas, GLOW_PADDING, frame.cutWidth, frame.cutHeight
+            padding - offCanvas, padding, frame.cutWidth, frame.cutHeight
         );
     }
 

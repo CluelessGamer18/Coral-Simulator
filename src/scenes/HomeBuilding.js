@@ -58,6 +58,7 @@ const STAGE_NOTICES = [
 ];
 
 const PIECE_GLOW_COLOR = 0x66ff66;
+const PIECE_GLOW_STYLE = { padding: 22, blur: 10, layers: 12 };
 const PICKUP_DISTANCE = 90;     // how close the fish must be to grab a piece
 const HOME_DROP_DISTANCE = 220; // how close the fish must be to the nest to drop a piece in
 const HOME_CLEARANCE = 450;     // pieces never spawn this close to the nest
@@ -203,7 +204,7 @@ export function addPiece(scene, x, type, y = Phaser.Math.Between(PIECE_MIN_Y, PI
         .setScale(PIECE_SCALE)
         .setDepth(PIECE_DEPTH)
         .setAngle(Phaser.Math.Between(-20, 20));
-    addGlow(scene, piece, PIECE_GLOW_COLOR);
+    addGlow(scene, piece, PIECE_GLOW_COLOR, PIECE_GLOW_STYLE);
     scene.homePieces.push(piece);
 
     // Fade in so pieces don't pop into existence in front of the player
@@ -257,7 +258,7 @@ function dropPiece(scene) {
         angle: Phaser.Math.Between(-20, 20),
         duration: 700,
         ease: "Sine.out",
-        onComplete: () => addGlow(scene, piece, PIECE_GLOW_COLOR),
+        onComplete: () => addGlow(scene, piece, PIECE_GLOW_COLOR, PIECE_GLOW_STYLE),
     });
 }
 
