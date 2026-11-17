@@ -97,7 +97,7 @@ const STEPS = [
     {
         id: "cloudy",
         title: "Shade the Reef",
-        text: "Bright summer light makes heat bleach coral even faster. During heatwaves, green Cloudy bubbles appear near you. Swim into one to shade the reef and slow the bleaching.",
+        text: "Bright summer light makes heat bleach coral even faster. During heatwaves, green Cloudy bubbles appear at different spots across the reef. Swim into one to shade the reef and slow the bleaching.",
         image: "tutorial/tutorial_cloudy.svg",
         imageAlt: "A fish swimming toward a green Cloudy bubble",
         praise: "Complete!",
