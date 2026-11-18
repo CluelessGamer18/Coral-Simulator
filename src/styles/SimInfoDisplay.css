@@ -262,23 +262,26 @@
     font-size: 12px !important;
 }
 
-.collectionPips {
+.collectionIcons {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    gap: 3px;
 }
 
-.collectionPip {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.85);
-    background: transparent;
-    transition: background-color 300ms ease, border-color 300ms ease, transform 300ms ease;
+.collectionCoralIcon {
+    display: block;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 24px;
+    object-fit: contain;
+    filter: grayscale(1) brightness(0) invert(1) drop-shadow(0 0 1px #fff);
+    opacity: 0.65;
+    transition: filter 300ms ease, opacity 300ms ease, transform 300ms ease;
 }
 
-.collectionPip.found {
-    background: #ffe3a3;
-    border-color: #ffe3a3;
+.collectionCoralIcon.found {
+    filter: drop-shadow(0 0 2px #ffe3a3);
+    opacity: 1;
     transform: scale(1.15);
 }
 

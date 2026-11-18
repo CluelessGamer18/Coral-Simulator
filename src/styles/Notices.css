@@ -44,7 +44,7 @@
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-left: 5px solid #f86a1c;
   border-radius: 8px;
-  background: #087e8b;
+  background: rgba(8, 126, 139, 0.84);
   color: #fff;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
   font-family: 'Poppins', sans-serif;
@@ -57,7 +57,7 @@
   overflow: hidden;
   border: 3px solid #ffd166;
   border-radius: 14px;
-  background: linear-gradient(135deg, #8f2d1f, #d1492f);
+  background: linear-gradient(135deg, rgba(143, 45, 31, 0.88), rgba(209, 73, 47, 0.88));
   box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.18), 0 12px 36px rgba(65, 13, 5, 0.45);
   text-align: center;
 }
@@ -113,7 +113,7 @@
 .EventNoticeWarning {
   border-color: #ffb000;
   border-left-color: #ff3b30;
-  background: #762b20;
+  background: rgba(118, 43, 32, 0.88);
 }
 
 .EventNoticeHeading {

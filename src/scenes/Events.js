@@ -13,6 +13,7 @@ const CONFIG = {
     aggroRadius: 700, // if the player is within this distance the bubbles will chase the player
     minSpawnDistance: 700, // the negative bubbles must spawn at least this far away from the player
     positiveMinSpawnDistance: 350, // keep helpful bubbles clear of the player's position
+    positiveMinBubbleDistance: 1000, // keep helpful bubbles spread out across the reef
     baseChaseSpeed: 1.2,
     chasePerIntensity: 0.2, // this is the base value for each point of intensity as each event can have varying values
     eventsCanKill: true, // when false, negative events cannot push conditions into fatal ranges
@@ -180,50 +181,48 @@ export class EventManager {
         if (this.active.length >= CONFIG.maxTotalBubbles) return;
         const def = this.pickEvent();
         if (!def) return;
-
         const s = this.scene;
-        const change = randomEventChange(def.variable, def.type);
         const minDist = def.type === "negative"
             ? CONFIG.minSpawnDistance
             : CONFIG.positiveMinSpawnDistance;
         let x, y, tries = 0;
 
-        do {
-            if (def.type === "positive") {
-                // Keep helpful bubbles near the center of the reef for easy collection.
+        if (def.type === "positive") {
+            const otherPositiveBubbles = this.active.filter(b => b.def.type === "positive");
+            let foundPosition = false;
+
+            for (let attempt = 0; attempt < 50; attempt++) {
                 x = Phaser.Math.Between(
-                    Math.max(100, s.guide.x - 400),
-                    Math.min(s.WORLD_WIDTH - 100, s.guide.x + 400)
+                    100,
+                    s.WORLD_WIDTH - 100
                 );
                 y = Phaser.Math.Between(
-                    Math.max(120, s.guide.y - 400),
-                    Math.min(850, s.guide.y + 400)
+                    120,
+                    850
                 );
-            } else {
-                // Only spawn in the same areas that the fish can reach.
+
+                const farFromPlayer = Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) >= minDist;
+                const farFromOtherBubbles = otherPositiveBubbles.every(b =>
+                    Phaser.Math.Distance.Between(x, y, b.sprite.x, b.sprite.y) >= CONFIG.positiveMinBubbleDistance
+                );
+                if (farFromPlayer && farFromOtherBubbles) {
+                    foundPosition = true;
+                    break;
+                }
+            }
+
+            if (!foundPosition) return;
+        } else {
+            do {
                 x = Phaser.Math.Between(100, s.WORLD_WIDTH - 100);
                 y = Phaser.Math.Between(120, 850);
-            }
-        } while (
-            Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist
-            && ++tries < 20
-        );
-
-        // If a constrained positive spawn has exhausted its retries, place it at the
-        // nearest guaranteed valid point instead of using a candidate on top of the player.
-        if (def.type === "positive"
-            && Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist) {
-            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-            x = Phaser.Math.Clamp(s.guide.x + Math.cos(angle) * minDist, 100, s.WORLD_WIDTH - 100);
-            y = Phaser.Math.Clamp(s.guide.y + Math.sin(angle) * minDist, 120, 850);
-            // If clamping moved this fallback inside the exclusion radius, try the
-            // opposite axis, then center it in the nearest safe in-bounds area.
-            if (Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist) {
-                x = Phaser.Math.Clamp(s.guide.x, 100 + minDist, s.WORLD_WIDTH - 100 - minDist);
-                y = Phaser.Math.Clamp(s.guide.y + minDist, 120 + minDist, 850 - minDist);
-            }
+            } while (
+                Phaser.Math.Distance.Between(x, y, s.guide.x, s.guide.y) < minDist
+                && ++tries < 20
+            );
         }
 
+        const change = randomEventChange(def.variable, def.type);
         const sprite = s.add.image(x, y, VARIABLES[def.variable].texture).setDepth(7);
         const changeSign = def.type === "negative" ? "+" : "−";
         const changeUnit = def.variable === "temperature" ? "°C" : "";

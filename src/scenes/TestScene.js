@@ -338,6 +338,13 @@ class TestScene extends Phaser.Scene {
         this.recordHistory();
         this.spawnFood();
         createHomeBuilding(this);
+        this.guide.setPosition(this.home.x, this.home.y - 100);
+        this.updateHearts();
+        cam.scrollX = Phaser.Math.Clamp(
+            this.home.x - cam.width / 2,
+            0,
+            this.WORLD_WIDTH - cam.width
+        );
         this.eventManager = new EventManager(this, THRESHOLDS);
 
         exposeForDebugging(this);

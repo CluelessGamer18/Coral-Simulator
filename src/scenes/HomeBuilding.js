@@ -38,12 +38,12 @@ const CONDITIONS = {
 };
 const BLEACHING_HEAT_SUPPLY_LOSS = 0.35; // at the worst heat, a bleaching event's supply drops by this much more
 
-// Each stage is the crater from home_stageN.svg, drawn at 6x. The rim values describe the oval the
-// collected pieces sit on, measured from the bottom-centre of the image.
+// The same nest art grows with each stage. Rim values describe the oval the collected pieces sit on,
+// measured from the bottom-centre of the image.
 export const HOME_STAGES = [
-    { texture: "homeStage1", piecesNeeded: 0, rimRx: 90, rimRy: 30, rimAboveBottom: 48 },
-    { texture: "homeStage2", piecesNeeded: 8, rimRx: 120, rimRy: 41, rimAboveBottom: 60 },
-    { texture: "homeStage3", piecesNeeded: 20, rimRx: 150, rimRy: 51, rimAboveBottom: 72 },
+    { texture: "homeNest", scale: 0.3, piecesNeeded: 0, rimRx: 73, rimRy: 23, rimAboveBottom: 60 },
+    { texture: "homeNest", scale: 0.4, piecesNeeded: 8, rimRx: 97, rimRy: 31, rimAboveBottom: 80 },
+    { texture: "homeNest", scale: 0.5, piecesNeeded: 20, rimRx: 122, rimRy: 38, rimAboveBottom: 100 },
 ];
 const STAGE_NOTICES = [
     null,
@@ -58,6 +58,7 @@ const STAGE_NOTICES = [
 ];
 
 const PIECE_GLOW_COLOR = 0x66ff66;
+const PIECE_GLOW_STYLE = { padding: 22, blur: 10, layers: 12 };
 const PICKUP_DISTANCE = 90;     // how close the fish must be to grab a piece
 const HOME_DROP_DISTANCE = 220; // how close the fish must be to the nest to drop a piece in
 const HOME_CLEARANCE = 450;     // pieces never spawn this close to the nest
@@ -67,7 +68,8 @@ const PIECE_MAX_Y = 845;
 const HOME_BOTTOM = 860;        // the nest sits on the sand band the fish swims over (lower down is hidden by the HUD)
 const HOME_DEPTH = 6.5;         // above the sand layers (depth 5 and 6), below the corals in front
 const PIECE_DEPTH = 7.5;
-const PIECE_HOME_SCALE = 0.6;   // pieces shrink a little once they're part of the nest
+const PIECE_SCALE = 0.3;
+const PIECE_HOME_SCALE = PIECE_SCALE * 0.6; // pieces shrink a little once they're part of the nest
 const HIDE_ZOOM = 1.35;         // how far the camera zooms in on the nest while the fish hides in it
 const HIDE_CAMERA_SMOOTHING = 0.08;
 
@@ -86,6 +88,7 @@ export function createHome(scene, x) {
 
     scene.home = scene.add.image(x, HOME_BOTTOM, HOME_STAGES[0].texture)
         .setOrigin(0.5, 1)
+        .setScale(HOME_STAGES[0].scale)
         .setDepth(HOME_DEPTH);
 
     scene.homeKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
@@ -198,9 +201,10 @@ function spawnPiece(scene, condition) {
 // A glowing piece lying on the floor, ready to be picked up. type is a key of PIECE_TYPES.
 export function addPiece(scene, x, type, y = Phaser.Math.Between(PIECE_MIN_Y, PIECE_MAX_Y)) {
     const piece = scene.add.image(x, y, PIECE_TYPES[type])
+        .setScale(PIECE_SCALE)
         .setDepth(PIECE_DEPTH)
         .setAngle(Phaser.Math.Between(-20, 20));
-    addGlow(scene, piece, PIECE_GLOW_COLOR);
+    addGlow(scene, piece, PIECE_GLOW_COLOR, PIECE_GLOW_STYLE);
     scene.homePieces.push(piece);
 
     // Fade in so pieces don't pop into existence in front of the player
@@ -254,7 +258,7 @@ function dropPiece(scene) {
         angle: Phaser.Math.Between(-20, 20),
         duration: 700,
         ease: "Sine.out",
-        onComplete: () => addGlow(scene, piece, PIECE_GLOW_COLOR),
+        onComplete: () => addGlow(scene, piece, PIECE_GLOW_COLOR, PIECE_GLOW_STYLE),
     });
 }
 
@@ -298,13 +302,14 @@ function growHomeIfReady(scene) {
     if (next >= HOME_STAGES.length || scene.homePiecesPlaced < HOME_STAGES[next].piecesNeeded) return;
 
     scene.homeStage = next;
-    scene.home.setTexture(HOME_STAGES[next].texture);
+    const stage = HOME_STAGES[next];
+    scene.home.setTexture(stage.texture).setScale(stage.scale * 0.85);
 
     // A little bounce so the growth is noticeable
     scene.tweens.add({
         targets: scene.home,
-        scaleX: { from: 0.85, to: 1 },
-        scaleY: { from: 0.85, to: 1 },
+        scaleX: { from: stage.scale * 0.85, to: stage.scale },
+        scaleY: { from: stage.scale * 0.85, to: stage.scale },
         duration: 500,
         ease: "Back.out",
     });

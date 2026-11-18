@@ -82,11 +82,11 @@ function App() {
     setToasts([]);
   };
 
-  // A notice timed out, or the player clicked its Close button (which the tutorial's lessons wait for)
-  const closeNotice = useCallback((key, byPlayer) => {
+  // A notice timed out or was manually closed; gated tutorial notices advance the lesson either way.
+  const closeNotice = useCallback((key, advanceTutorial = false) => {
     setBanners((list) => list.filter((notice) => notice.key !== key));
     setToasts((list) => list.filter((notice) => notice.key !== key));
-    if (byPlayer) scene?.eventNoticeClosed?.();
+    if (advanceTutorial) scene?.eventNoticeClosed?.();
   }, [scene]);
 
   const hideGoal = useCallback(() => setShowGoal(false), []);
