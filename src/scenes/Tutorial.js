@@ -2,19 +2,21 @@ import Phaser from "phaser";
 import { createBleachStages, getBleachStage, getCoralInfo, prepareBleachStages } from "./CoralManager.js";
 import { EVENTS } from "./Events.js";
 import { createHome, addPiece, updateHomeControls, updateNestCamera } from "./HomeBuilding.js";
+import { createStamina, updateStamina } from "./Stamina.js";
 import { addGlow, removeGlow, addShadow } from "./Glow.js";
 import {
     FOOD_GROWTH,
     FOOD_GLOW_COLOR,
     FOOD_SIZE,
     FOOD_MAX_Y,
+    addFoodHealthIcon,
     PREDATOR_SPEED,
     REEF_HIDE_DISTANCE,
     PREDATOR_ESCAPE_MARGIN,
 } from "./TestScene.js";
 import { exposeForDebugging } from "./debug.js";
 import { getEffectiveVolumes } from "../audioSettings.js";
-import { MAX_FRAME_MS, FISH_SPEED, MAX_HEARTS, HEART_SPACING, HEART_OFFSET_Y } from "./gameConfig.js";
+import { MAX_FRAME_MS, FISH_SPEED, SPRINT_MULTIPLIER, MAX_HEARTS, HEART_SPACING, HEART_OFFSET_Y } from "./gameConfig.js";
 
 const FISH_SCALE = 1.3 / 1.5; // the fish's size in the main game before it grows
 const PRAISE_DURATION = 2000; // ms the "well done" message shows before moving on (keep in sync with TutorialBanner.css)
@@ -73,7 +75,7 @@ const STEPS = [
     {
         id: "food",
         title: "Eat to Grow",
-        text: "Triggerfish crack open shellfish like snails and clams that live on the sea floor. Swim down to the glowing shell to eat it. Food refills the hearts above your fish and helps it grow bigger.",
+        text: "Triggerfish crack open shellfish like snails and clams that live on the sea floor. Swim down to the glowing shell to eat it. Food refills the hearts above your fish and helps it grow bigger. Your fish gets hungry and loses half a heart at every dot on the timeline, and a new shell turns up at the far end of the reef each time, so keep looking!",
         image: "tutorial/tutorial_food.svg",
         imageAlt: "A fish swimming toward a glowing red shell, then growing bigger",
         praise: "Complete!",
@@ -203,6 +205,7 @@ class Tutorial extends Phaser.Scene {
             this.hearts.push(this.add.image(0, 0, "heartFull").setDepth(9999.5));
         }
         this.refreshHeartTextures();
+        createStamina(this);
     }
 
     setupKeys() {
@@ -211,6 +214,7 @@ class Tutorial extends Phaser.Scene {
         this.wasdKeys = this.input.keyboard.addKeys({ up: "W", left: "A", down: "S", right: "D" });
         this.arrowKeys = this.input.keyboard.addKeys({ up: "UP", left: "LEFT", down: "DOWN", right: "RIGHT" });
         this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+        this.sprintKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // Restarting removes the keys, so they're handed out again here. React sets the scheme on a new scene.
         this.setControlScheme(this.controlScheme ?? "wasd");
@@ -348,7 +352,9 @@ class Tutorial extends Phaser.Scene {
         // Swimming away leaves the coral, like in the main game
         if (this.isHiding && movementLength > 0 && !hidePressed) this.leaveHiding();
 
-        if (!this.isHiding && movementLength > 0) {
+        const swimming = !this.isHiding && movementLength > 0;
+        this.sprinting = updateStamina(this, delta, swimming && this.sprintKey.isDown);
+        if (swimming) {
             this.swim(horizontal, vertical, movementLength, frameScale);
             this.swamThisStep = true;
             if (this.stepId === "swim") this.trackSwimming(delta);
@@ -368,7 +374,10 @@ class Tutorial extends Phaser.Scene {
             }
         }
 
-        if (this.home) this.updateHome();
+        if (this.home) {
+            this.hidePromptText = this.stepId === "predator" && !this.isHiding && this.nestInHideReach() ? "E: hide in nest" : "";
+            this.updateHome();
+        }
         if (this.coral) this.updateCoral(delta);
 
         if (this.predator) this.updatePredator(frameScale);
@@ -394,7 +403,7 @@ class Tutorial extends Phaser.Scene {
 
     // Same movement as the main game's fish
     swim(horizontal, vertical, movementLength, frameScale) {
-        const speed = FISH_SPEED * frameScale;
+        const speed = FISH_SPEED * (this.sprinting ? SPRINT_MULTIPLIER : 1) * frameScale; // Space sprints, on stamina
         this.guide.x += (horizontal / movementLength) * speed;
         this.guide.y += (vertical / movementLength) * speed;
 
@@ -462,7 +471,7 @@ class Tutorial extends Phaser.Scene {
         this.shownDirectionsDone = directionsDone;
         const { swimKeys, lookKeys, image, imageAlt } = CONTROL_TEXT[this.controlScheme];
         this.emitStep({
-            text: `You are a triggerfish living on a coral reef. Hold the ${swimKeys} to swim in every direction. Prefer the ${lookKeys}? You can switch in Options. (${directionsDone}/4 directions)`,
+            text: `You are a triggerfish living on a coral reef. Hold the ${swimKeys} to swim in every direction (hold Space to sprint). Prefer the ${lookKeys}? You can switch in Options. (${directionsDone}/4 directions)`,
             image,
             imageAlt,
         });
@@ -492,6 +501,7 @@ class Tutorial extends Phaser.Scene {
         // a little bigger than in the main game, so it's easy to spot
         this.shellfish.setScale(FOOD_SIZE * 1.25 / Math.sqrt(this.shellfish.width * this.shellfish.height));
         addGlow(this, this.shellfish, FOOD_GLOW_COLOR);
+        addFoodHealthIcon(this, this.shellfish);
         this.emitStep();
     }
 
@@ -770,10 +780,17 @@ class Tutorial extends Phaser.Scene {
 
     // Like the main game, the predator leaves while the fish stays in its nest. (The main game's corals hide the
     // fish too, but the predator only waits nearby, so the lesson teaches the nest.)
+    nestHideY() {
+        return Phaser.Math.Clamp(this.home.y - this.home.displayHeight * 0.45, 120, 850);
+    }
+
+    nestInHideReach() {
+        return Phaser.Math.Distance.Between(this.guide.x, this.guide.y, this.home.x, this.nestHideY()) <= REEF_HIDE_DISTANCE;
+    }
+
     hideFish() {
-        const hideY = Phaser.Math.Clamp(this.home.y - this.home.displayHeight * 0.45, 120, 850);
-        const distance = Phaser.Math.Distance.Between(this.guide.x, this.guide.y, this.home.x, hideY);
-        if (this.isHiding || distance > REEF_HIDE_DISTANCE) return;
+        if (this.isHiding || !this.nestInHideReach()) return;
+        const hideY = this.nestHideY();
 
         this.isHiding = true;
         this.guide.clearTint();
