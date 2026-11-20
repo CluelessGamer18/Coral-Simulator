@@ -11,6 +11,7 @@ export const WINTER_DURATION_MS = YEAR_DURATION_MS - SUMMER_DURATION_MS;
 export const MAX_FRAME_MS = 50;
 
 export const FISH_SPEED = 6.75; // px per frame at 60fps
+export const SPRINT_MULTIPLIER = 1.75; // holding Space swims this many times faster
 
 // Hearts above the fish. Health is counted in half hearts, so 3 hearts = 6.
 export const MAX_HEARTS = 3;

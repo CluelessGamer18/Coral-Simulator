@@ -15,7 +15,7 @@ const SHADOW_COLOR = 0x333333;
 const SHADOW_ALPHA = 0.55;
 const SHADOW_DROP = 5;   // how far below the target its shadow falls, at scale 1
 
-// Pulsing glow that marks something on the sea floor the fish can interact with (green for nest pieces, red for
+// Pulsing glow that marks something on the sea floor the fish can interact with (purple for nest pieces, red for
 // food). The target has to stay put while it glows; call removeGlow() before moving or destroying it.
 export function addGlow(scene, target, color, { padding = GLOW_PADDING, blur = GLOW_BLUR, layers = GLOW_LAYERS } = {}) {
     removeGlow(target);

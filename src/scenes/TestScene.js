@@ -3,6 +3,7 @@ import { createFishSchools } from "./FishSchools.js";
 import { createCorals, cullCorals, swayCorals, updateCoralStress, killCorals, resetCorals, CORAL_KIND_IDS } from "./CoralManager.js";
 import { EventManager } from "./Events.js";
 import { createHomeBuilding, updateHomeBuilding, updateNestCamera } from "./HomeBuilding.js";
+import { createStamina, updateStamina } from "./Stamina.js";
 import { addGlow, removeGlow, addShadow } from "./Glow.js";
 import { isBleachingYear, getSummerTemperatureRise } from "./BleachingSchedule.js";
 import { OceanSounds } from "./OceanSounds.js";
@@ -13,7 +14,7 @@ import { loadOceanSounds } from "../oceanSoundsSetting.js";
 import { getEffectiveVolumes } from "../audioSettings.js";
 import {
     GAME_YEARS, YEAR_DURATION_MS, SUMMER_DURATION_MS, WINTER_DURATION_MS, MAX_FRAME_MS,
-    FISH_SPEED, MAX_HEARTS, HEART_SPACING, HEART_OFFSET_Y,
+    FISH_SPEED, SPRINT_MULTIPLIER, MAX_HEARTS, HEART_SPACING, HEART_OFFSET_Y,
 } from "./gameConfig.js";
 
 // [a, b) and (c, d] are the stressed ranges; at or beyond a or d the reef dies; between b and c is healthy
@@ -65,8 +66,13 @@ const HISTORY_SAMPLES_PER_YEAR = 8; // points per year on the end screen's chart
 const OVERLAY_FADE = 0.06; // how much of the way the light, stress and pollution overlays move to their target each frame
 
 // Food is shellfish (snails and clams), which triggerfish crack open with their strong jaws.
-// They live on the sea floor, so they're scattered along the band of sand the fish can still reach (it's clamped to y <= 850).
-const FOOD_COUNT = 5; // shellfish scattered over the sea floor at the start of each game
+// They live on the sea floor, along the band of sand the fish can still reach (it's clamped to y <= 850).
+// The fish gets hungry: every interval (one dot on the timeline, half a year) it loses half a heart, and one
+// shellfish turns up at the far end of the reef from it, so it has to go looking.
+const FOOD_INTERVAL_MS = YEAR_DURATION_MS / 2; // the gap between two dots on the timeline
+const FOOD_END_ZONE = 0.2;    // food turns up in this outer fraction of the world at either end
+const FOOD_MIDDLE_ZONE = 0.1; // a fish within this fraction of the world's width of the middle gets food at a random end
+const FOOD_TO_SCARE_PREDATOR = 5; // shellfish the fish must eat before it's big enough to scare predators off
 export const FOOD_GROWTH = 1.1; // each shellfish eaten makes the fish 10% bigger
 const FOOD_SHELLS = ["isabellaCowrie", "honeyCowrie", "fleaCone", "mulberryDrupe"];
 export const FOOD_SIZE = 44; // on-screen size of an average shellfish, as the square root of its area, since the shell images are all different sizes
@@ -74,7 +80,39 @@ const FOOD_SIZE_VARIATION = 0.2; // each shellfish is up to 20% smaller or bigge
 export const FOOD_GLOW_COLOR = 0xff4d4d;
 const FOOD_MIN_Y = 790;
 export const FOOD_MAX_Y = 845;
-const FOOD_NEST_CLEARANCE = 300; // keep food out of the nest in the middle of the sandbar
+const FOOD_ICON_SIZE = 20;   // the red plus over each shellfish that says "eat me for health", in pixels
+const FOOD_ICON_ALPHA = 0.7;
+
+// A small semi-transparent red plus floating just above a shellfish, so players can tell it heals. The texture is
+// drawn once and shared; the icon stays upright whatever the shell's angle, and goes when the shellfish does.
+export function addFoodHealthIcon(scene, shellfish) {
+    const key = "foodHealthIcon";
+    if (!scene.textures.exists(key)) {
+        const size = FOOD_ICON_SIZE, bar = size / 3, edge = 2; // edge = the white outline's width
+        const full = size + edge * 2;
+        const g = scene.make.graphics({ x: 0, y: 0 }, false);
+        // white outline first, so the red reads against both sand and dark water
+        g.fillStyle(0xffffff, 1);
+        g.fillRoundedRect(bar, 0, bar + edge * 2, full, 3);
+        g.fillRoundedRect(0, bar, full, bar + edge * 2, 3);
+        g.fillStyle(0xe53935, 1);
+        g.fillRect(edge + bar, edge, bar, size);
+        g.fillRect(edge, edge + bar, size, bar);
+        g.generateTexture(key, full, full);
+        g.destroy();
+    }
+
+    const icon = scene.add.image(shellfish.x, shellfish.y - shellfish.displayHeight / 2 - FOOD_ICON_SIZE / 2 - 4, key)
+        .setDepth(shellfish.depth + 0.01)
+        .setAlpha(FOOD_ICON_ALPHA);
+    // a gentle bob, so it reads as a pickup rather than part of the scenery
+    scene.tweens.add({ targets: icon, y: icon.y - 5, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    shellfish.once(Phaser.GameObjects.Events.DESTROY, () => {
+        scene.tweens.killTweensOf(icon);
+        icon.destroy();
+    });
+    return icon;
+}
 
 export function evaluateThreshold(value, { a, b, c, d }) {
     const stressed = (value >= a && value < b) || (value > c && value <= d);
@@ -144,6 +182,7 @@ class TestScene extends Phaser.Scene {
         this.health = MAX_HEARTS * 2;
         this.fishDead = false;
         this.foodEaten = 0;
+        this.nextFoodIntervalMs = FOOD_INTERVAL_MS; // when the fish next gets hungrier and a shellfish turns up
         this.fishGrowth = 1; // size multiplier from eating food, applied in update()
         this.touchingPredator = false;
         this.predatorContactTime = 0; // time since the last bite while touching the predator, in ms
@@ -265,6 +304,7 @@ class TestScene extends Phaser.Scene {
         }
         this.lowHealthPulseActive = false;
         this.updateHearts();
+        createStamina(this);
 
         // A soft blur with no detail, so the image is a quarter of this size and stretched (see scripts/build-art.py)
         this.badOutline = this.add.image(-95, -95, "badOutline")
@@ -291,6 +331,7 @@ class TestScene extends Phaser.Scene {
         this.arrowKeys = this.input.keyboard.createCursorKeys();
         this.wasdKeys = this.input.keyboard.addKeys({ up: "W", left: "A", down: "S", right: "D" });
         this.hideKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+        this.sprintKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // Restarting removes the keys, so they're handed out again here. React sets the scheme on a new scene.
         this.setControlScheme(this.controlScheme ?? "wasd");
@@ -336,7 +377,8 @@ class TestScene extends Phaser.Scene {
         this.setupAudio(); // after setupUI: Ocean Sounds needs to know where the fish is
         this.setupCamera(cam);
         this.recordHistory();
-        this.spawnFood();
+        this.food = []; // the shellfish on the sea floor, added one an interval by spawnFood()
+        this.foodShells = []; // kinds of shell still to deal out before any repeat
         createHomeBuilding(this);
         this.guide.setPosition(this.home.x, this.home.y - 100);
         this.updateHearts();
@@ -452,31 +494,42 @@ class TestScene extends Phaser.Scene {
         }
     }
 
-    // Scatters shellfish along the sea floor, anywhere but the nest. Eaten shellfish don't come back.
-    spawnFood() {
-        this.food = []; // the shellfish still on the sea floor
-        const shells = Phaser.Utils.Array.Shuffle([...FOOD_SHELLS]); // dealt in turn, so every kind appears before any repeats
-
-        for (let i = 0; i < FOOD_COUNT; i++) {
-            let x;
-            do {
-                x = Phaser.Math.Between(100, this.WORLD_WIDTH - 100);
-            } while (Math.abs(x - this.WORLD_WIDTH / 2) < FOOD_NEST_CLEARANCE);
-
-            const shellfish = this.add.image(x, Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y), shells[i % shells.length]);
-            this.food.push(shellfish);
-            const size = FOOD_SIZE * Phaser.Math.FloatBetween(1 - FOOD_SIZE_VARIATION, 1 + FOOD_SIZE_VARIATION);
-
-            shellfish
-                .setDepth(7.5) // in front of the corals, like the nest pieces, so it's never hidden behind one
-                .setScale(size / Math.sqrt(shellfish.width * shellfish.height))
-                .setAngle(Phaser.Math.Between(-30, 30))
-                .setFlipX(Math.random() < 0.5);
-            addGlow(this, shellfish, FOOD_GLOW_COLOR);
+    // Once an interval: the fish loses half a heart to hunger and one shellfish turns up to make up for it.
+    advanceHunger() {
+        while (this.elapsedSimMs >= this.nextFoodIntervalMs && this.nextFoodIntervalMs < SIMULATION_DURATION_MS) {
+            this.nextFoodIntervalMs += FOOD_INTERVAL_MS;
+            this.loseHalfHeart();
+            if (this.simEnd) return;
+            this.spawnFood();
         }
     }
 
-    // The fish eats any shellfish its body reaches. Five distance checks a frame, in place of a physics engine.
+    // One shellfish at the far end of the reef from the fish. Near the middle, either end is as far, so it's a coin toss.
+    spawnFood() {
+        const middle = this.WORLD_WIDTH / 2;
+        const nearMiddle = Math.abs(this.guide.x - middle) <= this.WORLD_WIDTH * FOOD_MIDDLE_ZONE;
+        const atRightEnd = nearMiddle ? Math.random() < 0.5 : this.guide.x < middle;
+        const zoneWidth = this.WORLD_WIDTH * FOOD_END_ZONE;
+        const x = atRightEnd
+            ? Phaser.Math.Between(this.WORLD_WIDTH - zoneWidth, this.WORLD_WIDTH - 100)
+            : Phaser.Math.Between(100, zoneWidth);
+
+        // dealt in turn from a shuffled deck, so every kind appears before any repeats
+        if (this.foodShells.length === 0) this.foodShells = Phaser.Utils.Array.Shuffle([...FOOD_SHELLS]);
+        const shellfish = this.add.image(x, Phaser.Math.Between(FOOD_MIN_Y, FOOD_MAX_Y), this.foodShells.pop());
+        this.food.push(shellfish);
+        const size = FOOD_SIZE * Phaser.Math.FloatBetween(1 - FOOD_SIZE_VARIATION, 1 + FOOD_SIZE_VARIATION);
+
+        shellfish
+            .setDepth(7.5) // in front of the corals, like the nest pieces, so it's never hidden behind one
+            .setScale(size / Math.sqrt(shellfish.width * shellfish.height))
+            .setAngle(Phaser.Math.Between(-30, 30))
+            .setFlipX(Math.random() < 0.5);
+        addGlow(this, shellfish, FOOD_GLOW_COLOR);
+        addFoodHealthIcon(this, shellfish);
+    }
+
+    // The fish eats any shellfish its body reaches. One distance check per shellfish a frame, in place of a physics engine.
     checkFood() {
         const reach = this.guide.displayHeight / 2;
         for (const shellfish of this.food) {
@@ -555,6 +608,7 @@ class TestScene extends Phaser.Scene {
 
             this.advanceStress(delta);
             this.recordHistory();
+            this.advanceHunger(); // can starve the fish, which the simEnd check below picks up
 
             if (!this.simEnd && this.elapsedSimMs >= SIMULATION_DURATION_MS) this.simEnd = true;
 
@@ -594,6 +648,11 @@ class TestScene extends Phaser.Scene {
 
         let horizontal = 0;
         let vertical = 0;
+        // Holding Space sprints while there's stamina. Also sets how fast the camera scrolls at the screen edges,
+        // so it keeps up.
+        const swimming = this.tutorialComplete && !this.isHiding && Object.values(this.moveKeys).some(key => key.isDown);
+        const sprinting = updateStamina(this, delta, swimming && this.sprintKey.isDown);
+        const fishSpeed = FISH_SPEED * (sprinting ? SPRINT_MULTIPLIER : 1);
 
         if (this.tutorialComplete) {
             horizontal = (this.moveKeys.right.isDown ? 1 : 0) - (this.moveKeys.left.isDown ? 1 : 0);
@@ -605,7 +664,7 @@ class TestScene extends Phaser.Scene {
             }
 
             if (!this.isHiding && movementLength > 0) {
-                const speed = FISH_SPEED * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
+                const speed = fishSpeed * frameScale; //This adjust the constant speed of the fish movement, regardless of direction.
                 const moveX = (horizontal / movementLength) * speed;
                 const moveY = (vertical / movementLength) * speed;
 
@@ -659,7 +718,7 @@ class TestScene extends Phaser.Scene {
         if (this.tutorialComplete) this.checkFood();
 
         const sideWidth = 300; // Adjust the width of the side areas where the camera starts moving when the fish is near the edge
-        const edgeScrollSpeed = FISH_SPEED; // the same as the fish, so the camera keeps up with it at the screen edges
+        const edgeScrollSpeed = fishSpeed; // the same as the fish, so the camera keeps up with it at the screen edges
         const cameraSmoothing = 0.15;
         const { scrollX, width, zoom } = this.cameras.main;
         const fishScreenX = (this.guide.x - scrollX - width / 2) * zoom + width / 2; // the camera zooms around its centre
@@ -692,6 +751,7 @@ class TestScene extends Phaser.Scene {
             .setScale(this.guide.scale, 1);
 
         this.updateHearts();
+        this.updateHidePrompt();
         updateHomeBuilding(this, delta, clockIsRunning);
     }
 
@@ -1162,7 +1222,7 @@ class TestScene extends Phaser.Scene {
                 this.guide.x,
                 this.guide.y
             );
-            const canScarePredator = this.foodEaten >= FOOD_COUNT;
+            const canScarePredator = this.foodEaten >= FOOD_TO_SCARE_PREDATOR;
             const scareDistance = PREDATOR_SCARE_DISTANCE / this.fishGrowth;
             const nervousDistance = PREDATOR_NERVOUS_DISTANCE / this.fishGrowth;
             if (
@@ -1276,14 +1336,9 @@ class TestScene extends Phaser.Scene {
         );
     }
 
-    hideFish() {
-        if (
-            !this.tutorialComplete ||
-            this.coralInfoOpen ||
-            this.isHiding
-        ) {
-            return;
-        }
+    // The hiding spot E would use right now (the nest, or the nearest coral in reach), or undefined
+    findHideTarget() {
+        if (!this.tutorialComplete || this.coralInfoOpen || this.isHiding || this.simEnd) return undefined;
 
         const hideTargets = this.corals.map(coral => ({
             x: coral.x,
@@ -1304,10 +1359,23 @@ class TestScene extends Phaser.Scene {
         }
 
         // The nest wins whenever it's in reach, since it's the only place that makes a predator leave
-        const nearbyHideTarget = hideTargets
+        return hideTargets
             .filter(({ distance }) => distance <= REEF_HIDE_DISTANCE)
             .sort((a, b) => (b.isHome - a.isHome) || (a.distance - b.distance))[0];
+    }
 
+    // "E: hide" above the fish. The nest always shows it; coral only while a predator is out, since corals are
+    // everywhere and the hint would otherwise never go away.
+    updateHidePrompt() {
+        const target = this.findHideTarget();
+        const predatorOut = this.predators.some(({ spawned, fleeing }) => spawned && !fleeing);
+        if (target?.isHome) this.hidePromptText = "E: hide in nest";
+        else if (target && predatorOut) this.hidePromptText = "E: hide";
+        else this.hidePromptText = "";
+    }
+
+    hideFish() {
+        const nearbyHideTarget = this.findHideTarget();
         if (!nearbyHideTarget) return;
 
         this.isHiding = true;

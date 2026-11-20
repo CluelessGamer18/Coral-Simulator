@@ -57,7 +57,7 @@ const STAGE_NOTICES = [
     },
 ];
 
-const PIECE_GLOW_COLOR = 0x66ff66;
+const PIECE_GLOW_COLOR = 0xc04dff; // vivid purple: no other pickup or bubble uses it, so it reads as "nest piece"
 const PIECE_GLOW_STYLE = { padding: 22, blur: 10, layers: 12 };
 const PICKUP_DISTANCE = 90;     // how close the fish must be to grab a piece
 const HOME_DROP_DISTANCE = 220; // how close the fish must be to the nest to drop a piece in
@@ -93,13 +93,15 @@ export function createHome(scene, x) {
 
     scene.homeKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
 
-    // Small "Q" hint above the fish whenever there's something to pick up or drop
+    // Small "Q" hint above the fish whenever there's something to pick up or drop, plus "E: hide" when in reach
+    scene.hidePromptText = "";
     scene.homePrompt = scene.add.text(0, 0, "", {
         fontFamily: "monospace",
         fontSize: "18px",
         color: "#ffffff",
         backgroundColor: "#1f3b4dcc",
         padding: { x: 6, y: 3 },
+        align: "center",
     }).setOrigin(0.5, 1).setDepth(10002).setVisible(false);
 }
 
@@ -152,9 +154,11 @@ export function updateHomeControls(scene, canAct) {
     let prompt = "";
     if (canAct && scene.carriedPiece) prompt = nearHome ? "Q: place in nest" : "Q: drop";
     else if (canAct && nearbyPiece) prompt = "Q: pick up";
+    // The scene sets hidePromptText (e.g. "E: hide") before this runs; both hints share the one label
+    const text = [prompt, scene.hidePromptText].filter(Boolean).join("\n");
     scene.homePrompt
-        .setText(prompt)
-        .setVisible(prompt !== "")
+        .setText(text)
+        .setVisible(text !== "")
         .setPosition(scene.guide.x, scene.guide.y - scene.guide.displayHeight / 2 - 70);
 }
 
