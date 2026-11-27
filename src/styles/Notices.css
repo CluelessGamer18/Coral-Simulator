@@ -1,176 +1,181 @@
 /* The two lanes of notices (Notices.jsx). The lanes let clicks through; only the notices themselves take them. */
 .Notices {
-  position: fixed;
-  inset: 0;
-  z-index: 11000;
-  pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-notices);
+    pointer-events: none;
 }
 
 .NoticeBannerLane {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .NoticeToastLane {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
 }
 
 /* In the tutorial both lanes sit in the slot under the lesson banner, so they follow the banner instead of the window */
 .NoticesInSlot {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: min(520px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(520px, 100%);
 }
 
-.NoticesInSlot .EventNotice {
-  width: 100%;
+.NoticesInSlot .NoticeBannerLane,
+.NoticesInSlot .NoticeToastLane {
+    position: static;
+    transform: none;
+    align-items: stretch;
 }
 
-.EventNotice {
-  position: relative;
-  box-sizing: border-box;
-  width: min(360px, calc(100vw - 40px));
-  pointer-events: auto;
-  padding: 16px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-left: 5px solid #f86a1c;
-  border-radius: 8px;
-  background: rgba(8, 126, 139, 0.84);
-  color: #fff;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
-  font-family: 'Poppins', sans-serif;
-  animation: eventNoticeFadeIn 180ms ease-out;
+.Notice {
+    position: relative;
+    box-sizing: border-box;
+    width: min(360px, calc(100vw - 40px));
+    pointer-events: auto;
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-left: 5px solid var(--color-orange);
+    border-radius: 8px;
+    background: rgba(8, 126, 139, 0.84);
+    color: #ffffff;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+    animation: noticeFadeIn 180ms ease-out;
 }
 
-.EventNoticeBleaching {
-  width: min(620px, calc(100vw - 40px));
-  padding: 22px 58px;
-  overflow: hidden;
-  border: 3px solid #ffd166;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(143, 45, 31, 0.88), rgba(209, 73, 47, 0.88));
-  box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.18), 0 12px 36px rgba(65, 13, 5, 0.45);
-  text-align: center;
+.NoticeHeading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-.EventNoticeBleaching::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 9px;
-  pointer-events: none;
+.Notice h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
 }
 
-.EventNoticeBleachingIcon {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  margin-bottom: 6px;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+.Notice p {
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre-line;
 }
 
-.EventNoticeBleaching .EventNoticeHeading {
-  position: relative;
-  justify-content: center;
+.NoticeDismiss {
+    flex: 0 0 auto;
+    padding: 5px 9px;
+    border: 1px solid #ffffff;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
 }
 
-.EventNoticeBleaching h2 {
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.EventNoticeBleaching p {
-  position: relative;
-  margin-top: 10px;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.EventNoticeBleaching .EventNoticeDismiss {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
+.NoticeDismiss:hover {
+    background: var(--color-orange);
+    color: #ffffff;
 }
 
 /* Good news: the nest growing, the coral collection filling up */
-.EventNoticeGood {
-  border-left-color: #7fe3c4;
+.Notice.isGood {
+    border-left-color: #7fe3c4;
 }
 
-.EventNoticeWarning {
-  border-color: #ffb000;
-  border-left-color: #ff3b30;
-  background: rgba(118, 43, 32, 0.88);
+.Notice.isWarning {
+    border-color: #ffb000;
+    border-left-color: #ff3b30;
+    background: rgba(118, 43, 32, 0.88);
 }
 
-.EventNoticeHeading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+/* The alert that opens a bleaching summer: bigger, centered, with a warning sign */
+.Notice.isBleaching {
+    width: min(620px, calc(100vw - 40px));
+    padding: 22px 58px;
+    overflow: hidden;
+    border: 3px solid #ffd166;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(143, 45, 31, 0.88), rgba(209, 73, 47, 0.88));
+    box-shadow:
+        0 0 0 4px rgba(255, 209, 102, 0.18),
+        0 12px 36px rgba(65, 13, 5, 0.45);
+    text-align: center;
+    animation: noticeBleachingEntrance 220ms ease-out;
 }
 
-.EventNotice h2 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 600;
+.Notice.isBleaching::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 9px;
+    pointer-events: none;
 }
 
-.EventNotice p {
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.45;
-  white-space: pre-line;
+.NoticeBleachingIcon {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
 }
 
-.EventNotice button {
-  flex: 0 0 auto;
-  padding: 5px 9px;
-  border: 1px solid #fff;
-  border-radius: 4px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
+.Notice.isBleaching .NoticeHeading {
+    position: relative;
+    justify-content: center;
 }
 
-.EventNotice button:hover {
-  background: #f86a1c;
-  color: #fff;
+.Notice.isBleaching h2 {
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
-@keyframes eventNoticeFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.Notice.isBleaching p {
+    position: relative;
+    font-weight: 500;
 }
 
-@keyframes bleachingNoticeEntrance {
-  from { opacity: 0; transform: translateY(-16px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+.Notice.isBleaching .NoticeDismiss {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1;
 }
 
-.EventNoticeBleaching {
-  animation: bleachingNoticeEntrance 220ms ease-out;
+/* Last, so it wins over the widths above: in the slot every notice is as wide as the banner */
+.NoticesInSlot .Notice {
+    width: 100%;
 }
 
-/* Declared after the lane rules above so they win: in the slot the lanes flow under the banner, one after the other */
-.NoticesInSlot .NoticeBannerLane,
-.NoticesInSlot .NoticeToastLane {
-  position: static;
-  transform: none;
-  align-items: stretch;
+@keyframes noticeFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes noticeBleachingEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }

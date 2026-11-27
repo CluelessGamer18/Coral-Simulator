@@ -7,10 +7,10 @@ set -euo pipefail
 SRC=assets-src/audio
 OUT=public/assets/audio/ocean
 
-REEF="$SRC/Ambient Music or Reef Sounds/Actual Reef Sounds"
+REEF=$SRC/reef_recordings
 PACK=$SRC/shellfegio_sample_pack
-TRIGGER="$SRC/Sound Effects/Actual Trigger Fish Sounds"
-WAVES="$SRC/Main Title and Options/253607__floating-tree__waves_washingthroughcoral.wav"
+TRIGGER=$SRC/triggerfish
+WAVES=$SRC/waves/253607__floating-tree__waves_washingthroughcoral.wav
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$OUT"

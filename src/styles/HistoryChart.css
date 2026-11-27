@@ -1,0 +1,5 @@
+/* The end screen's chart (HistoryChart.jsx). Chart.js fills this box and redraws when it changes size. */
+.HistoryChart {
+    width: 650px;
+    height: 300px;
+}

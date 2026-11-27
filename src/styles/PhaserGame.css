@@ -1,0 +1,13 @@
+/* Fills .GameContainer, which App.css sizes to fit the window. The tutorial banner and coral popup are placed
+   against this box, so they stay on the game. */
+.PhaserGame {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    margin: 0;
+}
+
+/* Phaser sets the canvas's size itself. This only stops the gap an inline element leaves under it. */
+.PhaserGame > canvas {
+    display: block;
+}

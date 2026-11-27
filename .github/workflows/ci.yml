@@ -1,4 +1,4 @@
-# Checks every pull request, and every push to main, still lints and builds.
+# Checks every pull request, and every push to main, is formatted, lints and builds.
 name: CI
 
 on:
@@ -16,5 +16,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run format:check
       - run: npm run lint
       - run: npm run build

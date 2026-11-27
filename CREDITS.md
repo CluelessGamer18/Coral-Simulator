@@ -1,11 +1,9 @@
 # Credits and attributions
 
-Sources and licences for the sound and music in the game, collected from the attribution documents kept beside the original files in `assets-src/audio/`.
+Sources and licenses for the sound and music in the game. The original files are in `assets-src/audio/`, one folder per
+section below. The attribution documents that used to sit beside them were copied into this file word for word.
 
-
-## Ambient Music or Reef Sounds/Actual Reef Sounds
-
-_From `Attribution.docx`_
+## reef_recordings
 
 Natural underwater reef sounds
 
@@ -19,19 +17,13 @@ free under CC BY 4.0, allowing editing and use in your game with attribution. Da
 
 Goat Island is labelled as a degraded reef, giving you a different reef environment to compare.
 
-
-## Ambient Music or Reef Sounds/Main Game Ambient Music
-
-_From `Site of exploration theme OpengameArt.org.docx`_
+## music
 
 Sound file suggestion for main game music
 
 https://opengameart.org/content/exploration-theme?utm_source=chatgpt.com
 
-
-## Main Title and Options
-
-_From `Attributions for Sound text.docx`_
+## waves
 
 Freesound .org
 
@@ -53,10 +45,7 @@ lapping-waves-salish-sea-edited-fadeout.wav by 1888software -- https://freesound
 
 https://freesound.org/people/1888software/sounds/554579/?attribution=javascript%3Avoid%280%29%3B
 
-
-## Sound Effects/Actual Trigger Fish Sounds
-
-_From `Attributions.docx`_
+## triggerfish
 
 Attributions
 
@@ -66,10 +55,7 @@ https://fishsounds.net/reference.js?id=c6d67e52-9b76-4b12-9d37-f0f965e90d34
 
 Raick X, Lecchini D, Kéver L, Colleye O, Bertucci F, Parmentier É 2018. Sound production mechanism in triggerfish (Balistidae): a synapomorphy. Journal of Experimental Biology 221(1): jeb168948. doi: <a href='https://doi.org/10.1242/jeb.168948'>10.1242/jeb.168948</a>.
 
-
-## Sound Effects
-
-_From `Attributions.docx`_
+## sound_effects
 
 Freesound.org
 
@@ -120,7 +106,6 @@ When your reef is becoming stressed
 Attribution
 
 Musique stressante.mp3 by Terydug -- https://freesound.org/s/651649/ -- License: Creative Commons 0
-
 
 ## shellfegio_sample_pack
 

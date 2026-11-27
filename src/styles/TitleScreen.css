@@ -1,0 +1,108 @@
+/* The title screen (TitleScreen.jsx), over the game while it loads */
+.TitleScreen {
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    background-color: var(--color-sea);
+    z-index: var(--z-title);
+}
+
+.TitleScreenTitle {
+    font-size: 90px;
+    line-height: 1.1;
+    letter-spacing: 0.2rem;
+    animation: titleFadeIn 1.2s ease-out forwards;
+}
+
+.TitleScreenPrimaryButton,
+.TitleScreenSecondaryButton {
+    margin-top: 40px;
+    width: 370px;
+    border-width: 2px;
+    border-color: #ffffff;
+    border-radius: 100px;
+    background-color: var(--color-teal);
+    letter-spacing: 0.1em;
+    font-size: 20px;
+    padding: 0;
+    color: #ffffff;
+    transition: 0.2s ease;
+}
+
+.TitleScreenPrimaryButton {
+    height: 45px;
+}
+
+.TitleScreenSecondaryButton {
+    height: 40px;
+}
+
+.TitleScreenPrimaryButton:hover,
+.TitleScreenSecondaryButton:hover {
+    background-color: var(--color-orange-hover);
+    scale: 1.1;
+}
+
+/* The waves along the bottom: they rise into place, then bob up and down */
+.TitleScreenWaves {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 65%;
+    animation: titleWavesRise 2s ease forwards;
+    z-index: -5;
+}
+
+.TitleScreenWave {
+    position: absolute;
+    left: 0;
+    bottom: -10%;
+    width: 100vw;
+    height: 90%;
+    background-color: var(--color-teal);
+    --mask:
+        radial-gradient(111.8px at 50% 150px, #000 100%, #0000 100%) calc(50% - 100px) 0/200px 100%,
+        radial-gradient(111.8px at 50% -100px, #0000 100%, #000 100%) 50% 50px/200px 100% repeat-x;
+    -webkit-mask: var(--mask);
+    mask: var(--mask);
+    animation: titleWaveFloat 2s ease-in-out 2s infinite alternate;
+}
+
+@keyframes titleFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Bobs down by a tenth of its height and back (the animation alternates) */
+@keyframes titleWaveFloat {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(0, 10%);
+    }
+}
+
+@keyframes titleWavesRise {
+    from {
+        transform: translate(0, 65%); /* starts below the bottom of the screen */
+    }
+    to {
+        transform: translate(0, -10%); /* and rises up into place */
+    }
+}
