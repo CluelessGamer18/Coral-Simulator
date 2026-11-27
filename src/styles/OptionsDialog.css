@@ -1,0 +1,158 @@
+/* The Options menu over the game (OptionsDialog.jsx) */
+.OptionsDialog {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+    border: 4px solid transparent;
+    border-radius: 16px;
+    background:
+        linear-gradient(var(--color-teal), var(--color-teal)) padding-box,
+        linear-gradient(to bottom, var(--color-teal), #ffffff) border-box;
+    color: #ffffff;
+    z-index: var(--z-dialog);
+}
+
+.OptionsDialogTitle {
+    font-size: 70px;
+    line-height: 1.1;
+    letter-spacing: 0.1rem;
+}
+
+.OptionsDialogClose {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    top: 20px;
+    left: 20px;
+    padding: 0;
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1;
+    color: #ffffff;
+    background-color: var(--color-teal);
+    border-width: 2px;
+    border-color: #ffffff;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.OptionsDialogClose:hover {
+    background-color: var(--color-orange-hover);
+}
+
+/* One setting: its name, then a slider or buttons */
+.OptionsDialogGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    margin: 10px auto;
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.OptionsDialogGroup input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.OptionsDialogControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.OptionsDialogMute {
+    flex: 0 0 72px;
+    padding: 5px 8px;
+    border: 1px solid #ffffff;
+    border-radius: 16px;
+    background-color: var(--color-teal);
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.OptionsDialogMute:hover {
+    background-color: var(--color-orange-hover);
+}
+
+/* A pair of buttons where one is chosen: Music or Ocean Sounds, WASD or Arrow Keys */
+.OptionsDialogToggle {
+    flex: 1 1 0;
+    padding: 5px 4px;
+    white-space: nowrap;
+    border: 1px solid #ffffff;
+    border-radius: 16px;
+    background-color: var(--color-teal);
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.OptionsDialogToggle[aria-pressed="true"] {
+    background-color: #ffffff;
+    color: var(--color-teal);
+}
+
+.OptionsDialogToggle:hover {
+    background-color: var(--color-orange-hover);
+    color: #ffffff;
+}
+
+.OptionsDialogResume,
+.OptionsDialogButton {
+    margin-top: 15px;
+    width: 100%;
+    height: 40px;
+    border-width: 2px;
+    border-color: #ffffff;
+    border-radius: 100px;
+    letter-spacing: 0.1em;
+    font-size: 20px;
+    padding: 0;
+    position: relative;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.OptionsDialogResume {
+    background-color: #ffffff;
+    color: var(--color-teal);
+}
+
+.OptionsDialogButton {
+    background-color: var(--color-teal);
+    color: #ffffff;
+}
+
+.OptionsDialogResume:hover,
+.OptionsDialogButton:hover {
+    background-color: var(--color-orange-hover);
+    color: #ffffff;
+}
+
+/* Short windows: tighter, so the whole box usually fits. If it still doesn't, it scrolls instead of running off the screen */
+@media (max-height: 880px) {
+    .OptionsDialog {
+        box-sizing: border-box;
+        max-height: calc(100vh - 16px);
+        padding: 24px 50px;
+        overflow-y: auto;
+        justify-content: flex-start;
+    }
+
+    .OptionsDialog > * {
+        flex-shrink: 0;
+    }
+
+    .OptionsDialog .OptionsDialogTitle {
+        margin: 0;
+        font-size: 40px;
+    }
+}

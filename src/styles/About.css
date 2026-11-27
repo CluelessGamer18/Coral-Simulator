@@ -1,7 +1,11 @@
-.AboutContainer {
+/* The About page (About.jsx) */
+.AboutPage {
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 0;
+    max-width: 1100px;
+    margin: auto;
 }
 
 .AboutBackgroundImage {
@@ -12,50 +16,70 @@
     z-index: -1;
 }
 
-html {
-    scroll-behavior: smooth;
-}
-
-.AboutPage {
-    padding: 0px;
-    max-width: 1100px;
-    margin: auto;
+.AboutBackButton {
+    background-color: var(--color-teal);
+    color: #ffffff;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: var(--z-page-controls);
+    padding: 10px 18px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
 }
 
 .AboutNav {
     position: sticky;
     top: 0;
-    /* padding: 16px; */
     display: flex;
     gap: 15px;
-    border-bottom: 1px solid #ddd;
-    z-index: 10;
-    background-color: #32AFAC;
-    border-radius: 0 0 16px 16px;
-    background: linear-gradient(#32AFAC, #32AFAC) padding-box,
-    linear-gradient(to bottom, #32AFAC, #FFFFFF) border-box;
+    z-index: var(--z-page-nav);
     border: 4px solid transparent;
+    border-radius: 0 0 16px 16px;
+    background:
+        linear-gradient(var(--color-lagoon), var(--color-lagoon)) padding-box,
+        linear-gradient(to bottom, var(--color-lagoon), #ffffff) border-box;
 }
 
 .AboutNav a {
     text-decoration: none;
     font-weight: bold;
-    color: white;
+    color: #ffffff;
     padding: 8px;
     border-radius: 10px;
     margin: 4px;
     transition: background-color 0.3s ease;
-
 }
 
 .AboutNav a:hover {
-    background-color: rgba(251, 105, 0, 0.864);
-    transition: background-color 0.3s ease;
+    background-color: var(--color-orange-hover);
+}
+
+/* The page's heading, for screen readers: the menu and section headings already show where the visitor is */
+.AboutTitle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 
 .AboutSection {
     min-height: 100vh;
-    padding: 60px 0 ;
+    padding: 60px 0;
+}
+
+.AboutSectionTitle {
+    font-size: 3.2em;
+    line-height: 1.1;
+    margin: 0.67em 0;
+}
+
+.AboutSubheading {
+    font-size: 1.5em;
+    margin: 0.83em 0;
 }
 
 .ContentGrid {
@@ -76,7 +100,6 @@ html {
     width: 100%;
     max-width: 100%;
     text-align: center;
-
 }
 
 .ContentItemImage {
@@ -87,13 +110,13 @@ html {
     object-fit: contain;
 }
 
-@media(max-width: 700px) {
+@media (max-width: 700px) {
     .ContentGrid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
-@media(max-width: 450px) {
+@media (max-width: 450px) {
     .ContentGrid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -106,7 +129,8 @@ html {
     gap: 16px;
 }
 
-.TeamImage, .TeamTextImage {
+.TeamImage,
+.TeamTextImage {
     display: block;
     width: 100%;
     height: auto;
@@ -120,16 +144,20 @@ html {
 }
 
 .ResourceCard {
-    aspect-ratio: auto;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
     box-sizing: border-box;
     background-color: #153f42;
-    color: white;
+    color: #ffffff;
     text-align: center;
     border-radius: 12px;
+    transition: background-color 0.3s ease;
+}
+
+.ResourceCard:hover {
+    background-color: var(--color-orange-hover);
 }
 
 .SoundCredits {

@@ -1,21 +1,91 @@
-.SimInfoDisplayContainer{
+/* The HUD along the bottom of the game (SimInfoDisplay.jsx) */
+.SimInfoDisplay {
     --hud-panel-background: rgba(2, 146, 165, 0.82);
     width: 500px;
     height: 170px;
-    /*background-color: red;*/
     /* Sits on the bottom edge of the game (see --game-height in App.css), not of the window, so it stays on the
        game when the window is taller than the game is */
     position: fixed;
     bottom: calc((100dvh - var(--game-height)) / 2 + 5px);
-    left: 50%; 
+    left: 50%;
     transform: translateX(-50%);
     display: flex;
     justify-content: center;
     flex-direction: column;
     align-items: center;
-    z-index: 100;
+    z-index: var(--z-hud);
 }
 
+.SimInfoText {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* The stress dial: a pin that swings from left to right as the reef's stress rises */
+.SimInfoDial {
+    width: 120px;
+    height: 65px;
+    border-top-left-radius: 60px;
+    border-top-right-radius: 60px;
+    margin: 0;
+    background: conic-gradient(
+        from 90deg at 47.52% 100%,
+        rgba(120, 160, 24, 0.82) 201deg,
+        rgba(255, 255, 255, 0.82) 338deg,
+        rgba(86, 75, 53, 0.82) 360deg
+    );
+    border: 5px solid var(--hud-panel-background);
+    padding: 0;
+    position: relative;
+}
+
+.SimInfoDialIcon {
+    position: absolute;
+    width: 40px;
+    aspect-ratio: 45 / 43;
+    bottom: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+}
+
+.SimInfoDialIcon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.SimInfoDialIconWarning {
+    animation: simInfoStressPulse 900ms ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes simInfoStressPulse {
+    50% {
+        transform: scale(1.2);
+        filter: brightness(1.6);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .SimInfoDialIcon .SimInfoDialIconWarning {
+        animation: none;
+    }
+}
+
+/* Its angle is set by SimInfoDisplay.jsx */
+.SimInfoDialPin {
+    position: absolute;
+    bottom: 50px;
+    left: 54px;
+    transform-origin: 50% 79px;
+    margin: 0;
+    padding: 0;
+    z-index: 20;
+    transition: transform 0.2s ease-out;
+}
+
+/* The timeline: a dot for each year and half year, and a marker for how far through the game it is */
 .SimInfoTimeline {
     position: relative;
     width: 500px;
@@ -32,193 +102,117 @@
     padding-right: 20px;
 }
 
-.SeasonIndicator {
+.SimInfoSeason {
     position: absolute;
     top: -19px;
     right: 18px;
     padding: 2px 8px;
     border-radius: 10px;
     font-size: 10px;
-    font-family: 'Poppins', sans-serif;
     font-weight: 600;
-    color: #fff;
+    color: #ffffff;
     z-index: 1;
 }
 
-.SeasonIndicator.summer {
+.SimInfoSeason.isSummer {
     background: #c65c25;
 }
 
-.SeasonIndicator.winter {
+.SimInfoSeason.isWinter {
     background: #247c91;
 }
 
-.TimelineDotLarge{
+.SimInfoTimelineTrack {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.SimInfoTimelineDotLarge,
+.SimInfoTimelineDotSmall {
+    border-radius: 100%;
+    background-color: aliceblue;
+}
+
+.SimInfoTimelineDotLarge {
+    width: 5px;
+    height: 5px;
+}
+
+.SimInfoTimelineDotSmall {
+    width: 3px;
+    height: 3px;
+}
+
+.SimInfoTimelineMarker {
+    position: absolute;
+    left: 0;
     width: 5px;
     height: 5px;
     border-radius: 100%;
-    background-color: aliceblue;
-    transition: transform 200ms ease; 
-    transform: scale(1); 
-} 
-
-.TimelineDotLarge.scaled { transform: scale(1.3); }
-
-.TimelineDotLarge.active{
     scale: 2.25;
-    background-color: rgba(251, 105, 0, 0.864);
-    border-width: 1px;
-    border-color: aliceblue;
-    border-style: solid;
+    background-color: rgba(251, 105, 0, 1);
+    border: 1px solid aliceblue;
+    transition: left 0.4s ease;
 }
 
-.TimelineDotSmall{
-    width: 3px;
-    height: 3px;
-    border-radius: 100%;
-    background-color: aliceblue;
-}
-
-.TimelineDotSmall.active{
-    scale: 2.25;
-    background-color: rgba(251, 105, 0, 0.864);
-    border-width: 1px;
-    border-color: aliceblue;
-    border-style: solid;
-}
-
-.SimInfoText{
-    font-size: 14px;
-    font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-}
-
-.TemperatureIcon {
-    display: inline-block;
-    flex: 0 0 16px;
-    width: 16px;
-    height: 31px;
-    background-color: #fff;
-    mask-size: contain;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    transition: background-color 300ms ease;
-}
-
-.TemperatureValue {
-    transition: color 300ms ease;
-}
-
-.LightValue {
-    transition: color 300ms ease;
-}
-
-.LightIcon {
-    display: inline-block;
-    flex: 0 0 24px;
-    width: 24px;
-    height: 24px;
-    background-color: #fff;
-    mask-size: contain;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    transition: background-color 300ms ease;
-}
-
-
-.SimInfoDial{
-    width: 120px; 
-    height: 65px; 
-    background: #0292A5; 
-    border-top-left-radius: 60px; 
-    border-top-right-radius: 60px;
-    margin: 0;
-    /* background: linear-gradient(to right,#0292A5,#a2f0f9); */
-    background: conic-gradient(from 90deg at 47.52% 100.00%, rgba(120, 160, 24, 0.82) 201deg, rgba(255, 255, 255, 0.82) 338deg, rgba(86, 75, 53, 0.82) 360deg);
-    border-style: solid;
-    border-width: 5px;
-    border-color: var(--hud-panel-background);
-    padding: 0;
-    position: relative;
-}
-
-.SimInfoDialIcon{
-    position: absolute;
-    width: 40px;
-    aspect-ratio: 45 / 43;
-    bottom: -20%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-}
-
-.SimInfoDialIcon svg{
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-
-.SimInfoDialIconWarning{
-    animation: coralStressPulse 900ms ease-in-out infinite;
-    transform-origin: center;
-}
-
-@keyframes coralStressPulse{
-    50%{
-        transform: scale(1.2);
-        filter: brightness(1.6);
-    }
-}
-
-@media (prefers-reduced-motion: reduce){
-    .SimInfoDialIcon .SimInfoDialIconWarning{
-        animation: none;
-    }
-}
-
-.SimInfoDialPin{
-    position: absolute;
-    bottom: 50px;
-    left: 54px;
-    transform: translateX(-50%) rotate(var(--angle, 0deg)); 
-    transform-origin: 50% 79px; 
-    margin: 0;
-    padding: 0;
-    z-index: 20;
-    font-size: 20px;
-    transition: transform 0.2s ease-out;
-
-}
-
-.SimInfoBottom{
+/* The readings along the bottom: temperature, light, pollution and the coral collection */
+.SimInfoBottom {
     display: flex;
     padding-bottom: 10px;
     padding-left: 30px;
     padding-right: 30px;
     gap: 20px;
     background: var(--hud-panel-background);
-    border-bottom-left-radius: 30px; 
+    border-bottom-left-radius: 30px;
     border-bottom-right-radius: 30px;
     margin: 0;
     position: relative;
-    display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.statusGroup {
+.SimInfoReading {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.hoverPreview {
+/* Icons drawn in whatever color their reading is (set by SimInfoDisplay.jsx), through the icon's shape as a mask */
+.SimInfoTemperatureIcon,
+.SimInfoLightIcon {
+    display: inline-block;
+    background-color: #ffffff;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    transition: background-color 300ms ease;
+}
+
+.SimInfoTemperatureIcon {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 31px;
+}
+
+.SimInfoLightIcon {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.SimInfoTemperatureValue,
+.SimInfoLightValue {
+    transition: color 300ms ease;
+}
+
+/* A picture that explains each reading, shown while the pointer is over it */
+.SimInfoTooltip {
     position: absolute;
     bottom: 120%;
     left: 50%;
@@ -231,92 +225,73 @@
     transition: opacity 0.4s ease;
 }
 
-.statusGroup:hover .hoverPreview {
+.SimInfoReading:hover .SimInfoTooltip,
+.SimInfoDial:hover .SimInfoTooltip {
     opacity: 1;
 }
 
-.SimInfoDial:hover .hoverPreview {
-    opacity: 1;
-}
-
-.TimelineTrack:hover .hoverPreview {
-    opacity: 1;
-}
-
-.TimelineTrack {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 100%;
-    justify-content: space-between;
-}
-
-.collectionGroup {
-    border-left: 1px solid rgba(255,255,255,0.3);
+.SimInfoCollection {
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
     padding-left: 16px;
     margin-left: 4px;
 }
 
-.collectionLabel {
+.SimInfoCollectionLabel {
     opacity: 0.85;
-    font-size: 12px !important;
+    font-size: 12px;
 }
 
-.collectionIcons {
+.SimInfoCollectionIcons {
     display: flex;
     align-items: center;
     gap: 3px;
 }
 
-.collectionCoralIcon {
+.SimInfoCollectionIcon {
     display: block;
     flex: 0 0 18px;
     width: 18px;
     height: 24px;
     object-fit: contain;
-    filter: grayscale(1) brightness(0) invert(1) drop-shadow(0 0 1px #fff);
+    filter: grayscale(1) brightness(0) invert(1) drop-shadow(0 0 1px #ffffff);
     opacity: 0.65;
-    transition: filter 300ms ease, opacity 300ms ease, transform 300ms ease;
+    transition:
+        filter 300ms ease,
+        opacity 300ms ease,
+        transform 300ms ease;
 }
 
-.collectionCoralIcon.found {
-    filter: drop-shadow(0 0 2px #ffe3a3);
+.SimInfoCollectionIcon.isFound {
+    filter: drop-shadow(0 0 2px var(--color-sand));
     opacity: 1;
     transform: scale(1.15);
 }
 
-.collectionValue {
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    color: #fff;
+.SimInfoCollectionValue {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
     min-width: 30px;
     text-align: right;
-    animation: collectionPop 450ms ease-out;
+    animation: simInfoCollectionPop 450ms ease-out;
 }
 
-.collectionGroup.complete .collectionValue {
-    color: #ffe3a3;
+.SimInfoCollection.isComplete .SimInfoCollectionValue {
+    color: var(--color-sand);
 }
 
-@keyframes collectionPop {
-    0% { transform: scale(1.6); color: #ffe3a3; }
-    100% { transform: scale(1); }
+@keyframes simInfoCollectionPop {
+    0% {
+        transform: scale(1.6);
+        color: var(--color-sand);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .collectionValue { animation: none; }
-}
-
-.TimelineIndicator {
-    position: absolute;
-    left: 0;
-    width: 5px;
-    height: 5px;
-    border-radius: 100%;
-    scale: 2.25;
-    background-color: rgba(251, 105, 0, 1);
-    border-width: 1px;
-    border-color: aliceblue;
-    border-style: solid;
-    transition: left 0.4s ease;
+    .SimInfoCollectionValue {
+        animation: none;
+    }
 }

@@ -1,47 +1,46 @@
 .ProblemScreen {
-  position: fixed;
-  inset: 0;
-  z-index: 20000;
-  display: grid;
-  place-items: center;
-  background: rgba(11, 46, 58, 0.88);
-  font-family: 'Poppins', sans-serif;
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-fatal);
+    display: grid;
+    place-items: center;
+    background: rgba(11, 46, 58, 0.88);
 }
 
 .ProblemScreenCard {
-  width: min(440px, calc(100vw - 40px));
-  box-sizing: border-box;
-  padding: 28px 32px;
-  border-radius: 18px;
-  border: 2px solid #ffffff;
-  background: #086b7a;
-  color: #ffffff;
-  text-align: center;
+    width: min(440px, calc(100vw - 40px));
+    box-sizing: border-box;
+    padding: 28px 32px;
+    border-radius: 18px;
+    border: 2px solid #ffffff;
+    background: var(--color-teal-deep);
+    color: #ffffff;
+    text-align: center;
 }
 
 .ProblemScreenCard h2 {
-  margin: 0 0 8px;
-  font-size: 24px;
-  font-weight: 700;
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 700;
 }
 
 .ProblemScreenCard p {
-  margin: 0 0 18px;
-  font-size: 15px;
+    margin: 0 0 18px;
+    font-size: 15px;
 }
 
 .ProblemScreenCard button {
-  padding: 9px 24px;
-  border: 2px solid #ffffff;
-  border-radius: 25px;
-  background: #ffffff;
-  color: #086b7a;
-  font-size: 16px;
-  font-weight: 600;
+    padding: 9px 24px;
+    border: 2px solid #ffffff;
+    border-radius: 25px;
+    background: #ffffff;
+    color: var(--color-teal-deep);
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .ProblemScreenCard button:hover {
-  background: #F86A1C;
-  border-color: #F86A1C;
-  color: #ffffff;
+    background: var(--color-orange);
+    border-color: var(--color-orange);
+    color: #ffffff;
 }

@@ -1,60 +1,81 @@
+/* Page-wide styles, loaded before every component's own stylesheet: the colors and stacking order the whole page
+   shares, the base look of the page, links and buttons, and the animations more than one component uses. */
+
 :root {
-  font-family: 'Poppins', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    --color-teal: #0292a5;
+    --color-teal-deep: #086b7a;
+    --color-orange: #f86a1c;
+    --color-orange-hover: rgba(251, 105, 0, 0.864);
+    --color-sea: #8acfc9;
+    --color-lagoon: #32afac;
+    --color-sand: #ffe3a3;
+    --color-ink: #0b2e3a;
 
+    /* What sits on top of what, back to front */
+    --z-page-nav: 10; /* the About page's sticky menu */
+    --z-page-controls: 20; /* the About page's back button */
+    --z-hud: 100; /* the HUD, the settings button and the end screen's show-results button */
+    --z-popup-backdrop: 999; /* catches clicks outside the coral popup */
+    --z-title: 1000;
+    --z-game-overlay: 9999; /* the tutorial banner and praise, the coral popup and the end screen */
+    --z-dialog: 10000; /* Options */
+    --z-goal: 10500; /* the "Survive all 10 years!" card */
+    --z-notices: 11000;
+    --z-fatal: 20000; /* the problem screen, over everything */
 
-   /* background-color:#8ACFC9; */
-  /*background-image: url("bg.png");*/
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-family: "Poppins", system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 html {
-  background-color: #32AFAC;
-
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light;
-  color: rgba(255, 255, 255, 0.87);
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+    background-color: var(--color-lagoon);
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light;
+    color: rgba(255, 255, 255, 0.87);
+    scroll-behavior: smooth; /* for the About page's menu, which jumps to sections of the page */
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  /* min-width: 320px;
-  min-height: 100vh; */
+    margin: 0;
+    display: flex;
+    place-items: center;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+a {
+    font-weight: 500;
+    color: inherit;
+    text-decoration: inherit;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: var(--color-teal);
+    cursor: pointer;
+    transition: border-color 0.25s;
 }
-button:focus,
+
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+    outline: 3px solid var(--color-orange);
+    outline-offset: 2px;
+}
+
+/* A popup rising into place, centered on its own middle (the coral popup and the end screen) */
+@keyframes popupRise {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
 }
